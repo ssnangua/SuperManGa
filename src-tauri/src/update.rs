@@ -52,7 +52,7 @@ fn is_newer(remote: &str, local: &str) -> bool {
 }
 
 fn check_app_update_sync(network: NetworkConfig) -> Result<UpdateCheckResult, String> {
-    let current = env!("CARGO_PKG_VERSION").to_string();
+    let current = env!("APP_VERSION").to_string();
     // Keep this short: startup checks must fail fast on bad networks.
     let agent = build_agent_with_timeout(&network, Duration::from_secs(8))?;
     let response = agent

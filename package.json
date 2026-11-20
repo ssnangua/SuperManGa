@@ -12,6 +12,8 @@
     "build": "tauri build --no-bundle",
     "build:win": "tauri build --no-bundle && node scripts/pack-portable.mjs",
     "bundle:offline": "node scripts/bundle-offline-data.mjs",
+    "sync-version": "node scripts/sync-version.mjs",
+    "version": "node scripts/sync-version.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

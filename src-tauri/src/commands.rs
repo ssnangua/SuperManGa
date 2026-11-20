@@ -266,7 +266,7 @@ fn probe_image(bytes: &[u8]) -> Option<(u32, u32, Option<u16>, Option<String>, O
 #[tauri::command]
 pub fn system_info() -> SystemInfo {
     SystemInfo {
-        version: env!("CARGO_PKG_VERSION").to_string(),
+        version: env!("APP_VERSION").to_string(),
         os: std::env::consts::OS.to_string(),
         arch: std::env::consts::ARCH.to_string(),
     }

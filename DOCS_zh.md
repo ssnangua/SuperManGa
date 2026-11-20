@@ -93,18 +93,16 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 
 工作流：[`.github/workflows/release.yml`](.github/workflows/release.yml)
 
-1. 将下列三处 **version 改成同一版本**（例如 `0.1.1`）：
-   - `package.json`
-   - `src-tauri/tauri.conf.json`
-   - `src-tauri/Cargo.toml`
-2. 提交后打 tag 并推送：
+1. 用 npm 升版本（会改 `package.json`，并经 `version` 钩子同步 `Cargo.toml`、`tauri.conf.json` 和 README 下载链接，再提交并打 `v*` tag）：
 
    ```bash
-   git tag v0.1.1
-   git push origin v0.1.1
+   npm version patch   # 或 minor / major
+   git push origin HEAD --follow-tags
    ```
 
-3. 推送 `v*` tag 时，CI 校验 tag 与三处版本一致，再分别构建并上传产物：
+   若只改了 `package.json`、尚未打 tag：`npm run sync-version`。
+
+2. 推送 `v*` tag 时，CI 校验 tag 与三处版本一致，再分别构建并上传产物：
 
 | 平台 | 产物 |
 |---|---|
@@ -147,8 +145,9 @@ npm run bundle:offline
 | [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | 将 `target/release/supermanga.exe` 打成 Windows portable zip，并附带 pdfium |
 | [`scripts/bundle-offline-data.mjs`](scripts/bundle-offline-data.mjs) | 生成含多 flavor ORT + 模型的 `SuperManGaData`（Win x64） |
 | [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | 检查 `src/i18n.ts` 各语言键一致，并扫描源码中未声明的 `$t` / `t(` 键 |
+| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | 把 `package.json` 的 version 同步到 Cargo / tauri.conf / README；`npm version` 会自动跑 |
 
-常用 npm scripts：`dev`、`fetch:pdfium`、`build`、`build:win`、`bundle:offline`、`preview`。
+常用 npm scripts：`dev`、`fetch:pdfium`、`build`、`build:win`、`bundle:offline`、`sync-version`、`preview`。
 
 ---
 

@@ -93,18 +93,16 @@ On first run the app creates `SuperManGaData/` next to the exe (settings, secret
 
 Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)
 
-1. Bump **the same version** in all three places (e.g. `0.1.1`):
-   - `package.json`
-   - `src-tauri/tauri.conf.json`
-   - `src-tauri/Cargo.toml`
-2. Commit, tag, and push:
+1. Bump with npm (updates `package.json`, then the `version` hook syncs `Cargo.toml`, `tauri.conf.json`, and README download links, then commits and tags `v*`):
 
    ```bash
-   git tag v0.1.1
-   git push origin v0.1.1
+   npm version patch   # or minor / major
+   git push origin HEAD --follow-tags
    ```
 
-3. On a `v*` tag push, CI verifies the tag matches all three versions, then builds and uploads:
+   If you only edited `package.json` and have not tagged yet: `npm run sync-version`.
+
+2. On a `v*` tag push, CI verifies the tag matches all three versions, then builds and uploads:
 
 | Platform | Artifacts |
 |---|---|
@@ -147,8 +145,9 @@ Offline packs must include the **CPU** flavor. GPU ORT zips do not ship full CUD
 | [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | Pack `target/release/supermanga.exe` into a Windows portable zip (with pdfium when available) |
 | [`scripts/bundle-offline-data.mjs`](scripts/bundle-offline-data.mjs) | Build multi-flavor ORT + models `SuperManGaData` (Win x64) |
 | [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | Ensure locale key parity in `src/i18n.ts` and scan for undeclared `$t` / `t(` keys |
+| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | Copy `package.json` version to Cargo / tauri.conf / README; runs from `npm version` |
 
-Common npm scripts: `dev`, `fetch:pdfium`, `build`, `build:win`, `bundle:offline`, `preview`.
+Common npm scripts: `dev`, `fetch:pdfium`, `build`, `build:win`, `bundle:offline`, `sync-version`, `preview`.
 
 ---
 
