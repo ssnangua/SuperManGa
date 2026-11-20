@@ -39,18 +39,18 @@ jobs:
           - os: ubuntu-22.04
             name: Linux-x64
             rust_target: ""
-            args: --bundles appimage,deb
+            args: --bundles deb
           - os: ubuntu-24.04-arm
             name: Linux-arm64
             rust_target: ""
-            args: --bundles appimage,deb
+            args: --bundles deb
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version-file: .node-version
           cache: npm
@@ -115,6 +115,28 @@ jobs:
         env:
           PDFIUM_TARGET: ${{ matrix.rust_target }}
 
+      # Tauri defaults to SuperManGa_0.1.0_amd64.deb / _aarch64.dmg; match Windows: SuperManGa-ver-os-arch.ext
+      - name: Rename release artifacts
+        if: ${{ !matrix.build_win }}
+        shell: bash
+        run: |
+          VERSION=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          case "${{ matrix.name }}" in
+            macOS-arm64) dest="SuperManGa-${VERSION}-macos-arm64.dmg"; glob='*.dmg' ;;
+            macOS-x64)   dest="SuperManGa-${VERSION}-macos-x64.dmg";   glob='*.dmg' ;;
+            Linux-x64)   dest="SuperManGa-${VERSION}-linux-x64.deb";   glob='*.deb' ;;
+            Linux-arm64) dest="SuperManGa-${VERSION}-linux-arm64.deb"; glob='*.deb' ;;
+            *) echo "Unknown matrix name: ${{ matrix.name }}"; exit 1 ;;
+          esac
+          mapfile -t files < <(find src-tauri/target -type f -name "$glob")
+          if [ "${#files[@]}" -ne 1 ]; then
+            echo "Expected 1 $glob, found ${#files[@]}:"
+            printf '%s\n' "${files[@]}"
+            exit 1
+          fi
+          mv "${files[0]}" "$(dirname "${files[0]}")/${dest}"
+          echo "Renamed ${files[0]} -> ${dest}"
+
       - name: Upload release artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -122,9 +144,7 @@ jobs:
           path: |
             src-tauri/target/**/release/bundle/portable/*.zip
             src-tauri/target/**/release/bundle/dmg/*.dmg
-            src-tauri/target/**/release/bundle/appimage/*.AppImage
             src-tauri/target/**/release/bundle/deb/*.deb
-            src-tauri/target/**/release/bundle/rpm/*.rpm
           if-no-files-found: error
 
   publish:
@@ -146,8 +166,7 @@ jobs:
         run: |
           mkdir -p release
           find artifacts -type f \( \
-            -name '*.zip' -o -name '*.msi' -o -name '*.dmg' -o \
-            -name '*.AppImage' -o -name '*.deb' -o -name '*.rpm' \
+            -name '*.zip' -o -name '*.msi' -o -name '*.dmg' -o -name '*.deb' \
           \) -exec cp -t release/ {} +
           echo "Release files:"
           ls -lah release

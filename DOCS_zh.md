@@ -85,7 +85,7 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 
 解压后目录形如 `SuperManGa-*-windows-x64/`，内含 `SuperManGa.exe` 与 `pdfium.dll`（若已找到）。发布文件名保持 **ASCII、无空格**。
 
-**CI**：Windows job 跑 `npm run build:win`；macOS / Linux 跑 `npx tauri build --bundles dmg|appimage,deb`。
+**CI**：Windows job 跑 `npm run build:win`；macOS / Linux 跑 `npx tauri build --bundles dmg|deb`。
 
 首次运行在 exe 同级创建 `SuperManGaData/`（设置、密钥、解压与模型缓存）。可与 exe 一起放在 U 盘 / 移动硬盘上带走；若该位置不可写，则回退到系统应用数据目录。
 
@@ -109,8 +109,10 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 | 平台 | 产物 |
 |---|---|
 | Windows x64 | `SuperManGa-*-windows-x64.zip`（portable） |
-| macOS arm64 / x64 | `.dmg` |
-| Linux x64 / arm64 | `.AppImage` + `.deb` |
+| macOS arm64 | `SuperManGa-*-macos-arm64.dmg` |
+| macOS x64 | `SuperManGa-*-macos-x64.dmg` |
+| Linux arm64 | `SuperManGa-*-linux-arm64.deb` |
+| Linux x64 | `SuperManGa-*-linux-x64.deb` |
 
 也可在 Actions 里 `workflow_dispatch` 手动跑 **Release**，只拿构建产物、不发 GitHub Release。
 
@@ -418,7 +420,7 @@ sequenceDiagram
 | **Windows Media OCR** | ✓ | — | — | `ocr/win_ocr.rs` |
 | **主实例互斥** | ✓ | 弱 | 弱 | 非 Win：每进程都 `is_primary=true` |
 | **HWND 原生窗口图标** | ✓ | — | — | `window_state::apply_native_window_icons` |
-| **portable zip 脚本** | ✓ | — | — | `pack-portable.mjs`；mac/Linux 用 dmg / AppImage / deb |
+| **portable zip 脚本** | ✓ | — | — | `pack-portable.mjs`；mac/Linux 用 dmg / deb |
 | **keyring 密钥** | ✓ | ✓ | ✓ | `keyring` 启用各平台原生后端；失败则 **文件加密回退**（便携可复制） |
 
 ---

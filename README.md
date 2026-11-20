@@ -7,7 +7,7 @@
 
 <p align="center">
   <img alt="PC" src="https://img.shields.io/badge/PC-Windows%EF%BD%9CmacOS%EF%BD%9CLinux-orange">
-  <img alt="格式" src="https://img.shields.io/badge/%E6%A0%BC%E5%BC%8F-文件夹%EF%BD%9Czip%EF%BD%9Ccbz%EF%BD%9Crar%EF%BD%9Ccbr%EF%BD%9C7z%EF%BD%9Cepub%EF%BD%9Cpdf%EF%BD%9Cmobi-blue">
+  <img alt="格式" src="https://img.shields.io/badge/%E6%A0%BC%E5%BC%8F-文件夹%EF%BD%9Czip%EF%BD%9Ccbz%EF%BD%9Crar%EF%BD%9Ccbr%EF%BD%9C7z%EF%BD%9Cepub%EF%BD%9Cpdf%EF%BD%9Cmobi%EF%BD%9Cazw3%EF%BD%9Cazw-blue">
   <img alt="框架" src="https://img.shields.io/badge/%E6%A1%86%E6%9E%B6-Tauri_2_%2B_Vue_3-purple">
 </p>
 
@@ -32,7 +32,7 @@
 
 之前我主要使用 MangaMeeya 在电脑上看漫画，但它有几个缺陷：不支持 Unicode 文件路径、不支持播放动图、不支持阅读条漫，这让我十分困扰。
 
-我也尝试过其他漫画阅读器，但始终没有找到满意的，绝大多数连基本的图像重采样功能都没有。
+我也尝试过其他漫画阅读器，但始终没能找到满意的，大多数连基本的图像重采样功能都没有。
 
 最终我决定自己写一个。
 
@@ -43,8 +43,8 @@
 | 系统 | 下载 |
 | --- | --- |
 | Windows | [![便携版 x64](https://img.shields.io/badge/便携版-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-windows-x64.zip) |
-| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/latest) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/latest) |
-| Linux | [![AppImage](https://img.shields.io/badge/AppImage-x64%20%2F%20arm64-FCBF25?logo=linux&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/latest) [![deb](https://img.shields.io/badge/deb-x64%20%2F%20arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/latest) |
+| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-macos-x64.dmg) |
+| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-linux-x64.deb) |
 
 > [!NOTE]
 > 运行环境 / 超分模型 / 文字检测器模型 / OCR 模型 **没有打进安装包**，要使用神经网络超分 / OCR 翻译功能，需在应用内自行下载。

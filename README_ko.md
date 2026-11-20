@@ -7,7 +7,7 @@
 
 <p align="center">
   <img alt="PC" src="https://img.shields.io/badge/PC-Windows%EF%BD%9CmacOS%EF%BD%9CLinux-orange">
-  <img alt="형식" src="https://img.shields.io/badge/%ED%98%95%EC%8B%9D-folder%EF%BD%9Czip%EF%BD%9Ccbz%EF%BD%9Crar%EF%BD%9Ccbr%EF%BD%9C7z%EF%BD%9Cepub%EF%BD%9Cpdf%EF%BD%9Cmobi-blue">
+  <img alt="형식" src="https://img.shields.io/badge/%ED%98%95%EC%8B%9D-folder%EF%BD%9Czip%EF%BD%9Ccbz%EF%BD%9Crar%EF%BD%9Ccbr%EF%BD%9C7z%EF%BD%9Cepub%EF%BD%9Cpdf%EF%BD%9Cmobi%EF%BD%9Cazw3%EF%BD%9Cazw-blue">
   <img alt="스택" src="https://img.shields.io/badge/%EC%8A%A4%ED%83%9D-Tauri_2_%2B_Vue_3-purple">
 </p>
 
@@ -43,8 +43,8 @@ OS에 맞는 `v0.1.0` 패키지를 선택하세요. 전체 버전은 [Releases](
 | OS | 다운로드 |
 | --- | --- |
 | Windows | [![Portable x64](https://img.shields.io/badge/Portable-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-windows-x64.zip) |
-| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/latest) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/latest) |
-| Linux | [![AppImage](https://img.shields.io/badge/AppImage-x64%20%2F%20arm64-FCBF25?logo=linux&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/latest) [![deb](https://img.shields.io/badge/deb-x64%20%2F%20arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/latest) |
+| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-macos-x64.dmg) |
+| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.0/SuperManGa-0.1.0-linux-x64.deb) |
 
 > [!NOTE]
 > 런타임 / 업스케일 모델 / 문자 검출 모델 / OCR 모델은 **설치 패키지에 포함되지 않습니다**. 신경망 업스케일·OCR 번역을 쓰려면 앱에서 직접 다운로드하세요.

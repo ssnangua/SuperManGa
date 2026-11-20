@@ -85,7 +85,7 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 
 Unpack to a folder like `SuperManGa-*-windows-x64/` containing `SuperManGa.exe` and `pdfium.dll` (when found). Release filenames stay **ASCII, no spaces**.
 
-**CI:** the Windows job runs `npm run build:win`; macOS / Linux run `npx tauri build --bundles dmg|appimage,deb`.
+**CI:** the Windows job runs `npm run build:win`; macOS / Linux run `npx tauri build --bundles dmg|deb`.
 
 On first run the app creates `SuperManGaData/` next to the exe (settings, secrets, extract/model caches). You can carry the folder with the exe on removable media; if that location is not writable, it falls back to the OS app-data directory.
 
@@ -109,8 +109,10 @@ Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)
 | Platform | Artifacts |
 |---|---|
 | Windows x64 | `SuperManGa-*-windows-x64.zip` (portable) |
-| macOS arm64 / x64 | `.dmg` |
-| Linux x64 / arm64 | `.AppImage` + `.deb` |
+| macOS arm64 | `SuperManGa-*-macos-arm64.dmg` |
+| macOS x64 | `SuperManGa-*-macos-x64.dmg` |
+| Linux arm64 | `SuperManGa-*-linux-arm64.deb` |
+| Linux x64 | `SuperManGa-*-linux-x64.deb` |
 
 You can also run **Release** via `workflow_dispatch` to collect build artifacts without publishing a GitHub Release.
 
@@ -418,7 +420,7 @@ Manual “Check for updates” is not gated on primary; silent startup check and
 | **Windows Media OCR** | ✓ | — | — | `ocr/win_ocr.rs` |
 | **Primary-instance mutex** | ✓ | weak | weak | Non-Win: every process reports `is_primary=true` |
 | **HWND native window icons** | ✓ | — | — | `window_state::apply_native_window_icons` |
-| **Portable zip script** | ✓ | — | — | `pack-portable.mjs`; mac/Linux use dmg / AppImage / deb |
+| **Portable zip script** | ✓ | — | — | `pack-portable.mjs`; mac/Linux use dmg / deb |
 | **Keyring secrets** | ✓ | ✓ | ✓ | `keyring` enables native backends; **file encryption fallback** if keyring fails (portable-friendly) |
 
 ---
