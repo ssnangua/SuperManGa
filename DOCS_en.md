@@ -125,7 +125,7 @@ npm run bundle:offline
 
 Place `SuperManGaData` next to `SuperManGa.exe` (and `pdfium.dll`) before uploading.
 
-Assets are hosted on GitHub Release tag **`data`** (`manifest.json` + `{stem}-v{ver}.zip`). Manifest entries are `{version,bytes,sha256}`; `bytes` drives UI download size and `sha256` rejects corrupt zips after download. The app ships a seed manifest and soft-refreshes the remote manifest after startup on a short timeout (non-blocking); local layout is `SuperManGaData/data/{stem}-v{ver}/`. Build zips with [`tools/pack-data/`](tools/pack-data/).
+Assets are hosted on GitHub Release tag **`data`** (`manifest.json` + `{stem}-v{ver}.zip`). Manifest entries are `{version,bytes,sha256}`; `bytes` drives UI download size and `sha256` rejects corrupt zips after download. The app ships a seed manifest and does not fetch on startup; Settings → General → Asset Catalog pulls the remote `manifest.json` on demand. Local layout is `SuperManGaData/data/{stem}-v{ver}/`. Build zips with [`tools/pack-data/`](tools/pack-data/).
 
 Runtime selection:
 

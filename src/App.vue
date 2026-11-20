@@ -14,7 +14,6 @@ import UpdateAvailableDialog from "./components/UpdateAvailableDialog.vue";
 import PageView from "./components/PageView.vue";
 import SettingsDialog from "./components/SettingsDialog.vue";
 import { checkUpdateOnStartup } from "./lib/updateCheck";
-import { refreshDataManifest } from "./lib/render/assets";
 import ShortcutsDialog from "./components/ShortcutsDialog.vue";
 import SidePanel from "./components/SidePanel.vue";
 import BookmarkDialog from "./components/BookmarkDialog.vue";
@@ -37,7 +36,6 @@ import {
   clampSidebarWidthToViewport,
   clock,
   comic,
-  downloadNetworkConfig,
   dropping,
   endSidebarResize,
   extracting,
@@ -230,13 +228,6 @@ function blockContextMenu(event: Event) {
 onMounted(() => {
   void boot().then(() => {
     void checkUpdateOnStartup();
-    // Defer + fire-and-forget: soft-refresh must not contend with first paint /
-    // boot IPC. Rust side is async+spawn_blocking with an 8s timeout.
-    window.setTimeout(() => {
-      void refreshDataManifest(downloadNetworkConfig()).catch(() => {
-        /* offline / release unavailable — keep local/seed manifest */
-      });
-    }, 1800);
   });
   unbindMenuHot = bindMenuHot();
   window.addEventListener("keydown", handleKey);

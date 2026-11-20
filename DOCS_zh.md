@@ -125,7 +125,7 @@ npm run bundle:offline
 
 将 `SuperManGaData` 与 `SuperManGa.exe`（及 `pdfium.dll`）放在同级后打包上传即可。
 
-资源统一放在 GitHub Release tag **`data`**（`manifest.json` + `{stem}-v{ver}.zip`）。清单条目为 `{version,bytes,sha256}`；`bytes` 供界面显示下载大小，`sha256` 在下载后校验坏包。应用内置 seed 清单，启动后后台短超时静默刷新远程 `manifest.json`（不阻塞界面）；本机目录为 `SuperManGaData/data/{stem}-v{ver}/`。打 zip 可用 [`tools/pack-data/`](tools/pack-data/)。
+资源统一放在 GitHub Release tag **`data`**（`manifest.json` + `{stem}-v{ver}.zip`）。清单条目为 `{version,bytes,sha256}`；`bytes` 供界面显示下载大小，`sha256` 在下载后校验坏包。应用内置 seed 清单，启动时不联网；设置 → 通用 →「资源清单」可手动拉取远程 `manifest.json`。本机目录为 `SuperManGaData/data/{stem}-v{ver}/`。打 zip 可用 [`tools/pack-data/`](tools/pack-data/)。
 
 运行时选型：
 

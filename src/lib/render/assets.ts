@@ -155,11 +155,17 @@ export async function initNeuralRuntime(
   });
 }
 
+export type ManifestRefreshResult = {
+  updated: boolean;
+};
+
 export async function refreshDataManifest(
   network: DownloadNetworkConfig,
-): Promise<unknown> {
+): Promise<ManifestRefreshResult | null> {
   if (!inTauri()) return null;
-  return invoke("refresh_data_manifest", { network: networkPayload(network) });
+  return invoke<ManifestRefreshResult>("refresh_data_manifest", {
+    network: networkPayload(network),
+  });
 }
 
 export async function installedNeuralIds(): Promise<string[]> {

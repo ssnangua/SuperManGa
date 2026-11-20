@@ -3,12 +3,14 @@ import { useI18n } from "vue-i18n";
 import { computed, nextTick, ref, watch } from "vue";
 import { open } from "@tauri-apps/plugin-dialog";
 import { type MessageKey } from "../i18n";
-import { notifyError, notifySuccess } from "../lib/appToast";
+import { notifyError, notifyInfo, notifySuccess } from "../lib/appToast";
 import { getCacheDir, getDefaultDataDir, migrateCacheDir, setCacheDir } from "../lib/cacheDir";
 import { sameFsPath } from "../lib/fsPath";
+import { refreshDataManifest } from "../lib/render/assets";
 import {
   ASSOC_GROUPS,
   applyFileAssociations,
+  downloadNetworkConfig,
   globalBusy,
   globalBusyText,
   inTauri,
@@ -35,6 +37,7 @@ const assocBusy = ref(false);
 const assocSelected = ref<string[]>([]);
 const cacheDirDraft = ref("");
 const tabScroller = ref<HTMLElement | null>(null);
+const manifestBusy = ref(false);
 
 function resetTabScroll() {
   void nextTick(() => {
@@ -102,6 +105,24 @@ async function refreshCacheDir() {
     cacheDirDraft.value = resolved;
   } catch {
     cacheDirDraft.value = settings.cacheDir || "";
+  }
+}
+
+async function refreshManifestCatalog() {
+  if (manifestBusy.value) return;
+  if (!inTauri()) {
+    notifyError(t("desktopOnly"));
+    return;
+  }
+  manifestBusy.value = true;
+  try {
+    const result = await refreshDataManifest(downloadNetworkConfig());
+    if (result?.updated) notifySuccess(t("refreshDataManifestDone"));
+    else notifyInfo(t("refreshDataManifestUnchanged"));
+  } catch (error) {
+    notifyError(String(error));
+  } finally {
+    manifestBusy.value = false;
   }
 }
 
@@ -330,6 +351,23 @@ async function applyAssociations() {
             </div>
           </div>
           <div class="settings-body">
+            <div class="settings-row">
+              <div class="settings-row-main">
+                <span class="settings-label">{{ t("refreshDataManifest") }}</span>
+                <button
+                  type="button"
+                  :disabled="manifestBusy"
+                  @click="refreshManifestCatalog"
+                >
+                  <span v-if="manifestBusy" class="busy-label">
+                    <Icon name="loadingDotsRotate" />
+                    {{ t("refreshDataManifestAction") }}
+                  </span>
+                  <template v-else>{{ t("refreshDataManifestAction") }}</template>
+                </button>
+              </div>
+              <p class="settings-hint">{{ t("refreshDataManifestHint") }}</p>
+            </div>
             <div class="settings-row">
               <div class="settings-row-main">
                 <span class="settings-label">{{ t("checkUpdateOnStartup") }}</span>
@@ -771,6 +809,17 @@ button.app-tab.on:not(:disabled) {
 .settings-row-main > :last-child {
   flex: 0 0 auto;
   margin-left: auto;
+}
+
+.app-modal-panel.settings-dialog .settings-row-main > button {
+  width: auto;
+  white-space: nowrap;
+}
+
+.app-modal-panel.settings-dialog .settings-row-main .busy-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .app-modal-panel.settings-dialog
