@@ -176,7 +176,7 @@ Windows에서는 첫 실행 시 실행 파일과 같은 위치에 `SuperManGaDat
 
 ## 관련
 
-- RAR / CBR 해제는 공식 [unrar](https://www.rarlab.com/)(`unrar-ng` 경유, 해제만)를 사용합니다. UnRAR 라이선스는 본 프로젝트와 별개입니다 → [RARLAB](https://www.rarlab.com/license.htm)
+- RAR / CBR 해제는 공식 [unrar](https://www.rarlab.com/) 를 사용합니다. UnRAR 라이선스는 본 프로젝트와 별개입니다 → [RARLAB](https://www.rarlab.com/license.htm)
 - PDF 렌더링은 [PDFium](https://pdfium.googlesource.com/pdfium/)
 - 신경망 업스케일은 [ONNX Runtime](https://onnxruntime.ai/)
 - 문자 검출 / OCR / 번역은 [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator), [manga-image-translator](https://github.com/zyddnys/manga-image-translator) 등 만화 번역 도구를 참고했습니다

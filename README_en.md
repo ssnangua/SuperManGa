@@ -176,7 +176,7 @@ On Windows, the first launch creates `SuperManGaData/` next to the executable fo
 
 ## Related
 
-- RAR / CBR extraction uses the official [unrar](https://www.rarlab.com/) library via `unrar-ng` (extract only). UnRAR’s license is separate from this project—see [RARLAB](https://www.rarlab.com/license.htm)
+- RAR / CBR extraction uses the official [unrar](https://www.rarlab.com/) library. UnRAR’s license is separate from this project—see [RARLAB](https://www.rarlab.com/license.htm)
 - PDF rendering uses [PDFium](https://pdfium.googlesource.com/pdfium/)
 - Neural upscaling uses [ONNX Runtime](https://onnxruntime.ai/)
 - Text detect / OCR / translate pipelines draw on ideas from manga translation tools such as [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) and [manga-image-translator](https://github.com/zyddnys/manga-image-translator)

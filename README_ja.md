@@ -176,7 +176,7 @@ Windows では初回起動時、実行ファイルと同じ場所に `SuperManGa
 
 ## 関連
 
-- RAR / CBR 展開には公式 [unrar](https://www.rarlab.com/)（`unrar-ng` 経由、展開のみ）を使用。UnRAR ライセンスは本プロジェクトとは別です → [RARLAB](https://www.rarlab.com/license.htm)
+- RAR / CBR 展開には公式 [unrar](https://www.rarlab.com/) を使用。UnRAR ライセンスは本プロジェクトとは別です → [RARLAB](https://www.rarlab.com/license.htm)
 - PDF 描画は [PDFium](https://pdfium.googlesource.com/pdfium/)
 - ニューラル超解像は [ONNX Runtime](https://onnxruntime.ai/)
 - 文字検出 / OCR / 翻訳は [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) や [manga-image-translator](https://github.com/zyddnys/manga-image-translator) などの漫画翻訳ツールを参考にしています

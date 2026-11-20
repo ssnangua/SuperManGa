@@ -176,7 +176,7 @@ Windows 下，首次运行会在可执行文件目录创建 `SuperManGaData/`，
 
 ## 相关
 
-- 读取 RAR / CBR 时使用了 [unrar](https://www.rarlab.com/) 官方解压库（经 `unrar-ng`，仅解压）。UnRAR 许可与本项目代码分开，说明见 [RARLAB](https://www.rarlab.com/license.htm)
+- 读取 RAR / CBR 时使用了 [unrar](https://www.rarlab.com/) 官方解压库。UnRAR 许可与本项目代码分开，说明见 [RARLAB](https://www.rarlab.com/license.htm)
 - PDF 渲染依赖 [PDFium](https://pdfium.googlesource.com/pdfium/)
-- 神经超分基于 [ONNX Runtime](https://onnxruntime.ai/)
+- 神经网络超分基于 [ONNX Runtime](https://onnxruntime.ai/)
 - 文字检测 / OCR / 翻译流程参考了一些漫画翻译工具（如 [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) / [manga-image-translator](https://github.com/zyddnys/manga-image-translator) 等）
