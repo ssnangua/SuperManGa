@@ -1,0 +1,77 @@
+{
+  "schema": 2,
+  "updatedAt": "2026-11-20T03:17:11Z",
+  "runtime": {
+    "cpu": {
+      "version": "1.30.0",
+      "bytes": 6249285,
+      "sha256": "dfca99ceb22396eb01d65fa2dc4e04cb382fd1cf3178e656e1153a8ac031e4e4"
+    },
+    "cuda12": {
+      "version": "1.30.0",
+      "bytes": 243761793,
+      "sha256": "beb04f5d39600de8dad145c841b3097134fbf2ea1ae342bc71f9d4f9cdf7e7da"
+    },
+    "cuda13": {
+      "version": "1.30.0",
+      "bytes": 153048039,
+      "sha256": "69564b37869bd133d0fdd74ca66a5e8117505d73275d2eee88b3405ae01e0981"
+    }
+  },
+  "detector": {
+    "dbnet": {
+      "version": "1.0.0",
+      "bytes": 283025238,
+      "sha256": "b84d8b53ad92e8f8756fb6148db1615153ebd124d5d70e1f1cefe3c13d97c7ea"
+    },
+    "ctd": {
+      "version": "1.0.0",
+      "bytes": 60994074,
+      "sha256": "5f64ac70af59d9799c1225ab4c62ad0429e7cf84e54e590c0da29165bb8a5c86"
+    },
+    "yolo": {
+      "version": "1.0.0",
+      "bytes": 33906032,
+      "sha256": "395a190288efc5cf766359b0a406d5cc00fd371da8de73e4e18b1e21b7848335"
+    },
+    "saber-yolo": {
+      "version": "1.0.0",
+      "bytes": 90282400,
+      "sha256": "24f6cbb2d11a7cc38a38221d0da6381a6a4d79131b98142823b7a2eafa55af91"
+    }
+  },
+  "ocr": {
+    "manga-ocr": {
+      "version": "1.0.0",
+      "bytes": 427272578,
+      "sha256": "e6296e47d5ea43206584de8dd0db33ab60b6f33abbbd09b3210fddc8cacd41ec"
+    },
+    "paddle": {
+      "version": "1.0.0",
+      "bytes": 105147261,
+      "sha256": "56c4a315eb31bf34e6c1f736f3966d4e3e3bc7075a827d4ae34fdbf2ff3194f5"
+    },
+    "mit48px": {
+      "version": "1.0.0",
+      "bytes": 107583748,
+      "sha256": "f9fc4f8b2ff007bd24d066dc8d0d5c192dc0fcef3933ffb83b704ea753de9a16"
+    },
+    "easyocr": {
+      "version": "1.0.0",
+      "bytes": 141990940,
+      "sha256": "5a6481f6e93af90aaa113698ef9d964296085d968a509d8046e7ce7583db1370"
+    }
+  },
+  "neural": {
+    "manga-janai-2x": {
+      "version": "1.0.0",
+      "bytes": 71402639,
+      "sha256": "418f29299bc7f48c0b5299e0ad1bc42df783fabccf0817512c55a2868be81b07"
+    },
+    "real-esrgan-anime-2x": {
+      "version": "1.0.0",
+      "bytes": 16618685,
+      "sha256": "be48a9c9a803cd6a01afc39acd8d3f371e4291880fedaaa72eaedce74064991b"
+    }
+  }
+}

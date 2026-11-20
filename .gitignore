@@ -1,0 +1,69 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# Dependencies & frontend build
+node_modules
+dist
+dist-ssr
+dist-offline
+*.local
+*.tsbuildinfo
+
+# Env (keep example if added later)
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Tauri / Rust
+src-tauri/target/
+src-tauri/gen/schemas
+
+# Fetched native PDFium libs (see scripts/fetch-pdfium.mjs)
+src-tauri/resources/pdfium/*
+!src-tauri/resources/pdfium/README.md
+
+# Portable / app data if created next to a local build in-repo
+SuperManGaData/
+JustMangaData/
+
+# Scratch dumps
+tmp_*
+*.tmp
+
+# Model weights & export outputs (downloaded or generated; not shipped in git)
+*.onnx
+*.pt
+*.pth
+*.ckpt
+tools/export-detectors/models/
+tools/export-detectors/out/
+tools/pack-data/data/
+tools/pack-data/.cache/
+tools/_tmp_*
+
+# Python under tools/
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/

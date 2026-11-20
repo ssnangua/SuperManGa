@@ -1,0 +1,3 @@
+Flag sprite vendored from https://github.com/lafeber/world-flags-sprite
+(MIT License, Copyright (c) 2012 Martijn Lafeber, 2018 Francescu Garoby).
+See LICENSE in this folder. Image: flags32.png

@@ -1,0 +1,503 @@
+/*
+ * Global tokens + shared primitives only.
+ * Component-owned rules live in each Vue SFC <style> block.
+ */
+:root {
+  color-scheme: dark;
+  font-family: "Segoe UI", "Microsoft YaHei", sans-serif;
+  --ink: #f2f2f2;
+  --muted: #a8a8a8;
+  --line: #2c2c2c;
+  --panel: #141414;
+  --accent: #409eff;
+  --danger: #f56c6c;
+  --danger-hover: #f78989;
+  --success: #67c23a;
+  --success-hover: #85ce61;
+  --switch-track-off-bg: #4c4d4f;
+  --chrome: #101010;
+  --chrome-ink: rgba(255, 255, 255, 0.72);
+  --chrome-faint: rgba(255, 255, 255, 0.45);
+  --chrome-active: #fff;
+  --chrome-hover: rgba(255, 255, 255, 0.08);
+  --chrome-sep: rgba(255, 255, 255, 0.16);
+  /* Chromium Fluent scrollbar (dark). */
+  --sb-size: 15px;
+  --sb-btn: 18px;
+  --sb-arrow: 9px;
+  --sb-thumb-gap: 3px;
+  --sb-track: #2c2c2c;
+  --sb-thumb: #9f9f9f;
+  --sb-thumb-hover: #d1d1d1;
+  --sb-arrow-fg: #9f9f9f;
+  --sb-arrow-hover: #d1d1d1;
+  --menu: #1a1a1a;
+  --menu-key: rgba(255, 255, 255, 0.4);
+  --menu-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --button: #1c1c1c;
+  --edge: #2c2c2c;
+  --popup: #1a1a1a;
+  --popup-ink: rgba(255, 255, 255, 0.72);
+  --popup-shadow: 0 2px 12px rgba(0, 0, 0, 0.35);
+  --seek: #535353;
+  --seek-buffer: rgba(255, 255, 255, 0.45);
+  /* Reading progress wash over neural/translate marks — white avoids blue tint shifts. */
+  --seek-read-overlay: color-mix(in srgb, #ffffff 42%, transparent);
+  /* Neural seek marks: green done + light blue running (pair). */
+  --neural-done: var(--success);
+  --neural-running: #409eff;
+  /* Translate seek marks: purple done + pink running (pair). */
+  --translate-done: #8b5cf6;
+  --translate-running: #f9a8d4;
+  --field: #111;
+  --img: #111;
+  --img-flow: #1c1c1c;
+  --dialog: #161616;
+  --bg: #181818;
+  --surface: #252526;
+  --accent-hover: #3375b9;
+  --control-bg: #252526;
+  --modal: #00000088;
+  --info: #909399;
+  --info-bg: #202121;
+  --warning: #e6a23c;
+  --warning-bg: #292218;
+  --success-bg: #1c2518;
+  --danger-bg: #2a1d1d;
+  /* Menu / custom-select item states */
+  --list-item-bg-hover: #2a2d2e;
+  --list-item-bg-active: #37373d;
+  --list-item-fg-active: #ffffff;
+  --radius-lg: 6px;
+  --radius: 4px;
+  --control-pad-y: 6px;
+  --control-pad-x: 12px;
+  --control-gap: 6px;
+  --icon-size: 16px;
+  --icon-size-sm: 12px;
+  --transition-fast:
+    color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+  /*
+   * Overlay stack (Teleport-to-body pattern, same idea as Radix / Floating UI):
+   *   chrome → toast → chrome menus/tips → mask modal → modal popovers → drop overlay
+   * Mask modals sit above page chrome; their selects/tips use --z-popover.
+   * Nested masks bump in JS: MASK_MODAL_BASE_Z + layer (see maskModal.ts).
+   * While a mask is open, AppToastHost raises itself above modal popovers
+   * (maskModalToastZIndex) so errors/success stay readable over the dimmer.
+   * File-drop hint stays above every mask / busy / restart dialog.
+   */
+  --z-dock: 2;
+  --z-titlebar: 7;
+  --z-toast: 35;
+  --z-menu: 50;
+  --z-tip: 55;
+  --z-modal: 100;
+  --z-popover: 120;
+  --z-drop: 20000;
+  --app-sash-size: 4px;
+  --app-sash-hover-size: 4px;
+  --app-sash-fade-duration: 0.16s;
+  --app-sash-hover-delay: 300ms;
+}
+
+html.theme-light {
+  color-scheme: light;
+  --ink: #1a1a1a;
+  --muted: #6a6a6a;
+  --line: #e0e0e0;
+  --panel: #f7f7f7;
+  --accent: #409eff;
+  --danger: #f56c6c;
+  --danger-hover: #f78989;
+  --success: #67c23a;
+  --success-hover: #85ce61;
+  --switch-track-off-bg: #dcdfe6;
+  --chrome: #f3f3f3;
+  --chrome-ink: rgba(0, 0, 0, 0.7);
+  --chrome-faint: rgba(0, 0, 0, 0.45);
+  --chrome-active: #111;
+  --chrome-hover: rgba(0, 0, 0, 0.06);
+  --chrome-sep: rgba(0, 0, 0, 0.12);
+  --sb-track: #fcfcfc;
+  --sb-thumb: #8b8b8b;
+  --sb-thumb-hover: #636363;
+  --sb-arrow-fg: #8b8b8b;
+  --sb-arrow-hover: #636363;
+  --menu: #fff;
+  --menu-key: rgba(0, 0, 0, 0.45);
+  --menu-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --button: #fff;
+  --edge: #d0d0d0;
+  --popup: #fff;
+  --popup-ink: rgba(0, 0, 0, 0.7);
+  --popup-shadow: 0 2px 12px rgba(0, 0, 0, 0.16);
+  --seek: #cccccc;
+  --seek-buffer: rgba(0, 0, 0, 0.28);
+  /* Dark wash on light track — white overlay washed out against chrome. */
+  --seek-read-overlay: color-mix(in srgb, #000000 26%, transparent);
+  --neural-done: var(--success);
+  --neural-running: #409eff;
+  --translate-done: #8b5cf6;
+  --translate-running: #f9a8d4;
+  --field: #fff;
+  --img: #ececec;
+  --img-flow: #f7f7f7;
+  --dialog: #fff;
+  --bg: #f8f8f8;
+  --surface: #f3f3f3;
+  --accent-hover: #79bbff;
+  --control-bg: #fff;
+  --modal: #00000055;
+  --info: #909399;
+  --info-bg: #f4f4f5;
+  --warning: #e6a23c;
+  --warning-bg: #fdf6ec;
+  --success-bg: #f0f9eb;
+  --danger-bg: #fef0f0;
+  --list-item-bg-hover: #f2f2f2;
+  --list-item-bg-active: #e4e6f1;
+  --list-item-fg-active: #000000;
+  --radius-lg: 6px;
+  --radius: 4px;
+  --control-pad-y: 6px;
+  --control-pad-x: 12px;
+  --control-gap: 6px;
+  --icon-size: 16px;
+  --icon-size-sm: 12px;
+  --transition-fast:
+    color 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+}
+
+input,
+textarea {
+  user-select: text;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+/* —— Shared controls —— */
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--control-gap);
+  margin: 0;
+  border: 1px solid var(--line);
+  font-size: 14px;
+  background: var(--button);
+  color: var(--ink);
+  border-radius: var(--radius);
+  padding: var(--control-pad-y) var(--control-pad-x);
+  line-height: 1.2;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+button:hover:not(:disabled),
+button.on:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+button.primary:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+button.success:not(:disabled) {
+  background: var(--success);
+  color: #fff;
+  border-color: var(--success);
+}
+
+button.success:hover:not(:disabled) {
+  background: var(--success-hover);
+  border-color: var(--success-hover);
+  color: #fff;
+}
+
+button.danger:not(:disabled) {
+  background: var(--danger);
+  color: #fff;
+  border-color: var(--danger);
+}
+
+button.danger:hover:not(:disabled) {
+  background: var(--danger-hover);
+  border-color: var(--danger-hover);
+  color: #fff;
+}
+
+button.ghost {
+  background: var(--button);
+}
+
+/* Outline buttons: warning accent on hover only (clear / clear-cache). */
+button.hover-warning:hover:not(:disabled) {
+  border-color: var(--warning);
+  color: var(--warning);
+}
+
+input[type="text"],
+input[type="number"],
+input[type="password"],
+input[type="search"],
+input[type="url"],
+select {
+  margin: 0;
+  background: var(--field);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--control-pad-y) 8px;
+  font-size: 14px;
+  /* Pixel line-height + no internal scroll: selecting letters must not nudge text up. */
+  line-height: 18px;
+  overflow: hidden;
+  transition: var(--transition-fast);
+}
+
+textarea {
+  margin: 0;
+  background: var(--field);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: var(--control-pad-y) 8px;
+  font-size: 14px;
+  line-height: 1.4;
+  transition: var(--transition-fast);
+  resize: none;
+}
+
+input[type="number"] {
+  appearance: textfield;
+}
+
+/* Hide Edge/Chromium native password reveal — we use a custom eye button. */
+input[type="password"]::-ms-reveal,
+input[type="password"]::-ms-clear,
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-strong-password-auto-fill-button {
+  display: none !important;
+  pointer-events: none;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+input[type="color"] {
+  width: 40px;
+  height: 28px;
+  padding: 2px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--field);
+  cursor: pointer;
+}
+
+input[type="range"] {
+  width: 100%;
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  margin: 0;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+button:focus,
+button:focus-visible,
+input:focus,
+input:focus-visible,
+select:focus,
+select:focus-visible,
+textarea:focus,
+textarea:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.asset-icon,
+.asset-icon svg {
+  display: block;
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex: none;
+}
+
+.asset-icon svg,
+.asset-icon svg :is(path, rect, circle, polygon) {
+  fill: currentColor;
+  stroke: none;
+}
+
+.asset-icon svg .stroke {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+button.icon-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+}
+
+button.icon-btn:hover:not(:disabled) {
+  color: var(--accent);
+  border: none;
+  background: transparent;
+}
+
+button.icon-btn .asset-icon,
+button.icon-btn .asset-icon svg {
+  width: var(--icon-size-sm);
+  height: var(--icon-size-sm);
+}
+
+/* Joined text field + trailing button (password reveal, browse, …).
+ * Keep here (not in a Vue SFC): global input/button radius/margin must not
+ * win by stylesheet order after component CSS. */
+.input-button-group {
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.input-button-group > :is(input, textarea) {
+  flex: 1 1 auto;
+  min-width: 0;
+  position: relative;
+  z-index: 0;
+  /* Overlap the button's left border so the join is a single line. */
+  margin-right: -1px;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.input-button-group > :is(input, textarea):focus,
+.input-button-group > :is(input, textarea):focus-visible {
+  z-index: 1;
+}
+
+.input-button-group > .input-group-btn {
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 0;
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  padding-inline: 10px;
+}
+
+/* While the field is focused, drop the button's left edge so it can't double the accent line. */
+.input-button-group:has(> :is(input, textarea):focus) > .input-group-btn,
+.input-button-group:has(> :is(input, textarea):focus-visible) > .input-group-btn,
+.input-button-group:has(> :is(input, textarea):focus) > .input-group-btn:hover,
+.input-button-group:has(> :is(input, textarea):focus-visible) > .input-group-btn:hover {
+  border-left-color: transparent;
+}
+
+.input-button-group > .input-group-btn .asset-icon,
+.input-button-group > .input-group-btn .asset-icon svg {
+  width: var(--icon-size);
+  height: var(--icon-size);
+}
+
+.input-button-group > .input-group-reset {
+  flex: 0 0 auto;
+  align-self: stretch;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+.segment,
+.cluster {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.row {
+  width: 100%;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  text-align: left;
+  margin-bottom: 6px;
+}
+
+.row .grow,
+button.grow {
+  flex: 1;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+.row span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  padding: 1px 6px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  color: var(--info);
+  font-size: 12px;
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+.tag.success {
+  background: color-mix(in srgb, var(--success) 18%, transparent);
+  color: var(--success);
+}
