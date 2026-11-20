@@ -66,7 +66,7 @@ async function goDownload() {
     max-width="420px"
     panel-class="update-available-dialog"
   >
-    <p>
+    <p class="update-available-text">
       {{ t("updateAvailablePrefix") }}{{ updateUi.latestVersion
       }}{{ t("updateAvailableSuffix") }}
     </p>
@@ -109,6 +109,7 @@ async function goDownload() {
   line-height: 1.5;
 }
 
+.update-available-text,
 .update-info-message {
   margin: 0;
   font-size: 13px;

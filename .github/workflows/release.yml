@@ -128,17 +128,23 @@ jobs:
             Linux-arm64) dest="SuperManGa-${VERSION}-linux-arm64.deb"; glob='*.deb' ;;
             *) echo "Unknown matrix name: ${{ matrix.name }}"; exit 1 ;;
           esac
-          mapfile -t files < <(find src-tauri/target -type f -name "$glob")
-          if [ "${#files[@]}" -ne 1 ]; then
-            echo "Expected 1 $glob, found ${#files[@]}:"
-            printf '%s\n' "${files[@]}"
+          src=""
+          n=0
+          while IFS= read -r f; do
+            [ -z "$f" ] && continue
+            n=$((n + 1))
+            src="$f"
+          done < <(find src-tauri/target -type f -name "$glob")
+          if [ "$n" -ne 1 ]; then
+            echo "Expected 1 $glob, found $n:"
+            find src-tauri/target -type f -name "$glob"
             exit 1
           fi
-          mv "${files[0]}" "$(dirname "${files[0]}")/${dest}"
-          echo "Renamed ${files[0]} -> ${dest}"
+          mv "$src" "$(dirname "$src")/${dest}"
+          echo "Renamed $src -> ${dest}"
 
       - name: Upload release artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-${{ matrix.name }}
           path: |
