@@ -64,8 +64,8 @@
 | <img src="./src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | 全屏 | **沉浸式阅读** |
 |  | 图像重采样 | 线性插补 / 双三次插补 / Lanczos / 平均像素法 + 锐化 |
 |  | Anime4K | GPU 着色器增强，偏锐化 / 去糊 |
-| <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **神经超分** | `MangaJaNai` / `Real-ESRGAN` |
-| <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **翻译** | 文字检测 → OCR → 在线 / AI 翻译 |
+| <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **神经网络超分** | `MangaJaNai` / `Real-ESRGAN` |
+| <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **OCR 翻译** | 文字检测 → OCR → 在线 / AI 翻译 |
 | <img src="./src/assets/palette.svg" width="18" height="18" alt=""> | 色彩调节 | 亮度 / 对比度 / 饱和度 |
 | <img src="./src/assets/lens.svg" width="18" height="18" alt=""> | 放大镜 | 局部放大查看细节 |
 | <img src="./src/assets/bookmark.svg" width="18" height="18" alt=""> | 书签 | 可添加带备注的书签 |
