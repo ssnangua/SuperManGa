@@ -1,54 +1,55 @@
 /* lafeber/world-flags-sprite flags32.png (MIT). Cells are 32×32; artwork is ~32×22. */
 .lang-flag {
-  --flag-pad: 3.125px;
+  --flag-w: 20px;
+  --flag-pad: calc(var(--flag-w) * 5 / 32);
   box-sizing: border-box;
   display: inline-block;
   flex: none;
-  width: 20px;
-  height: 13.75px;
+  width: var(--flag-w);
+  height: calc(var(--flag-w) * 22 / 32);
   overflow: hidden;
   background-image: url("../assets/flags/flags32.png");
   background-repeat: no-repeat;
-  background-size: 20px auto;
+  background-size: var(--flag-w) auto;
 }
 
-.lang-flag[data-cc="CN"] { background-position: 0 calc(-1300px - var(--flag-pad)); }
-.lang-flag[data-cc="TW"] { background-position: 0 calc(-4500px - var(--flag-pad)); }
-.lang-flag[data-cc="US"] { background-position: 0 calc(-4580px - var(--flag-pad)); }
-.lang-flag[data-cc="JP"] { background-position: 0 calc(-2480px - var(--flag-pad)); }
-.lang-flag[data-cc="KR"] { background-position: 0 calc(-2640px - var(--flag-pad)); }
-.lang-flag[data-cc="FR"] { background-position: 0 calc(-1780px - var(--flag-pad)); }
-.lang-flag[data-cc="ES"] { background-position: 0 calc(-1660px - var(--flag-pad)); }
-.lang-flag[data-cc="PT"] { background-position: 0 calc(-3740px - var(--flag-pad)); }
-.lang-flag[data-cc="BR"] { background-position: 0 calc(-1000px - var(--flag-pad)); }
-.lang-flag[data-cc="DE"] { background-position: 0 calc(-1440px - var(--flag-pad)); }
-.lang-flag[data-cc="IT"] { background-position: 0 calc(-2400px - var(--flag-pad)); }
-.lang-flag[data-cc="RU"] { background-position: 0 calc(-3880px - var(--flag-pad)); }
-.lang-flag[data-cc="UA"] { background-position: 0 calc(-4540px - var(--flag-pad)); }
-.lang-flag[data-cc="NL"] { background-position: 0 calc(-3440px - var(--flag-pad)); }
-.lang-flag[data-cc="PL"] { background-position: 0 calc(-3680px - var(--flag-pad)); }
-.lang-flag[data-cc="CZ"] { background-position: 0 calc(-1420px - var(--flag-pad)); }
-.lang-flag[data-cc="SK"] { background-position: 0 calc(-4060px - var(--flag-pad)); }
-.lang-flag[data-cc="HU"] { background-position: 0 calc(-2220px - var(--flag-pad)); }
-.lang-flag[data-cc="RO"] { background-position: 0 calc(-3840px - var(--flag-pad)); }
-.lang-flag[data-cc="BG"] { background-position: 0 calc(-860px - var(--flag-pad)); }
-.lang-flag[data-cc="HR"] { background-position: 0 calc(-2180px - var(--flag-pad)); }
-.lang-flag[data-cc="RS"] { background-position: 0 calc(-3860px - var(--flag-pad)); }
-.lang-flag[data-cc="SI"] { background-position: 0 calc(-4040px - var(--flag-pad)); }
-.lang-flag[data-cc="GR"] { background-position: 0 calc(-2040px - var(--flag-pad)); }
-.lang-flag[data-cc="TR"] { background-position: 0 calc(-4440px - var(--flag-pad)); }
-.lang-flag[data-cc="SE"] { background-position: 0 calc(-4000px - var(--flag-pad)); }
-.lang-flag[data-cc="DK"] { background-position: 0 calc(-1480px - var(--flag-pad)); }
-.lang-flag[data-cc="FI"] { background-position: 0 calc(-1700px - var(--flag-pad)); }
-.lang-flag[data-cc="NO"] { background-position: 0 calc(-3460px - var(--flag-pad)); }
-.lang-flag[data-cc="EE"] { background-position: 0 calc(-1580px - var(--flag-pad)); }
-.lang-flag[data-cc="LV"] { background-position: 0 calc(-2900px - var(--flag-pad)); }
-.lang-flag[data-cc="LT"] { background-position: 0 calc(-2860px - var(--flag-pad)); }
-.lang-flag[data-cc="SA"] { background-position: 0 calc(-3920px - var(--flag-pad)); }
-.lang-flag[data-cc="IL"] { background-position: 0 calc(-2280px - var(--flag-pad)); }
-.lang-flag[data-cc="IN"] { background-position: 0 calc(-2320px - var(--flag-pad)); }
-.lang-flag[data-cc="TH"] { background-position: 0 calc(-4320px - var(--flag-pad)); }
-.lang-flag[data-cc="VN"] { background-position: 0 calc(-4740px - var(--flag-pad)); }
-.lang-flag[data-cc="ID"] { background-position: 0 calc(-2240px - var(--flag-pad)); }
-.lang-flag[data-cc="MY"] { background-position: 0 calc(-3300px - var(--flag-pad)); }
-.lang-flag[data-cc="PH"] { background-position: 0 calc(-3640px - var(--flag-pad)); }
+.lang-flag[data-cc="CN"] { background-position: 0 calc(var(--flag-w) * -65 - var(--flag-pad)); }
+.lang-flag[data-cc="TW"] { background-position: 0 calc(var(--flag-w) * -225 - var(--flag-pad)); }
+.lang-flag[data-cc="US"] { background-position: 0 calc(var(--flag-w) * -229 - var(--flag-pad)); }
+.lang-flag[data-cc="JP"] { background-position: 0 calc(var(--flag-w) * -124 - var(--flag-pad)); }
+.lang-flag[data-cc="KR"] { background-position: 0 calc(var(--flag-w) * -132 - var(--flag-pad)); }
+.lang-flag[data-cc="FR"] { background-position: 0 calc(var(--flag-w) * -89 - var(--flag-pad)); }
+.lang-flag[data-cc="ES"] { background-position: 0 calc(var(--flag-w) * -83 - var(--flag-pad)); }
+.lang-flag[data-cc="PT"] { background-position: 0 calc(var(--flag-w) * -187 - var(--flag-pad)); }
+.lang-flag[data-cc="BR"] { background-position: 0 calc(var(--flag-w) * -50 - var(--flag-pad)); }
+.lang-flag[data-cc="DE"] { background-position: 0 calc(var(--flag-w) * -72 - var(--flag-pad)); }
+.lang-flag[data-cc="IT"] { background-position: 0 calc(var(--flag-w) * -120 - var(--flag-pad)); }
+.lang-flag[data-cc="RU"] { background-position: 0 calc(var(--flag-w) * -194 - var(--flag-pad)); }
+.lang-flag[data-cc="UA"] { background-position: 0 calc(var(--flag-w) * -227 - var(--flag-pad)); }
+.lang-flag[data-cc="NL"] { background-position: 0 calc(var(--flag-w) * -172 - var(--flag-pad)); }
+.lang-flag[data-cc="PL"] { background-position: 0 calc(var(--flag-w) * -184 - var(--flag-pad)); }
+.lang-flag[data-cc="CZ"] { background-position: 0 calc(var(--flag-w) * -71 - var(--flag-pad)); }
+.lang-flag[data-cc="SK"] { background-position: 0 calc(var(--flag-w) * -203 - var(--flag-pad)); }
+.lang-flag[data-cc="HU"] { background-position: 0 calc(var(--flag-w) * -111 - var(--flag-pad)); }
+.lang-flag[data-cc="RO"] { background-position: 0 calc(var(--flag-w) * -192 - var(--flag-pad)); }
+.lang-flag[data-cc="BG"] { background-position: 0 calc(var(--flag-w) * -43 - var(--flag-pad)); }
+.lang-flag[data-cc="HR"] { background-position: 0 calc(var(--flag-w) * -109 - var(--flag-pad)); }
+.lang-flag[data-cc="RS"] { background-position: 0 calc(var(--flag-w) * -193 - var(--flag-pad)); }
+.lang-flag[data-cc="SI"] { background-position: 0 calc(var(--flag-w) * -202 - var(--flag-pad)); }
+.lang-flag[data-cc="GR"] { background-position: 0 calc(var(--flag-w) * -102 - var(--flag-pad)); }
+.lang-flag[data-cc="TR"] { background-position: 0 calc(var(--flag-w) * -222 - var(--flag-pad)); }
+.lang-flag[data-cc="SE"] { background-position: 0 calc(var(--flag-w) * -200 - var(--flag-pad)); }
+.lang-flag[data-cc="DK"] { background-position: 0 calc(var(--flag-w) * -74 - var(--flag-pad)); }
+.lang-flag[data-cc="FI"] { background-position: 0 calc(var(--flag-w) * -85 - var(--flag-pad)); }
+.lang-flag[data-cc="NO"] { background-position: 0 calc(var(--flag-w) * -173 - var(--flag-pad)); }
+.lang-flag[data-cc="EE"] { background-position: 0 calc(var(--flag-w) * -79 - var(--flag-pad)); }
+.lang-flag[data-cc="LV"] { background-position: 0 calc(var(--flag-w) * -145 - var(--flag-pad)); }
+.lang-flag[data-cc="LT"] { background-position: 0 calc(var(--flag-w) * -143 - var(--flag-pad)); }
+.lang-flag[data-cc="SA"] { background-position: 0 calc(var(--flag-w) * -196 - var(--flag-pad)); }
+.lang-flag[data-cc="IL"] { background-position: 0 calc(var(--flag-w) * -114 - var(--flag-pad)); }
+.lang-flag[data-cc="IN"] { background-position: 0 calc(var(--flag-w) * -116 - var(--flag-pad)); }
+.lang-flag[data-cc="TH"] { background-position: 0 calc(var(--flag-w) * -216 - var(--flag-pad)); }
+.lang-flag[data-cc="VN"] { background-position: 0 calc(var(--flag-w) * -237 - var(--flag-pad)); }
+.lang-flag[data-cc="ID"] { background-position: 0 calc(var(--flag-w) * -112 - var(--flag-pad)); }
+.lang-flag[data-cc="MY"] { background-position: 0 calc(var(--flag-w) * -165 - var(--flag-pad)); }
+.lang-flag[data-cc="PH"] { background-position: 0 calc(var(--flag-w) * -182 - var(--flag-pad)); }

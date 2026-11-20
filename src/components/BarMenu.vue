@@ -97,9 +97,7 @@ withDefaults(
 }
 
 .bar-menu .lang-flag {
-  flex: none;
-  width: 16px;
-  height: 11px;
+  --flag-w: 16px;
 }
 
 .bar-menu .menu-current .lang-flag,

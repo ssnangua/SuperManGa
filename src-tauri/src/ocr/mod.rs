@@ -296,7 +296,6 @@ fn ocr_page_bytes(
             }
             #[cfg(not(windows))]
             {
-                let _ = (bytes, source_lang, settings, blocks);
                 Err("系统 OCR 仅在 Windows 上可用；请改用 Manga OCR 等本地引擎".into())
             }
         }
