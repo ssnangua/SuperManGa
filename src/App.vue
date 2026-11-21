@@ -14,6 +14,7 @@ import UpdateAvailableDialog from "./components/UpdateAvailableDialog.vue";
 import PageView from "./components/PageView.vue";
 import SettingsDialog from "./components/SettingsDialog.vue";
 import { checkUpdateOnStartup } from "./lib/updateCheck";
+import { fetchDataManifest } from "./lib/render/assets";
 import ShortcutsDialog from "./components/ShortcutsDialog.vue";
 import SidePanel from "./components/SidePanel.vue";
 import BookmarkDialog from "./components/BookmarkDialog.vue";
@@ -36,10 +37,9 @@ import {
   clampSidebarWidthToViewport,
   clock,
   comic,
+  downloadNetworkConfig,
   dropping,
   endSidebarResize,
-  extracting,
-  measuring,
   globalBusy,
   globalBusyText,
   fullscreen,
@@ -228,6 +228,12 @@ function blockContextMenu(event: Event) {
 onMounted(() => {
   void boot().then(() => {
     void checkUpdateOnStartup();
+    if (settings.fetchDataManifestOnStartup) {
+      // Fail quietly offline; keep local/seed manifest.
+      window.setTimeout(() => {
+        void fetchDataManifest(downloadNetworkConfig()).catch(() => {});
+      }, 1800);
+    }
   });
   unbindMenuHot = bindMenuHot();
   window.addEventListener("keydown", handleKey);
@@ -308,7 +314,7 @@ function clearAlt() {
           :original-scale="viewFit.fitOriginalScale"
           :direction="viewFit.direction"
           :sizes="comic.pages"
-          :sizes-ready="!measuring && !extracting"
+          :sizes-ready="true"
           :resume="scrollOffset"
           @update:index="setIndex($event, true)"
         />

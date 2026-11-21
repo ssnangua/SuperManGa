@@ -125,7 +125,7 @@ npm run bundle:offline
 
 Place `SuperManGaData` next to `SuperManGa.exe` (and `pdfium.dll`) before uploading.
 
-Assets are hosted on GitHub Release tag **`data`** (`manifest.json` + `{stem}-v{ver}.zip`). Manifest entries are `{version,bytes,sha256}`; `bytes` drives UI download size and `sha256` rejects corrupt zips after download. The app ships a seed manifest and does not fetch on startup; Settings → General → Asset Catalog pulls the remote `manifest.json` on demand. Local layout is `SuperManGaData/data/{stem}-v{ver}/`. Build zips with [`tools/pack-data/`](tools/pack-data/).
+Assets are hosted on GitHub Release tag **`data`** (`manifest.json` + `{stem}-v{ver}.zip`). Manifest entries are `{version,bytes,sha256}`; `bytes` drives UI download size and `sha256` rejects corrupt zips after download. The app ships a seed manifest. Settings → General → Fetch Latest Asset Catalog on Startup (`fetchDataManifestOnStartup`, default on) fetches after launch on a short timeout. When off, you can pull the remote `manifest.json` manually. Local layout is `SuperManGaData/data/{stem}-v{ver}/`. Build zips with [`tools/pack-data/`](tools/pack-data/).
 
 Runtime selection:
 
@@ -345,7 +345,7 @@ flowchart LR
 - **Detectors** (optional aux YOLO merge, SaberYOLO OBB refine): weights downloaded from Release `data` into `SuperManGaData/data/`.
 - **OCR:** Windows Media OCR is Windows-only; others are mostly ONNX and need an initialized ORT.
 - **Translation:** secrets prefer the OS keyring; on failure, an app-bound encrypted file under `SuperManGaData/secrets/`.
-- Frontend can pre-translate the whole book or only the current page / neighbors; results render in `OcrOverlay`.
+- Frontend can pre-translate the whole book or only the current page / neighbors; book pre-translate / pre-upscale background queues radiate from the current page (forward then backward). Results render in `OcrOverlay`.
 
 Commands: `ocr_translate_page`, `cancel_ocr_translate`, `translate_text_cmd`.
 
@@ -449,7 +449,7 @@ Translation target languages are not limited to UI locales (OCR / translation ma
 
 - Folders, `.zip`, `.cbz`, `.epub`: ready to page after open; EPUB pulls spine images (fixed-layout manga style); text-heavy EPUBs with almost no images report missing art.
 - `.rar`, `.cbr`, solid `.7z`, `.pdf`: extract / render into cache with progress.
-- PDF: prefer local pdfium rasterization; without it, try embedded scan JPEGs; encrypted PDFs show a password dialog.
+- PDF: when local pdfium is present, Settings → Rasterize PDF (default off) exports embedded original image files only (jpg/png/gif/webp — no text/vectors, no rasterize fallback; encrypted PDFs are decrypted then extracted); when on, uses full-page rasterization. Without pdfium, lopdf walks pages to export embedded image files (byte-scrape only if that yields nothing); encrypted PDFs without pdfium cannot open. Cache keys are tagged `pdf-r` / `pdf-i`; toggling the setting purges the other mode’s cache and, if that PDF is open, cancels in-flight work and reopens with the new path. PDF rasterize (B1) pre-renders the whole book in the background, fills MediaBox sizes on open, and orders the extract queue radiating from the current page (forward then backward); progress is shown as warning-colored seek segments (priority: neural/translate → extract → measure), not a centered “Extracting” toast.
 - `.mobi` / `.azw3` / `.azw`: DRM-free resource-region images; DRM is rejected explicitly. No KFX.
 
 ### UnRAR

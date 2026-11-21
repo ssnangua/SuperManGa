@@ -196,12 +196,14 @@ pub fn list(path: &Path, locale: &str) -> Result<Listed, String> {
 }
 
 pub fn extract(path: PathBuf, book: MobiBook, job: ExtractJob) {
-    let mut files = Vec::with_capacity(book.ranges.len());
-    for index in 0..book.ranges.len() {
+    let total = book.ranges.len();
+    let mut files = vec![None; total];
+    while let Some(index) = job.next_index() {
         if job.cancelled() {
             job.abort();
             return;
         }
+        job.begin_page(index);
         match book.read(index) {
             Ok(bytes) => {
                 let ext = detect_image(&bytes).unwrap_or("img");
@@ -211,7 +213,7 @@ pub fn extract(path: PathBuf, book: MobiBook, job: ExtractJob) {
                     job.fail(err.to_string());
                     return;
                 }
-                files.push(name);
+                files[index] = Some(name);
                 job.mark_written(index, dest);
             }
             Err(err) => {
@@ -221,6 +223,17 @@ pub fn extract(path: PathBuf, book: MobiBook, job: ExtractJob) {
         }
     }
     let _ = path;
+    if job.cancelled() {
+        job.abort();
+        return;
+    }
+    let files = match files.into_iter().collect::<Option<Vec<_>>>() {
+        Some(files) => files,
+        None => {
+            job.fail("mobi extract incomplete".into());
+            return;
+        }
+    };
     job.succeed(files);
 }
 

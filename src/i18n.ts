@@ -423,6 +423,9 @@ const messages = {
     readSubfolder: "读取子文件夹",
     readSubfolderHint:
       "打开文件夹时递归读取子文件夹；只读取图片文件，不会读取压缩包或电子书文件里的内容。",
+    pdfRasterize: "PDF 使用栅格化",
+    pdfRasterizeHint:
+      "关闭时：直接导出页面里的原始图片，速度快，但文本和矢量等会丢失。\n开启后：会对 PDF 进行整页栅格化，文本和矢量等也能显示，但速度较慢。",
     backgroundColor: "背景色",
     historyCount: "历史记录数量",
     historyCountHint:
@@ -539,12 +542,12 @@ const messages = {
     cacheDirReset: "恢复默认",
     cacheMoved: "数据目录已迁移",
     checkUpdateOnStartup: "启动时检查更新",
-    refreshDataManifest: "资源清单",
-    refreshDataManifestAction: "获取最新资源清单",
-    refreshDataManifestHint:
-      "运行环境、超分模型、文本检测器模型、OCR 引擎的版本信息。应用不会主动获取最新的资源清单，可在这里手动获取。",
-    refreshDataManifestDone: "资源清单已更新",
-    refreshDataManifestUnchanged: "无更新",
+    fetchDataManifestOnStartup: "启动时获取最新资源清单",
+    fetchDataManifest: "获取最新资源清单",
+    fetchDataManifestOnStartupHint:
+      "资源清单用于记录运行环境、超分模型、文本检测器模型、OCR 引擎等的版本信息，以判断这些资源是否需要更新。如果你没有使用超分和翻译功能，可关闭该选项。",
+    fetchDataManifestDone: "资源清单已更新",
+    fetchDataManifestUnchanged: "无更新",
     checkForUpdates: "检查更新",
     github: "GitHub",
     updateChecking: "正在检查更新",
@@ -956,6 +959,9 @@ const messages = {
     readSubfolder: "讀取子資料夾",
     readSubfolderHint:
       "開啟資料夾時遞迴讀取子資料夾；只讀取圖片檔，不會讀取壓縮檔或電子書裡的內容。",
+    pdfRasterize: "PDF 使用光柵化",
+    pdfRasterizeHint:
+      "關閉時：直接匯出頁面裡的原始圖片，速度快，但文字和向量等會遺失。\n開啟後：會對 PDF 進行整頁光柵化，文字和向量等也能顯示，但速度較慢。",
     backgroundColor: "背景色",
     historyCount: "歷史記錄數量",
     historyCountHint:
@@ -1072,12 +1078,12 @@ const messages = {
     cacheDirReset: "恢復預設",
     cacheMoved: "資料目錄已遷移",
     checkUpdateOnStartup: "啟動時檢查更新",
-    refreshDataManifest: "資源清單",
-    refreshDataManifestAction: "取得最新資源清單",
-    refreshDataManifestHint:
-      "執行環境、超分模型、文字偵測器模型、OCR 引擎的版本資訊。應用程式不會主動取得最新的資源清單，可在這裡手動取得。",
-    refreshDataManifestDone: "資源清單已更新",
-    refreshDataManifestUnchanged: "無更新",
+    fetchDataManifestOnStartup: "啟動時取得最新資源清單",
+    fetchDataManifest: "取得最新資源清單",
+    fetchDataManifestOnStartupHint:
+      "資源清單用於記錄執行環境、超分模型、文字偵測器模型、OCR 引擎等的版本資訊，以判斷這些資源是否需要更新。若未使用超分與翻譯功能，可關閉此選項。",
+    fetchDataManifestDone: "資源清單已更新",
+    fetchDataManifestUnchanged: "無更新",
     checkForUpdates: "檢查更新",
     github: "GitHub",
     updateChecking: "正在檢查更新",
@@ -1506,6 +1512,9 @@ const messages = {
     readSubfolder: "Read Subfolders",
     readSubfolderHint:
       "Recurse into subfolders when opening a folder. Only image files are read, not archives or e-books inside them.",
+    pdfRasterize: "Rasterize PDF",
+    pdfRasterizeHint:
+      "Off: export original images embedded in pages — faster, but text and vectors are lost.\nOn: rasterize each full page so text and vectors show — slower.",
     backgroundColor: "Background",
     historyCount: "Recent History Limit",
     historyCountHint:
@@ -1624,12 +1633,12 @@ const messages = {
     cacheDirReset: "Reset Default",
     cacheMoved: "Data directory migrated",
     checkUpdateOnStartup: "Check for Updates on Startup",
-    refreshDataManifest: "Asset Catalog",
-    refreshDataManifestAction: "Get Latest Catalog",
-    refreshDataManifestHint:
-      "Version info for the runtime, upscale models, text detectors, and OCR engines. The app does not fetch the latest catalog on its own; you can get it here.",
-    refreshDataManifestDone: "Asset catalog updated",
-    refreshDataManifestUnchanged: "No updates",
+    fetchDataManifestOnStartup: "Fetch Latest Asset Catalog on Startup",
+    fetchDataManifest: "Fetch Latest Catalog",
+    fetchDataManifestOnStartupHint:
+      "The asset catalog records versions of the runtime, upscale models, text detectors, OCR engines, and related packs so the app can tell whether they need updating. If you do not use upscaling or translation, you can turn this off.",
+    fetchDataManifestDone: "Asset catalog updated",
+    fetchDataManifestUnchanged: "No updates",
     checkForUpdates: "Check for Updates",
     github: "GitHub",
     updateChecking: "Checking for updates",
@@ -2057,6 +2066,9 @@ const messages = {
     readSubfolder: "サブフォルダーを読む",
     readSubfolderHint:
       "フォルダーを開くときサブフォルダーも再帰的に読みます。画像のみで、中の書庫や電子書籍は読みません。",
+    pdfRasterize: "PDF をラスタライズ",
+    pdfRasterizeHint:
+      "オフ：ページ内の元画像を直接書き出します。速いですが、テキストやベクターなどは失われます。\nオン：PDF をページ単位でラスタライズし、テキストやベクターも表示できますが遅くなります。",
     backgroundColor: "背景色",
     historyCount: "履歴件数",
     historyCountHint:
@@ -2175,12 +2187,12 @@ const messages = {
     cacheDirReset: "既定に戻す",
     cacheMoved: "データフォルダを移行しました",
     checkUpdateOnStartup: "起動時に更新を確認",
-    refreshDataManifest: "リソース一覧",
-    refreshDataManifestAction: "最新のリソース一覧を取得",
-    refreshDataManifestHint:
-      "ランタイム、超解像モデル、テキスト検出モデル、OCR エンジンのバージョン情報です。アプリは最新一覧を自動取得しません。ここで手動取得できます。",
-    refreshDataManifestDone: "リソース一覧を更新しました",
-    refreshDataManifestUnchanged: "更新なし",
+    fetchDataManifestOnStartup: "起動時に最新のリソース一覧を取得",
+    fetchDataManifest: "最新のリソース一覧を取得",
+    fetchDataManifestOnStartupHint:
+      "リソース一覧は、ランタイム・超解像モデル・テキスト検出モデル・OCR エンジンなどのバージョン情報を記録し、更新が必要かを判断するために使います。超解像や翻訳を使わない場合はオフにできます。",
+    fetchDataManifestDone: "リソース一覧を更新しました",
+    fetchDataManifestUnchanged: "更新なし",
     checkForUpdates: "更新を確認",
     github: "GitHub",
     updateChecking: "更新を確認しています",
@@ -2605,6 +2617,9 @@ const messages = {
     readSubfolder: "하위 폴더 읽기",
     readSubfolderHint:
       "폴더를 열 때 하위 폴더를 재귀적으로 읽습니다. 이미지만 읽고 압축 파일이나 전자책은 읽지 않습니다.",
+    pdfRasterize: "PDF 래스터화",
+    pdfRasterizeHint:
+      "끄기: 페이지 안의 원본 이미지를 바로 내보냅니다. 빠르지만 텍스트·벡터 등은 사라집니다.\n켜기: PDF를 페이지 단위로 래스터화해 텍스트·벡터도 보이지만 더 느립니다.",
     backgroundColor: "배경색",
     historyCount: "최근 기록 수",
     historyCountHint:
@@ -2722,12 +2737,12 @@ const messages = {
     cacheDirReset: "기본값으로",
     cacheMoved: "데이터 디렉터리를 옮겼습니다",
     checkUpdateOnStartup: "시작할 때 업데이트 확인",
-    refreshDataManifest: "리소스 목록",
-    refreshDataManifestAction: "최신 리소스 목록 받기",
-    refreshDataManifestHint:
-      "런타임, 업스케일 모델, 텍스트 검출기 모델, OCR 엔진의 버전 정보입니다. 앱은 최신 목록을 자동으로 받지 않으며, 여기에서 직접 받을 수 있습니다.",
-    refreshDataManifestDone: "리소스 목록을 업데이트했습니다",
-    refreshDataManifestUnchanged: "업데이트 없음",
+    fetchDataManifestOnStartup: "시작 시 최신 리소스 목록 받기",
+    fetchDataManifest: "최신 리소스 목록 받기",
+    fetchDataManifestOnStartupHint:
+      "리소스 목록은 런타임, 업스케일 모델, 텍스트 검출기 모델, OCR 엔진 등의 버전 정보를 기록하여 업데이트가 필요한지 판단하는 데 사용합니다. 업스케일이나 번역을 쓰지 않으면 끌 수 있습니다.",
+    fetchDataManifestDone: "리소스 목록을 업데이트했습니다",
+    fetchDataManifestUnchanged: "업데이트 없음",
     checkForUpdates: "업데이트 확인",
     github: "GitHub",
     updateChecking: "업데이트 확인 중",

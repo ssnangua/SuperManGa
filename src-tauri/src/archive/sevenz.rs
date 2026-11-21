@@ -96,6 +96,7 @@ pub fn extract(path: std::path::PathBuf, originals: Vec<String>, job: ExtractJob
         }
         let sort_key = normalize_rel(entry.name());
         if let Some(&index) = index_of.get(&sort_key) {
+            job.begin_page(index);
             let (dest, _) = job.destination(index, &originals[index]);
             match write_reader(reader, &dest) {
                 Ok(()) => job.mark_written(index, dest),

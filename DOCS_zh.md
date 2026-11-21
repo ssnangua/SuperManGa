@@ -125,7 +125,7 @@ npm run bundle:offline
 
 将 `SuperManGaData` 与 `SuperManGa.exe`（及 `pdfium.dll`）放在同级后打包上传即可。
 
-资源统一放在 GitHub Release tag **`data`**（`manifest.json` + `{stem}-v{ver}.zip`）。清单条目为 `{version,bytes,sha256}`；`bytes` 供界面显示下载大小，`sha256` 在下载后校验坏包。应用内置 seed 清单，启动时不联网；设置 → 通用 →「资源清单」可手动拉取远程 `manifest.json`。本机目录为 `SuperManGaData/data/{stem}-v{ver}/`。打 zip 可用 [`tools/pack-data/`](tools/pack-data/)。
+资源统一放在 GitHub Release tag **`data`**（`manifest.json` + `{stem}-v{ver}.zip`）。清单条目为 `{version,bytes,sha256}`；`bytes` 供界面显示下载大小，`sha256` 在下载后校验坏包。应用内置 seed 清单；设置 → 通用 →「启动时获取最新资源清单」（`fetchDataManifestOnStartup`，默认开）启动后后台短超时静默获取。关闭后可手动拉取远程 `manifest.json`。本机目录为 `SuperManGaData/data/{stem}-v{ver}/`。打 zip 可用 [`tools/pack-data/`](tools/pack-data/)。
 
 运行时选型：
 
@@ -345,7 +345,7 @@ flowchart LR
 - **检测器**（可选辅 YOLO 合并、SaberYOLO OBB 精修）：权重按清单从 Release `data` 下载到 `SuperManGaData/data/`。
 - **OCR**：Windows Media OCR 仅 Windows；其余多为 ONNX，依赖已初始化的 ORT。
 - **翻译**：密钥优先 OS keyring，失败则写入 `SuperManGaData/secrets/` 应用绑定加密文件。
-- 前端可开启「全书预翻译」或仅当前页/邻页；结果叠在 `OcrOverlay`。
+- 前端可开启「全书预翻译」或仅当前页/邻页；全书预翻译/预超分的后台队列均从当前页向两侧辐射（先往后再往前）。结果叠在 `OcrOverlay`。
 
 入口命令：`ocr_translate_page`、`cancel_ocr_translate`、`translate_text_cmd`。
 
@@ -449,7 +449,7 @@ node scripts/check-i18n.mjs
 
 - 文件夹、`.zip`、`.cbz`、`.epub`：打开即可翻页；EPUB 按 spine 抽图（偏固定版式漫画），几乎无图的文字 EPUB 会提示找不到图片。
 - `.rar`、`.cbr`、实体 `.7z`、`.pdf`：解压 / 渲染到缓存并显示进度。
-- PDF：优先本机 pdfium 栅格化；缺失时尝试抽扫描 JPEG；加密 PDF 弹密码框。
+- PDF：有本机 pdfium 时，设置「PDF 使用栅格化」（默认关）关闭则只导出内嵌原始图片文件（jpg/png/gif/webp，文本/矢量不要、也不回退栅格化；加密 PDF 先解密再抽图）；开启则整页栅格化。无 pdfium 时用 lopdf 按页序抽内嵌图片文件，失败再回退字节扫描；加密 PDF 无 pdfium 则不可用。缓存键区分 `pdf-r` / `pdf-i`；切换开关会清另一模式缓存，当前正在看的 PDF 会取消旧任务并按新路径重开。PDF 栅格化（B1）后台全书预渲，打开时用 MediaBox 先填尺寸，解压队列从当前页向两侧辐射（先往后再往前）。解压类进度在底部进度条用 warning 色段显示（优先级：超分/翻译 → 解压 → 量尺寸），不再用居中「正在解压」浮层。
 - `.mobi` / `.azw3` / `.azw`：无 DRM 按资源区抽图；有 DRM 明确拒绝。不支持 KFX。
 
 ### UnRAR

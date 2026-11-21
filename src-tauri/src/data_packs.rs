@@ -22,8 +22,8 @@ pub const RELEASE_BASE: &str =
     "https://github.com/ssnangua/SuperManGa/releases/download/data";
 pub const MANIFEST_FILE: &str = "manifest.json";
 const SEED_MANIFEST: &str = include_str!("../resources/data-manifest.json");
-/// Soft-refresh must fail fast offline (same idea as app update check).
-const MANIFEST_REFRESH_TIMEOUT: Duration = Duration::from_secs(8);
+/// Fetch must fail fast offline (same idea as app update check).
+const MANIFEST_FETCH_TIMEOUT: Duration = Duration::from_secs(8);
 
 /// One pack entry in the remote/local data manifest.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -147,7 +147,7 @@ pub fn load_manifest(app: &AppHandle) -> Result<DataManifest, String> {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct ManifestRefreshResult {
+pub struct FetchDataManifestResult {
     pub updated: bool,
     pub manifest: DataManifest,
 }
@@ -155,13 +155,13 @@ pub struct ManifestRefreshResult {
 /// Fetch remote manifest and write it only when it differs from local.
 /// Failures leave the local file untouched.
 /// Uses a short ureq timeout and must be called from a blocking/async worker — never the UI thread.
-pub fn refresh_manifest(
+pub fn fetch_manifest(
     app: &AppHandle,
     network: &NetworkConfig,
-) -> Result<ManifestRefreshResult, String> {
+) -> Result<FetchDataManifestResult, String> {
     let local = load_manifest(app)?;
     let url = format!("{RELEASE_BASE}/{MANIFEST_FILE}");
-    let agent = build_agent_with_timeout(network, MANIFEST_REFRESH_TIMEOUT)?;
+    let agent = build_agent_with_timeout(network, MANIFEST_FETCH_TIMEOUT)?;
     let response = agent
         .get(&url)
         .set("User-Agent", "supermanga-data-manifest")
@@ -174,14 +174,14 @@ pub fn refresh_manifest(
     let raw = response.into_string().map_err(|err| err.to_string())?;
     let parsed = parse_manifest_raw(&raw)?;
     if parsed == local {
-        return Ok(ManifestRefreshResult {
+        return Ok(FetchDataManifestResult {
             updated: false,
             manifest: local,
         });
     }
     let final_path = manifest_path(app)?;
     write_manifest(&final_path, &parsed)?;
-    Ok(ManifestRefreshResult {
+    Ok(FetchDataManifestResult {
         updated: true,
         manifest: parsed,
     })
@@ -189,11 +189,11 @@ pub fn refresh_manifest(
 
 /// Async so ureq cannot block the UI thread when DNS/proxy hangs offline.
 #[tauri::command]
-pub async fn refresh_data_manifest(
+pub async fn fetch_data_manifest(
     app: AppHandle,
     network: NetworkConfig,
-) -> Result<ManifestRefreshResult, String> {
-    tauri::async_runtime::spawn_blocking(move || refresh_manifest(&app, &network))
+) -> Result<FetchDataManifestResult, String> {
+    tauri::async_runtime::spawn_blocking(move || fetch_manifest(&app, &network))
         .await
         .map_err(|err| err.to_string())?
 }

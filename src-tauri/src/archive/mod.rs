@@ -80,6 +80,12 @@ impl Backend {
         }
     }
 
+    pub fn set_extract_priority(&self, pages: Vec<usize>) {
+        if let Backend::Cache(cache) = self {
+            cache.set_priority(pages);
+        }
+    }
+
     pub fn page_count(&self) -> usize {
         match self {
             Backend::Files(paths) => paths.len(),
@@ -176,6 +182,7 @@ pub fn open(
     app: AppHandle,
     path: &Path,
     read_subfolder: bool,
+    pdf_rasterize: bool,
     locale: &str,
     session_id: u64,
     password: Option<&str>,
@@ -217,7 +224,7 @@ pub fn open(
             _ => open_7z(app, path, locale, session_id),
         },
         "epub" => open_epub(path, locale),
-        "pdf" => open_pdf(app, path, locale, session_id, password),
+        "pdf" => open_pdf(app, path, locale, session_id, password, pdf_rasterize),
         "mobi" | "azw3" | "azw" => open_mobi(app, path, locale, session_id),
         _ => Err(tr(locale, "不支持该文件", "Unsupported file")),
     }
@@ -381,22 +388,43 @@ fn open_pdf(
     locale: &str,
     session_id: u64,
     password: Option<&str>,
+    rasterize: bool,
 ) -> Result<Loaded, String> {
     let password = password
         .map(str::trim)
         .filter(|value| !value.is_empty())
         .map(str::to_owned);
-    match pdf::plan_open(&app, path, locale, password.as_deref())? {
-        pdf::PdfPlan::Pdfium { page_count } => {
+    let root = cache_root(&app)?;
+    // Stop any in-flight extract/rasterize before deleting sibling-mode cache dirs.
+    // Otherwise a mid-write page can fail with "path not found" and toast via fail().
+    {
+        let state = app.state::<crate::state::AppState>();
+        if let Some(session) = crate::state::lock(&state.session).as_ref() {
+            session.backend.cancel();
+        }
+    }
+    // Drop the other mode's cache so a setting flip never reuses stale pages.
+    cache::purge_key(&root, &cache::pdf_other_cache_key(path, rasterize));
+    let key = cache::pdf_cache_key(path, rasterize);
+    match pdf::plan_open(&app, path, locale, password.as_deref(), rasterize)? {
+        pdf::PdfPlan::Pdfium { page_count, sizes } => {
             let rels = pdf::list_rels_for_pdfium(page_count);
             let archive_path = path.to_path_buf();
-            start_cache(app, path, rels, locale, session_id, move |job| {
+            // MediaBox sizes are known up front; background job still rasterizes all pages
+            // with current-page priority via CacheBackend::set_priority.
+            start_cache(app, path, rels, locale, session_id, &key, &sizes, move |job| {
                 pdf::render_pages(archive_path, page_count, password, job);
+            })
+        }
+        pdf::PdfPlan::PdfiumImages { rels } => {
+            let archive_path = path.to_path_buf();
+            start_cache(app, path, rels, locale, session_id, &key, &[], move |job| {
+                pdf::extract_pdfium_images(archive_path, password, job);
             })
         }
         pdf::PdfPlan::Embedded { images } => {
             let rels = pdf::list_rels_for_embedded(&images);
-            start_cache(app, path, rels, locale, session_id, move |job| {
+            start_cache(app, path, rels, locale, session_id, &key, &[], move |job| {
                 pdf::write_embedded(images, job);
             })
         }
@@ -418,7 +446,8 @@ fn open_mobi(app: AppHandle, path: &Path, locale: &str, session_id: u64) -> Resu
     let archive_path = path.to_path_buf();
     let book = listed.book;
     let rels = listed.rels;
-    start_cache(app, path, rels, locale, session_id, move |job| {
+    let key = cache::cache_key(path);
+    start_cache(app, path, rels, locale, session_id, &key, &[], move |job| {
         mobi::extract(archive_path, book, job);
     })
 }
@@ -433,6 +462,8 @@ fn start_cache(
     rels: Vec<String>,
     locale: &str,
     session_id: u64,
+    key: &str,
+    sizes: &[(u32, u32)],
     spawn: impl FnOnce(ExtractJob) + Send + 'static,
 ) -> Result<Loaded, String> {
     if rels.is_empty() {
@@ -440,7 +471,6 @@ fn start_cache(
     }
     let total = Instant::now();
     let root = cache_root(&app)?;
-    let key = cache::cache_key(path);
     let count = rels.len();
     if let Some(files) = cache::try_reuse(&root, &key, rels.len()) {
         crate::app_log::info(
@@ -454,7 +484,7 @@ fn start_cache(
         return Ok(Loaded {
             root: path.to_path_buf(),
             title: names::title_of(path),
-            pages: pages_of(&rels, &[]),
+            pages: pages_of(&rels, sizes),
             backend: Arc::new(Backend::Files(files)),
             extracting: false,
             initial_index: None,
@@ -481,7 +511,7 @@ fn start_cache(
     Ok(Loaded {
         root: path.to_path_buf(),
         title: names::title_of(path),
-        pages: pages_of(&rels, &[]),
+        pages: pages_of(&rels, sizes),
         backend: Arc::new(Backend::Cache(cache)),
         extracting: true,
         initial_index: None,
@@ -507,7 +537,8 @@ fn open_7z(app: AppHandle, path: &Path, locale: &str, session_id: u64) -> Result
         });
     }
     let archive_path = path.to_path_buf();
-    start_cache(app, path, rels, locale, session_id, move |job| {
+    let key = cache::cache_key(path);
+    start_cache(app, path, rels, locale, session_id, &key, &[], move |job| {
         sevenz::extract(archive_path, originals, job);
     })
 }
@@ -516,7 +547,8 @@ fn open_rar(app: AppHandle, path: &Path, locale: &str, session_id: u64) -> Resul
     let rels = rar::list(path)?;
     let archive_path = path.to_path_buf();
     let names = rels.clone();
-    start_cache(app, path, rels, locale, session_id, move |job| {
+    let key = cache::cache_key(path);
+    start_cache(app, path, rels, locale, session_id, &key, &[], move |job| {
         rar::extract(archive_path, names, job);
     })
 }

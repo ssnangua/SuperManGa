@@ -49,6 +49,9 @@
   /* Translate seek marks: purple done + pink running (pair). */
   --translate-done: #8b5cf6;
   --translate-running: #f9a8d4;
+  /* Extract/rasterize seek marks (warning pair). */
+  --extract-done: var(--warning);
+  --extract-running: color-mix(in srgb, var(--warning) 55%, #ffffff);
   --field: #111;
   --img: #111;
   --img-flow: #1c1c1c;
@@ -139,6 +142,8 @@ html.theme-light {
   --neural-running: #409eff;
   --translate-done: #8b5cf6;
   --translate-running: #f9a8d4;
+  --extract-done: var(--warning);
+  --extract-running: color-mix(in srgb, var(--warning) 70%, #ffffff);
   --field: #fff;
   --img: #ececec;
   --img-flow: #f7f7f7;

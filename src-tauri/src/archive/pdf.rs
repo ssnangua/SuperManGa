@@ -1,12 +1,19 @@
-//! PDF support: prefer local pdfium for full rasterization; fall back to extracting
-//! embedded page images (typical for scanned comics) when pdfium is unavailable.
+//! PDF support:
+//! - Path B1 (rasterize on): local/downloaded pdfium full-page rasterization.
+//! - Path B2 (rasterize off): pdfium decrypt + export embedded image *files* only
+//!   (jpg/png/gif/webp). No page rasterization fallback.
+//! - Path A: no pdfium — lopdf walks pages in order and exports image *files*;
+//!   byte-scrape is only a fallback when the page tree yields nothing.
 //! Runtime download from GitHub is best-effort only (often blocked on some networks).
 
+use std::collections::HashSet;
 use std::fs;
 use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
 use std::time::Duration;
 
+use lopdf::content::Content;
+use lopdf::{Dictionary, Document, Object, ObjectId, Stream};
 use pdfium_render::prelude::*;
 use tauri::{AppHandle, Manager};
 
@@ -15,9 +22,20 @@ use super::names::tr;
 
 const MAX_EDGE: f32 = 4096.0;
 const PDFIUM_VERSION: &str = "chromium/8152";
+const MIN_IMAGE_BYTES: usize = 32;
+/// Cap decoded Path A image streams (decompression-bomb guard).
+const MAX_PATH_A_DECODE: usize = 64 * 1024 * 1024;
+const MAX_FORM_DEPTH: usize = 32;
 
 pub enum PdfPlan {
-    Pdfium { page_count: usize },
+    /// B1: full-book pdfium rasterize (MediaBox sizes up front; ExtractJob prefers current page).
+    Pdfium {
+        page_count: usize,
+        sizes: Vec<(u32, u32)>,
+    },
+    /// B2: export image XObject file bytes via pdfium (rels listed; bytes written in job).
+    PdfiumImages { rels: Vec<String> },
+    /// Path A: embedded image files in page order (no pdfium).
     Embedded { images: Vec<EmbeddedImage> },
 }
 
@@ -36,24 +54,22 @@ pub fn plan_open(
     path: &Path,
     locale: &str,
     password: Option<&str>,
+    rasterize: bool,
 ) -> Result<PdfPlan, String> {
     let encrypted = pdf_is_encrypted(path);
 
-    // Prefer a locally available pdfium (no network). Download is last resort only.
+    // Whenever pdfium is available, never take Path A.
     if let Ok(pdfium) = try_load_pdfium_local(app) {
-        return plan_with_pdfium(pdfium, path, locale, password);
+        return plan_with_pdfium(pdfium, path, locale, password, rasterize);
     }
 
-    // Encrypted PDFs cannot be unlocked by raw stream scraping — ciphertext may
-    // still contain accidental JPEG markers and would open as broken pages.
+    // Encrypted PDFs need pdfium to decrypt — prompt before any download attempt.
     if encrypted {
-        // Prompt for a password before any network download so the UI responds
-        // immediately; retry with the password then attempts pdfium download.
         if password.is_none() {
             return Err(ERR_PASSWORD_REQUIRED.to_string());
         }
         if let Ok(pdfium) = try_load_pdfium_with_download(app) {
-            return plan_with_pdfium(pdfium, path, locale, password);
+            return plan_with_pdfium(pdfium, path, locale, password, rasterize);
         }
         return Err(tr(
             locale,
@@ -68,14 +84,15 @@ pub fn plan_open(
         ));
     }
 
+    // Path A: no pdfium — page-ordered extract (lopdf), then byte-scrape fallback.
     let images = extract_embedded_images(path)?;
     if !images.is_empty() {
         return Ok(PdfPlan::Embedded { images });
     }
 
-    // Text/vector PDFs need rasterization — attempt download only when needed.
+    // Last resort: try downloading pdfium, then B1/B2.
     if let Ok(pdfium) = try_load_pdfium_with_download(app) {
-        return plan_with_pdfium(pdfium, path, locale, password);
+        return plan_with_pdfium(pdfium, path, locale, password, rasterize);
     }
 
     Err(tr(
@@ -134,15 +151,37 @@ fn plan_with_pdfium(
     path: &Path,
     locale: &str,
     password: Option<&str>,
+    rasterize: bool,
 ) -> Result<PdfPlan, String> {
     let document = pdfium
         .load_pdf_from_file(path, password)
         .map_err(|err| format_pdf_err(err, locale, password.is_some()))?;
-    let page_count = document.pages().len() as usize;
-    if page_count == 0 {
-        return Err(tr(locale, "没有找到图片", "No images found"));
+    if rasterize {
+        let page_count = document.pages().len() as usize;
+        if page_count == 0 {
+            return Err(tr(locale, "没有找到图片", "No images found"));
+        }
+        let mut sizes = Vec::with_capacity(page_count);
+        for index in 0..page_count {
+            let page = document
+                .pages()
+                .get(index as u16)
+                .map_err(|err| err.to_string())?;
+            sizes.push(page_pixel_size(&page));
+        }
+        return Ok(PdfPlan::Pdfium { page_count, sizes });
     }
-    Ok(PdfPlan::Pdfium { page_count })
+
+    // B2: list exportable image files only (bytes written later in the extract job).
+    let rels = list_pdfium_image_rels(&document);
+    if rels.is_empty() {
+        return Err(tr(
+            locale,
+            "未找到可导出的原始图片。",
+            "No extractable images found.",
+        ));
+    }
+    Ok(PdfPlan::PdfiumImages { rels })
 }
 
 pub fn list_rels_for_pdfium(page_count: usize) -> Vec<String> {
@@ -155,6 +194,16 @@ pub fn list_rels_for_embedded(images: &[EmbeddedImage]) -> Vec<String> {
     images.iter().map(|image| image.rel.clone()).collect()
 }
 
+fn page_pixel_size(page: &PdfPage<'_>) -> (u32, u32) {
+    let width = page.width().value;
+    let height = page.height().value;
+    let scale = scale_for(width, height);
+    (
+        (width * scale).round().max(1.0) as u32,
+        (height * scale).round().max(1.0) as u32,
+    )
+}
+
 pub fn render_pages(path: PathBuf, page_count: usize, password: Option<String>, job: ExtractJob) {
     if let Err(err) = render_pages_inner(&path, page_count, password.as_deref(), &job) {
         if job.cancelled() {
@@ -165,22 +214,163 @@ pub fn render_pages(path: PathBuf, page_count: usize, password: Option<String>, 
     }
 }
 
+pub fn extract_pdfium_images(path: PathBuf, password: Option<String>, job: ExtractJob) {
+    if let Err(err) = extract_pdfium_images_inner(&path, password.as_deref(), &job) {
+        if job.cancelled() {
+            job.abort();
+        } else {
+            job.fail(err);
+        }
+    }
+}
+
 pub fn write_embedded(images: Vec<EmbeddedImage>, job: ExtractJob) {
-    let mut files = Vec::with_capacity(images.len());
-    for (index, image) in images.into_iter().enumerate() {
+    let total = images.len();
+    let mut files = vec![None; total];
+    let mut remaining: Vec<Option<EmbeddedImage>> = images.into_iter().map(Some).collect();
+    while let Some(index) = job.next_index() {
         if job.cancelled() {
             job.abort();
             return;
         }
+        let Some(image) = remaining.get_mut(index).and_then(|slot| slot.take()) else {
+            job.fail(format!("embedded image {index} missing"));
+            return;
+        };
+        job.begin_page(index);
         let (dest, name) = job.destination(index, &image.rel);
         if let Err(err) = fs::write(&dest, &image.bytes) {
             job.fail(err.to_string());
             return;
         }
-        files.push(name);
+        files[index] = Some(name);
         job.mark_written(index, dest);
     }
+    if job.cancelled() {
+        job.abort();
+        return;
+    }
+    let files = match files.into_iter().collect::<Option<Vec<_>>>() {
+        Some(files) => files,
+        None => {
+            job.fail("embedded image extract incomplete".into());
+            return;
+        }
+    };
     job.succeed(files);
+}
+
+fn list_pdfium_image_rels(document: &PdfDocument<'_>) -> Vec<String> {
+    let mut rels = Vec::new();
+    let mut index = 0usize;
+    for page in document.pages().iter() {
+        visit_page_objects(page.objects().iter(), &mut |img| {
+            if let Some(ext) = image_object_file_ext(img) {
+                index += 1;
+                rels.push(format!("img-{index:05}.{ext}"));
+            }
+        });
+    }
+    rels
+}
+
+fn extract_pdfium_images_inner(
+    path: &Path,
+    password: Option<&str>,
+    job: &ExtractJob,
+) -> Result<(), String> {
+    let pdfium = try_load_pdfium(&job.app)?;
+    let document = pdfium
+        .load_pdf_from_file(path, password)
+        .map_err(|err| format_pdf_err(err, "en", password.is_some()))?;
+    let mut files = Vec::new();
+    let mut index = 0usize;
+    for page in document.pages().iter() {
+        let mut err: Option<String> = None;
+        visit_page_objects(page.objects().iter(), &mut |img| {
+            if err.is_some() {
+                return;
+            }
+            if job.cancelled() {
+                return;
+            }
+            let Some((ext, bytes)) = image_object_file_bytes(img) else {
+                return;
+            };
+            job.begin_page(index);
+            let rel = format!("img-{:05}.{ext}", index + 1);
+            let (dest, name) = job.destination(index, &rel);
+            if let Err(write_err) = fs::write(&dest, &bytes) {
+                err = Some(write_err.to_string());
+                return;
+            }
+            files.push(name);
+            job.mark_written(index, dest);
+            index += 1;
+        });
+        if job.cancelled() {
+            job.abort();
+            return Ok(());
+        }
+        if let Some(write_err) = err {
+            return Err(write_err);
+        }
+    }
+    if files.is_empty() {
+        return Err("No extractable images found.".into());
+    }
+    job.succeed(files);
+    Ok(())
+}
+
+fn visit_page_objects<'a>(
+    objects: impl Iterator<Item = PdfPageObject<'a>>,
+    visit: &mut dyn FnMut(&PdfPageImageObject<'_>),
+) {
+    for object in objects {
+        if let Some(image) = object.as_image_object() {
+            visit(image);
+        } else if let Some(form) = object.as_x_object_form_object() {
+            visit_page_objects(form.iter(), visit);
+        }
+    }
+}
+
+fn image_object_file_ext(img: &PdfPageImageObject<'_>) -> Option<&'static str> {
+    image_object_file_bytes(img).map(|(ext, _)| ext)
+}
+
+fn image_object_file_bytes(img: &PdfPageImageObject<'_>) -> Option<(&'static str, Vec<u8>)> {
+    let raw = img.get_raw_image_data().ok()?;
+    if raw.len() < MIN_IMAGE_BYTES {
+        return None;
+    }
+    sniff_image_ext(&raw).map(|ext| (ext, raw))
+}
+
+fn sniff_image_ext(data: &[u8]) -> Option<&'static str> {
+    if data.len() >= 3 && data[0] == 0xFF && data[1] == 0xD8 && data[2] == 0xFF {
+        return Some("jpg");
+    }
+    if data.len() >= 8
+        && data[0] == 0x89
+        && data[1] == b'P'
+        && data[2] == b'N'
+        && data[3] == b'G'
+        && data[4] == b'\r'
+        && data[5] == b'\n'
+        && data[6] == 0x1a
+        && data[7] == b'\n'
+    {
+        return Some("png");
+    }
+    if data.starts_with(b"GIF87a") || data.starts_with(b"GIF89a") {
+        return Some("gif");
+    }
+    if data.len() >= 12 && data.starts_with(b"RIFF") && &data[8..12] == b"WEBP" {
+        return Some("webp");
+    }
+    None
 }
 
 fn render_pages_inner(
@@ -199,12 +389,13 @@ fn render_pages_inner(
             "PDF page count mismatch (expected {page_count}, got {available})"
         ));
     }
-    let mut files = Vec::with_capacity(page_count);
-    for index in 0..page_count {
+    let mut files = vec![None; page_count];
+    while let Some(index) = job.next_index() {
         if job.cancelled() {
             job.abort();
             return Ok(());
         }
+        job.begin_page(index);
         let page = document
             .pages()
             .get(index as u16)
@@ -222,9 +413,20 @@ fn render_pages_inner(
         let original = format!("page-{index:05}.jpg");
         let (dest, name) = job.destination(index, &original);
         save_jpeg(&image, &dest)?;
-        files.push(name);
+        files[index] = Some(name);
         job.mark_written(index, dest);
     }
+    if job.cancelled() {
+        job.abort();
+        return Ok(());
+    }
+    let files = files
+        .into_iter()
+        .enumerate()
+        .map(|(index, name)| {
+            name.ok_or_else(|| format!("PDF page {index} was not rendered"))
+        })
+        .collect::<Result<Vec<_>, _>>()?;
     job.succeed(files);
     Ok(())
 }
@@ -486,20 +688,208 @@ fn pdfium_asset_name() -> Result<&'static str, String> {
     Err("unsupported platform for pdfium download".into())
 }
 
-/// Extract embedded JPEG page images from comic/scan PDFs without pdfium.
+/// Path A: extract embedded image *files* (jpg/png/gif/webp) without pdfium.
 ///
-/// Prefer `/Subtype /Image` + `/DCTDecode` streams (one page image each). Some
-/// exporters concatenate a second full-bleed JPEG inside the same stream — only
-/// the first JPEG (matching `/Height` when present) is kept.
+/// Prefer lopdf page-tree order (and content-stream `Do` order within a page).
+/// Fall back to raw byte scrape when the page tree yields nothing.
 fn extract_embedded_images(path: &Path) -> Result<Vec<EmbeddedImage>, String> {
+    if let Ok(images) = extract_embedded_images_lopdf(path) {
+        if !images.is_empty() {
+            return Ok(images);
+        }
+    }
+    extract_embedded_images_bytescrape(path)
+}
+
+fn extract_embedded_images_lopdf(path: &Path) -> Result<Vec<EmbeddedImage>, String> {
+    let doc = Document::load(path).map_err(|err| err.to_string())?;
+    let mut files: Vec<(&'static str, Vec<u8>)> = Vec::new();
+    let mut seen: HashSet<ObjectId> = HashSet::new();
+    for (_num, page_id) in doc.get_pages() {
+        collect_page_file_images(&doc, page_id, &mut files, &mut seen);
+    }
+    Ok(files
+        .into_iter()
+        .enumerate()
+        .map(|(index, (ext, bytes))| EmbeddedImage {
+            rel: format!("page-{:05}.{ext}", index + 1),
+            bytes,
+        })
+        .collect())
+}
+
+fn collect_page_file_images(
+    doc: &Document,
+    page_id: ObjectId,
+    out: &mut Vec<(&'static str, Vec<u8>)>,
+    seen: &mut HashSet<ObjectId>,
+) {
+    let Some(resources) = page_resources(doc, page_id) else {
+        return;
+    };
+    let mut emitted = false;
+    // Prefer paint order from the page content stream (`/Name Do`).
+    let content = doc.get_page_content(page_id);
+    if let Ok(parsed) = Content::decode(&content) {
+        for operation in parsed.operations {
+            if operation.operator != "Do" {
+                continue;
+            }
+            let Some(Object::Name(name)) = operation.operands.first() else {
+                continue;
+            };
+            if push_named_xobject_images(doc, resources, name, out, seen, 0) {
+                emitted = true;
+            }
+        }
+    }
+    // No usable Do ops (or only non-file images): still collect Image XObjects.
+    if !emitted {
+        visit_resource_images(doc, resources, out, seen, 0);
+    }
+}
+
+fn page_resources<'a>(doc: &'a Document, page_id: ObjectId) -> Option<&'a Dictionary> {
+    let mut node = doc.get_dictionary(page_id).ok()?;
+    let mut guard = HashSet::new();
+    guard.insert(page_id);
+    loop {
+        if let Ok(resources) = doc.get_dict_in_dict(node, b"Resources") {
+            return Some(resources);
+        }
+        let parent = node.get(b"Parent").ok()?.as_reference().ok()?;
+        if !guard.insert(parent) {
+            return None;
+        }
+        node = doc.get_dictionary(parent).ok()?;
+    }
+}
+
+fn push_named_xobject_images(
+    doc: &Document,
+    resources: &Dictionary,
+    name: &[u8],
+    out: &mut Vec<(&'static str, Vec<u8>)>,
+    seen: &mut HashSet<ObjectId>,
+    depth: usize,
+) -> bool {
+    if depth > MAX_FORM_DEPTH {
+        return false;
+    }
+    let Ok(xobjects) = doc.get_dict_in_dict(resources, b"XObject") else {
+        return false;
+    };
+    let Ok(entry) = xobjects.get(name) else {
+        return false;
+    };
+    let Ok(id) = entry.as_reference() else {
+        return false;
+    };
+    push_xobject_id(doc, id, out, seen, depth)
+}
+
+fn visit_resource_images(
+    doc: &Document,
+    resources: &Dictionary,
+    out: &mut Vec<(&'static str, Vec<u8>)>,
+    seen: &mut HashSet<ObjectId>,
+    depth: usize,
+) {
+    if depth > MAX_FORM_DEPTH {
+        return;
+    }
+    let Ok(xobjects) = doc.get_dict_in_dict(resources, b"XObject") else {
+        return;
+    };
+    for (_, value) in xobjects.iter() {
+        let Ok(id) = value.as_reference() else {
+            continue;
+        };
+        let _ = push_xobject_id(doc, id, out, seen, depth);
+    }
+}
+
+fn push_xobject_id(
+    doc: &Document,
+    id: ObjectId,
+    out: &mut Vec<(&'static str, Vec<u8>)>,
+    seen: &mut HashSet<ObjectId>,
+    depth: usize,
+) -> bool {
+    if depth > MAX_FORM_DEPTH || !seen.insert(id) {
+        return false;
+    }
+    let Ok(object) = doc.get_object(id) else {
+        return false;
+    };
+    let Ok(stream) = object.as_stream() else {
+        return false;
+    };
+    let subtype = stream
+        .dict
+        .get(b"Subtype")
+        .ok()
+        .and_then(|obj| obj.as_name().ok());
+    match subtype {
+        Some(b"Image") => {
+            if let Some(file) = stream_image_file_bytes(stream) {
+                out.push(file);
+                true
+            } else {
+                false
+            }
+        }
+        Some(b"Form") => {
+            let before = out.len();
+            if let Ok(form_res) = doc.get_dict_in_dict(&stream.dict, b"Resources") {
+                visit_resource_images(doc, form_res, out, seen, depth + 1);
+            }
+            out.len() > before
+        }
+        _ => false,
+    }
+}
+
+fn stream_image_file_bytes(stream: &Stream) -> Option<(&'static str, Vec<u8>)> {
+    let expect_w = stream.dict.get(b"Width").ok().and_then(|o| o.as_i64().ok());
+    let expect_h = stream.dict.get(b"Height").ok().and_then(|o| o.as_i64().ok());
+    // DCTDecode payloads are already JPEG file bytes — sniff raw first.
+    if let Some(ext) = sniff_image_ext(&stream.content) {
+        if stream.content.len() >= MIN_IMAGE_BYTES {
+            return Some((ext, stream.content.clone()));
+        }
+    }
+    if let Some(jpeg) = first_jpeg_in(&stream.content, expect_w, expect_h) {
+        if jpeg.len() >= MIN_IMAGE_BYTES {
+            return Some(("jpg", jpeg));
+        }
+    }
+    let decoded = stream
+        .decompressed_content_with_limit(MAX_PATH_A_DECODE)
+        .ok()?;
+    if let Some(ext) = sniff_image_ext(&decoded) {
+        if decoded.len() >= MIN_IMAGE_BYTES {
+            return Some((ext, decoded));
+        }
+    }
+    first_jpeg_in(&decoded, expect_w, expect_h)
+        .filter(|jpeg| jpeg.len() >= MIN_IMAGE_BYTES)
+        .map(|jpeg| ("jpg", jpeg))
+}
+
+fn extract_embedded_images_bytescrape(path: &Path) -> Result<Vec<EmbeddedImage>, String> {
     let data = fs::read(path).map_err(|err| err.to_string())?;
-    let mut images = extract_dct_image_streams(&data);
+    let mut images = extract_image_file_streams(&data);
     if images.is_empty() {
-        // Fallback for odd PDFs without parseable Image dicts.
-        images = extract_jpeg_blobs(&data);
-        let max_len = images.iter().map(Vec::len).max().unwrap_or(0);
+        // Fallback for odd PDFs without parseable Image dicts (JPEG only).
+        let blobs = extract_jpeg_blobs(&data);
+        let max_len = blobs.iter().map(Vec::len).max().unwrap_or(0);
         let min_keep = (max_len / 5).max(8_192);
-        images.retain(|bytes| bytes.len() >= min_keep);
+        images = blobs
+            .into_iter()
+            .filter(|bytes| bytes.len() >= min_keep)
+            .filter_map(|bytes| sniff_image_ext(&bytes).map(|ext| (ext, bytes)))
+            .collect();
     }
     if images.is_empty() {
         return Ok(Vec::new());
@@ -507,14 +897,14 @@ fn extract_embedded_images(path: &Path) -> Result<Vec<EmbeddedImage>, String> {
     Ok(images
         .into_iter()
         .enumerate()
-        .map(|(index, bytes)| EmbeddedImage {
-            rel: format!("page-{:05}.jpg", index + 1),
+        .map(|(index, (ext, bytes))| EmbeddedImage {
+            rel: format!("page-{:05}.{ext}", index + 1),
             bytes,
         })
         .collect())
 }
 
-fn extract_dct_image_streams(data: &[u8]) -> Vec<Vec<u8>> {
+fn extract_image_file_streams(data: &[u8]) -> Vec<(&'static str, Vec<u8>)> {
     let mut out = Vec::new();
     let mut search_from = 0;
     while search_from < data.len() {
@@ -543,9 +933,6 @@ fn extract_dct_image_streams(data: &[u8]) -> Vec<Vec<u8>> {
         };
         let dict = &data[dict_start..dict_end];
         search_from = dict_end;
-        if find_bytes(dict, b"/DCTDecode").is_none() {
-            continue;
-        }
         let Some(length) = dict_int(dict, b"/Length") else {
             continue;
         };
@@ -569,9 +956,17 @@ fn extract_dct_image_streams(data: &[u8]) -> Vec<Vec<u8>> {
             continue;
         }
         let payload = &stream_body[..length];
-        if let Some(jpeg) = first_jpeg_in(payload, expect_w, expect_h) {
-            if jpeg.len() >= 1024 {
-                out.push(jpeg);
+        if find_bytes(dict, b"/DCTDecode").is_some() {
+            if let Some(jpeg) = first_jpeg_in(payload, expect_w, expect_h) {
+                if jpeg.len() >= 1024 {
+                    out.push(("jpg", jpeg));
+                }
+            }
+            continue;
+        }
+        if let Some(ext) = sniff_image_ext(payload) {
+            if payload.len() >= 1024 {
+                out.push((ext, payload.to_vec()));
             }
         }
     }

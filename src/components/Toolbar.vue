@@ -56,6 +56,8 @@ import {
   turn,
   ocrEnabled,
   translationSeekGradient,
+  extractSeekGradient,
+  showExtractBar,
 } from "../reader";
 import { maskModalOpen } from "../lib/maskModal";
 import { neuralSeekGradient } from "../lib/render/neural";
@@ -65,6 +67,7 @@ const { t } = useI18n();
 const emptySeek = "linear-gradient(to right, transparent, transparent)";
 const neuralProgressOn = computed(() => isNeuralProfile(settings.renderProfile));
 const translateProgressOn = computed(() => ocrEnabled.value);
+const extractProgressOn = computed(() => showExtractBar.value);
 
 const modes = ["single", "double", "scroll"] as const;
 const pageFits = ["window", "auto", "original", "fixedWidth", "originalScale"] as const satisfies readonly FitMode[];
@@ -544,11 +547,13 @@ const showSeek = computed(() => {
         measuring: showMeasureBar,
         'neural-progress': neuralProgressOn,
         'translate-progress': translateProgressOn,
+        'extract-progress': extractProgressOn,
         disabled: pageCount <= 0,
       }"
       :style="{
         '--progress': progress,
         '--measure': showMeasureBar ? measureProgress : '0%',
+        '--extract-seek': extractSeekGradient === 'none' ? emptySeek : extractSeekGradient,
         '--neural-seek': neuralSeekGradient === 'none' ? emptySeek : neuralSeekGradient,
         '--translate-seek':
           translationSeekGradient === 'none' ? emptySeek : translationSeekGradient,
@@ -1386,18 +1391,24 @@ const showSeek = computed(() => {
   );
 }
 
-.toolbar-seek.measuring .slider::-webkit-slider-runnable-track {
-  background:
+/* Extract / measure: semi-transparent reading wash on top of base-service fills. */
+.toolbar-seek.extract-progress:not(.neural-progress):not(.translate-progress) .slider::-webkit-slider-runnable-track,
+.toolbar-seek.measuring:not(.neural-progress):not(.translate-progress) .slider::-webkit-slider-runnable-track {
+  background-color: var(--seek);
+  background-repeat: no-repeat;
+  background-image:
     linear-gradient(
       to right,
-      color-mix(in srgb, var(--accent) 52%, transparent) var(--progress, 0%),
+      var(--seek-read-overlay) var(--progress, 0%),
       transparent var(--progress, 0%)
     ),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent)),
     linear-gradient(
       to right,
       var(--seek-buffer) var(--measure, 0%),
-      var(--seek) var(--measure, 0%)
+      transparent var(--measure, 0%)
     );
+  background-size: 100% 100%, 100% 100%, 100% 100%;
 }
 
 /* Reading progress overlay shared by neural / translate seek fills. */
@@ -1417,9 +1428,10 @@ const showSeek = computed(() => {
         transparent var(--progress, 0%)
       )
     ),
-    var(--neural-seek, linear-gradient(to right, transparent, transparent));
-  background-size: 100% 100%, 100% 100%;
-  background-position: 0 0, 0 0;
+    var(--neural-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent));
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0, 0 0;
 }
 
 .toolbar-seek.translate-progress:not(.neural-progress) .slider::-webkit-slider-runnable-track {
@@ -1432,9 +1444,10 @@ const showSeek = computed(() => {
         transparent var(--progress, 0%)
       )
     ),
-    var(--translate-seek, linear-gradient(to right, transparent, transparent));
-  background-size: 100% 100%, 100% 100%;
-  background-position: 0 0, 0 0;
+    var(--translate-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent));
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0, 0 0;
 }
 
 /* Dual: translation on top half, neural SR on bottom half (4px → 2px + 2px). */
@@ -1449,9 +1462,10 @@ const showSeek = computed(() => {
       )
     ),
     var(--translate-seek, linear-gradient(to right, transparent, transparent)),
-    var(--neural-seek, linear-gradient(to right, transparent, transparent));
-  background-size: 100% 100%, 100% 50%, 100% 50%;
-  background-position: 0 0, 0 0, 0 100%;
+    var(--neural-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent));
+  background-size: 100% 100%, 100% 50%, 100% 50%, 100% 100%;
+  background-position: 0 0, 0 0, 0 100%, 0 0;
 }
 
 .toolbar-seek.neural-progress.measuring:not(.translate-progress) .slider::-webkit-slider-runnable-track {
@@ -1465,12 +1479,13 @@ const showSeek = computed(() => {
       )
     ),
     var(--neural-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent)),
     linear-gradient(
       to right,
       var(--seek-buffer) var(--measure, 0%),
-      var(--seek) var(--measure, 0%)
+      transparent var(--measure, 0%)
     );
-  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 }
 
 .toolbar-seek.translate-progress.measuring:not(.neural-progress) .slider::-webkit-slider-runnable-track {
@@ -1484,12 +1499,13 @@ const showSeek = computed(() => {
       )
     ),
     var(--translate-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent)),
     linear-gradient(
       to right,
       var(--seek-buffer) var(--measure, 0%),
-      var(--seek) var(--measure, 0%)
+      transparent var(--measure, 0%)
     );
-  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 }
 
 .toolbar-seek.translate-progress.neural-progress.measuring .slider::-webkit-slider-runnable-track {
@@ -1504,13 +1520,14 @@ const showSeek = computed(() => {
     ),
     var(--translate-seek, linear-gradient(to right, transparent, transparent)),
     var(--neural-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent)),
     linear-gradient(
       to right,
       var(--seek-buffer) var(--measure, 0%),
-      var(--seek) var(--measure, 0%)
+      transparent var(--measure, 0%)
     );
-  background-size: 100% 100%, 100% 50%, 100% 50%, 100% 100%;
-  background-position: 0 0, 0 0, 0 100%, 0 0;
+  background-size: 100% 100%, 100% 50%, 100% 50%, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0, 0 100%, 0 0, 0 0;
 }
 
 .toolbar-seek .slider::-webkit-slider-thumb {
@@ -1544,12 +1561,19 @@ const showSeek = computed(() => {
   background: var(--seek);
 }
 
-.toolbar-seek.measuring .slider::-moz-range-track {
-  background: linear-gradient(
-    to right,
-    var(--seek-buffer) var(--measure, 0%),
-    var(--seek) var(--measure, 0%)
-  );
+.toolbar-seek.extract-progress:not(.neural-progress):not(.translate-progress) .slider::-moz-range-track,
+.toolbar-seek.measuring:not(.neural-progress):not(.translate-progress) .slider::-moz-range-track {
+  background-color: var(--seek);
+  background-repeat: no-repeat;
+  /* Reading wash is ::-moz-range-progress; track only carries extract + measure. */
+  background-image:
+    var(--extract-seek, linear-gradient(to right, transparent, transparent)),
+    linear-gradient(
+      to right,
+      var(--seek-buffer) var(--measure, 0%),
+      transparent var(--measure, 0%)
+    );
+  background-size: 100% 100%, 100% 100%;
 }
 
 .toolbar-seek.neural-progress .slider::-moz-range-track,
@@ -1568,9 +1592,10 @@ const showSeek = computed(() => {
         transparent var(--progress, 0%)
       )
     ),
-    var(--neural-seek, linear-gradient(to right, transparent, transparent));
-  background-size: 100% 100%, 100% 100%;
-  background-position: 0 0, 0 0;
+    var(--neural-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent));
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0, 0 0;
 }
 
 .toolbar-seek.translate-progress:not(.neural-progress) .slider::-moz-range-track {
@@ -1583,9 +1608,10 @@ const showSeek = computed(() => {
         transparent var(--progress, 0%)
       )
     ),
-    var(--translate-seek, linear-gradient(to right, transparent, transparent));
-  background-size: 100% 100%, 100% 100%;
-  background-position: 0 0, 0 0;
+    var(--translate-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent));
+  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0, 0 0;
 }
 
 .toolbar-seek.translate-progress.neural-progress .slider::-moz-range-track {
@@ -1599,9 +1625,10 @@ const showSeek = computed(() => {
       )
     ),
     var(--translate-seek, linear-gradient(to right, transparent, transparent)),
-    var(--neural-seek, linear-gradient(to right, transparent, transparent));
-  background-size: 100% 100%, 100% 50%, 100% 50%;
-  background-position: 0 0, 0 0, 0 100%;
+    var(--neural-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent));
+  background-size: 100% 100%, 100% 50%, 100% 50%, 100% 100%;
+  background-position: 0 0, 0 0, 0 100%, 0 0;
 }
 
 .toolbar-seek.neural-progress.measuring:not(.translate-progress) .slider::-moz-range-track {
@@ -1615,12 +1642,13 @@ const showSeek = computed(() => {
       )
     ),
     var(--neural-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent)),
     linear-gradient(
       to right,
       var(--seek-buffer) var(--measure, 0%),
-      var(--seek) var(--measure, 0%)
+      transparent var(--measure, 0%)
     );
-  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 }
 
 .toolbar-seek.translate-progress.measuring:not(.neural-progress) .slider::-moz-range-track {
@@ -1634,12 +1662,13 @@ const showSeek = computed(() => {
       )
     ),
     var(--translate-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent)),
     linear-gradient(
       to right,
       var(--seek-buffer) var(--measure, 0%),
-      var(--seek) var(--measure, 0%)
+      transparent var(--measure, 0%)
     );
-  background-size: 100% 100%, 100% 100%, 100% 100%;
+  background-size: 100% 100%, 100% 100%, 100% 100%, 100% 100%;
 }
 
 .toolbar-seek.translate-progress.neural-progress.measuring .slider::-moz-range-track {
@@ -1654,13 +1683,14 @@ const showSeek = computed(() => {
     ),
     var(--translate-seek, linear-gradient(to right, transparent, transparent)),
     var(--neural-seek, linear-gradient(to right, transparent, transparent)),
+    var(--extract-seek, linear-gradient(to right, transparent, transparent)),
     linear-gradient(
       to right,
       var(--seek-buffer) var(--measure, 0%),
-      var(--seek) var(--measure, 0%)
+      transparent var(--measure, 0%)
     );
-  background-size: 100% 100%, 100% 50%, 100% 50%, 100% 100%;
-  background-position: 0 0, 0 0, 0 100%, 0 0;
+  background-size: 100% 100%, 100% 50%, 100% 50%, 100% 100%, 100% 100%;
+  background-position: 0 0, 0 0, 0 100%, 0 0, 0 0;
 }
 
 .toolbar-seek .slider::-moz-range-progress {
@@ -1669,8 +1699,9 @@ const showSeek = computed(() => {
   background: var(--accent);
 }
 
+.toolbar-seek.extract-progress .slider::-moz-range-progress,
 .toolbar-seek.measuring .slider::-moz-range-progress {
-  background: color-mix(in srgb, var(--accent) 52%, transparent);
+  background: var(--seek-read-overlay);
 }
 
 /* Progress fill lives in the track overlay so neural/translate marks can show through. */

@@ -1,3 +1,4 @@
+import { radiateBatchRank } from "../radiateRank";
 import { spreadIndexes, type ReadingMode } from "../spread";
 
 /** Interactive view (current spread / focus). */
@@ -79,21 +80,6 @@ export function nearFocusTranslatePages(
   return [...set].sort((a, b) => a - b);
 }
 
-function batchStartIndex(
-  focus: number,
-  count: number,
-  mode: ReadingMode,
-  isolateCover: boolean,
-): number {
-  const current = focusSpread(focus, count, mode, isolateCover);
-  const last = current[current.length - 1] ?? focus;
-  let start = last + 1;
-  if (start >= count) return count;
-  const next = neighborSpread(start, count, mode, isolateCover);
-  if (next.length) start = (next[next.length - 1] ?? start) + 1;
-  return start;
-}
-
 function batchRank(
   index: number,
   focus: number,
@@ -101,12 +87,13 @@ function batchRank(
   mode: ReadingMode,
   isolateCover: boolean,
 ): number {
-  const start = batchStartIndex(focus, count, mode, isolateCover);
-  if (index >= start) return index - start;
-  return count + (start - 1 - index);
+  const current = focusSpread(focus, count, mode, isolateCover);
+  const lo = current[0] ?? focus;
+  const hi = current[current.length - 1] ?? focus;
+  return radiateBatchRank(index, lo, hi);
 }
 
-/** Sort pending page indexes: current → next → prev → batch (outward from focus). */
+/** Sort pending page indexes: current → next → prev → batch (radiate from focus). */
 export function rankTranslatePages(
   pages: number[],
   focus: number,

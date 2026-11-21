@@ -69,6 +69,7 @@ pub fn extract(path: std::path::PathBuf, rels: Vec<String>, job: ExtractJob) {
                     }
                 };
                 archive = next;
+                job.begin_page(index);
                 let (dest, _) = job.destination(index, &rels[index]);
                 if let Err(err) = write_bytes(&dest, &bytes) {
                     job.fail(err);

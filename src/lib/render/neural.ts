@@ -6,6 +6,7 @@ import {
   neuralUpscale,
 } from "./assets";
 import { ANIMATED_IMAGE_SKIP, isAnimatedImage, isAnimatedImageSkip } from "./animated";
+import { radiateBatchRank } from "../radiateRank";
 import { spreadIndexes, type ReadingMode } from "../spread";
 
 /** Interactive draw (current page). */
@@ -392,22 +393,11 @@ function priorityForIndex(index: number, focus: number, count: number): number {
   return NEURAL_PRIORITY_BATCH;
 }
 
-function batchStartIndex(focus: number, count: number): number {
-  const current = focusSpread(focus, count);
-  const last = current[current.length - 1] ?? focus;
-  let start = last + 1;
-  if (start >= count) return count;
-  // Skip the next (prefetched) spread / page so batch continues after it.
-  const next = neighborSpread(start, count);
-  if (next.length) start = (next[next.length - 1] ?? start) + 1;
-  return start;
-}
-
 function batchRank(index: number, focus: number, count: number): number {
-  const start = batchStartIndex(focus, count);
-  if (index >= start) return index - start;
-  const tail = Math.max(0, count - start);
-  return tail + index;
+  const current = focusSpread(focus, count);
+  const lo = current[0] ?? focus;
+  const hi = current[current.length - 1] ?? focus;
+  return radiateBatchRank(index, lo, hi);
 }
 
 function pickNextJob(): PendingJob | null {
@@ -856,4 +846,4 @@ export function enqueueNeuralPage(options: {
   ).catch(ignoreIdleQueueError);
 }
 
-export { priorityForIndex };
+export { priorityForIndex, batchRank };

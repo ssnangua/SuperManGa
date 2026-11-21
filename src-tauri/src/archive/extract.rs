@@ -16,6 +16,10 @@ pub struct ExtractProgress {
     pub total: usize,
     pub finished: bool,
     pub error: Option<String>,
+    /// Page just written (progressive / out-of-order extract).
+    pub index: Option<usize>,
+    /// Page currently being extracted, if any.
+    pub running: Option<usize>,
 }
 
 pub struct ExtractJob {
@@ -61,6 +65,15 @@ impl ExtractJob {
         self.cache.is_cancelled()
     }
 
+    pub fn next_index(&self) -> Option<usize> {
+        self.cache.next_unready()
+    }
+
+    pub fn begin_page(&self, index: usize) {
+        self.cache.set_running(Some(index));
+        self.emit(self.done.load(Ordering::SeqCst), false, None, None, Some(index));
+    }
+
     pub fn destination(&self, index: usize, original: &str) -> (PathBuf, String) {
         let name = cache_filename(index, original);
         (self.work_dir.join(&name), name)
@@ -72,7 +85,8 @@ impl ExtractJob {
         }
         self.cache.mark(index, path);
         let done = self.done.fetch_add(1, Ordering::SeqCst) + 1;
-        self.emit(done, false, None);
+        let running = self.cache.running();
+        self.emit(done, false, None, Some(index), running);
     }
 
     pub fn succeed(&self, files: Vec<String>) {
@@ -85,21 +99,40 @@ impl ExtractJob {
             return;
         }
         self.cache.finish(None);
-        self.emit(self.total, true, None);
+        self.emit(self.total, true, None, None, None);
     }
 
     pub fn fail(&self, message: String) {
+        // Mode switch / reopen cancels then purges the work dir; treat that as abort.
+        if self.cancelled() {
+            self.abort();
+            return;
+        }
         self.cache.finish(Some(message.clone()));
-        self.emit(self.done.load(Ordering::SeqCst), true, Some(message));
+        self.emit(
+            self.done.load(Ordering::SeqCst),
+            true,
+            Some(message),
+            None,
+            None,
+        );
     }
 
     pub fn abort(&self) {
         let _ = fs::remove_dir_all(&self.work_dir);
         self.cache.cancel();
-        self.emit(self.done.load(Ordering::SeqCst), true, None);
+        // No error payload — cancelled extract must not toast in the UI.
+        self.emit(self.done.load(Ordering::SeqCst), true, None, None, None);
     }
 
-    fn emit(&self, done: usize, finished: bool, error: Option<String>) {
+    fn emit(
+        &self,
+        done: usize,
+        finished: bool,
+        error: Option<String>,
+        index: Option<usize>,
+        running: Option<usize>,
+    ) {
         let _ = self.app.emit(
             "extract-progress",
             ExtractProgress {
@@ -108,6 +141,8 @@ impl ExtractJob {
                 total: self.total,
                 finished,
                 error,
+                index,
+                running,
             },
         );
     }

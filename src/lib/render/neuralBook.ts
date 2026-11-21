@@ -5,6 +5,7 @@ import {
   enqueueNeuralPage,
   neuralBatchPaused,
   neuralDiskKey,
+  batchRank,
   NEURAL_PRIORITY_BATCH,
   priorityForIndex,
   probeNeuralDisk,
@@ -149,6 +150,11 @@ async function runNeuralBook(ctx: NeuralBookContext): Promise<void> {
     const pa = priorityForIndex(a.index, ctx.focusIndex, count);
     const pb = priorityForIndex(b.index, ctx.focusIndex, count);
     if (pa !== pb) return pa - pb;
+    if (pa >= NEURAL_PRIORITY_BATCH) {
+      return (
+        batchRank(a.index, ctx.focusIndex, count) - batchRank(b.index, ctx.focusIndex, count)
+      );
+    }
     return a.index - b.index;
   });
   for (const item of ranked) {

@@ -138,8 +138,12 @@ export interface Settings {
   autoLoadHistory: boolean;
   /** When true, check GitHub Releases on startup and prompt to download if newer. */
   checkUpdateOnStartup: boolean;
+  /** When true, fetch remote data manifest.json on startup. */
+  fetchDataManifestOnStartup: boolean;
   syncCurrentFile: boolean;
   readSubfolder: boolean;
+  /** When true, PDF pages are rasterized via pdfium; when false, extract embedded images only. */
+  pdfRasterize: boolean;
   backgroundColor: string;
   /** Multi-rule filename chapter matching. */
   chapterRules: ChapterFilenameRule[];
@@ -343,6 +347,8 @@ interface ExtractProgress {
   total: number;
   finished: boolean;
   error: string | null;
+  index?: number | null;
+  running?: number | null;
 }
 
 interface PageMetric {
@@ -410,8 +416,10 @@ const defaultSettings = (): Settings => ({
   playNoScrollPageMs: 2500,
   autoLoadHistory: true,
   checkUpdateOnStartup: true,
+  fetchDataManifestOnStartup: true,
   syncCurrentFile: false,
   readSubfolder: true,
+  pdfRasterize: false,
   backgroundColor: "#000000",
   chapterRules: createDefaultChapterRules(),
   sidebarWidth: 200,
@@ -531,6 +539,8 @@ function applySettings(saved: Partial<Settings>) {
   settings.minimalist = !!settings.minimalist;
   settings.syncCurrentFile = !!saved.syncCurrentFile;
   settings.checkUpdateOnStartup = saved.checkUpdateOnStartup !== false;
+  settings.fetchDataManifestOnStartup = saved.fetchDataManifestOnStartup !== false;
+  settings.pdfRasterize = saved.pdfRasterize === true;
   settings.scrollTrack = normalizeScrollTrack(saved.scrollTrack);
   settings.scrollDelta = clampInt(saved.scrollDelta, 1, 400, 100);
   settings.smoothScroll = saved.smoothScroll !== false;
@@ -1393,6 +1403,10 @@ function isPdfPasswordError(message: string) {
 export const extracting = ref(false);
 export const extractDone = ref(0);
 export const extractTotal = ref(0);
+/** Pages written during extract/rasterize (out-of-order capable). */
+export const extractReadyFlags = ref<boolean[]>([]);
+export const extractRunningIndex = ref<number | null>(null);
+let extractPriorityTimer = 0;
 export const measuring = ref(false);
 export const measureDone = ref(0);
 export const measureTotal = ref(0);
@@ -1514,6 +1528,114 @@ export const translationSeekGradient = computed(() => {
   }
   return `linear-gradient(to right, ${parts.join(", ")})`;
 });
+
+/** Seek-bar segments for extract / PDF rasterize (warning done / lighter running). */
+export const extractSeekGradient = computed(() => {
+  if (!extracting.value && extractDone.value >= extractTotal.value && extractTotal.value > 0) {
+    return "none";
+  }
+  if (!extracting.value && extractTotal.value <= 0) return "none";
+  const n = pageCount.value;
+  if (n <= 0) return "none";
+  const ready = extractReadyFlags.value;
+  const running = extractRunningIndex.value;
+  type Seg = { start: number; end: number; color: string };
+  const segs: Seg[] = [];
+  let i = 0;
+  while (i < n) {
+    const color =
+      i === running
+        ? "var(--extract-running)"
+        : ready[i]
+          ? "var(--extract-done)"
+          : "";
+    if (!color) {
+      i += 1;
+      continue;
+    }
+    let end = i + 1;
+    while (
+      end < n &&
+      (end === running
+        ? "var(--extract-running)"
+        : ready[end]
+          ? "var(--extract-done)"
+          : "") === color
+    ) {
+      end += 1;
+    }
+    segs.push({ start: i, end, color });
+    i = end;
+  }
+  if (!segs.length) return "none";
+  const pct = (index: number) => {
+    if (n <= 1) return index <= 0 ? 0 : 100;
+    return Math.min(100, (index / (n - 1)) * 100);
+  };
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const seg of segs) {
+    if (seg.start > cursor) {
+      parts.push(`transparent ${pct(cursor)}%`, `transparent ${pct(seg.start)}%`);
+    }
+    parts.push(`${seg.color} ${pct(seg.start)}%`, `${seg.color} ${pct(seg.end)}%`);
+    cursor = seg.end;
+  }
+  if (cursor < n) {
+    parts.push(`transparent ${pct(cursor)}%`, "transparent 100%");
+  }
+  return `linear-gradient(to right, ${parts.join(", ")})`;
+});
+
+export const showExtractBar = computed(
+  () => extracting.value || (extractTotal.value > 0 && extractDone.value < extractTotal.value),
+);
+
+function resetExtractProgress(total = 0) {
+  extractDone.value = 0;
+  extractTotal.value = total;
+  extractRunningIndex.value = null;
+  extractReadyFlags.value = total > 0 ? Array.from({ length: total }, () => false) : [];
+}
+
+function scheduleExtractPriority() {
+  if (!extracting.value || !comic.value || !inTauri()) return;
+  window.clearTimeout(extractPriorityTimer);
+  extractPriorityTimer = window.setTimeout(() => {
+    void pushExtractPriority();
+  }, 40);
+}
+
+async function pushExtractPriority() {
+  const book = comic.value;
+  if (!book || !extracting.value || !inTauri()) return;
+  const focus = translationTargetPages.value;
+  const count = book.pages.length;
+  const pages: number[] = [];
+  const seen = new Set<number>();
+  const push = (index: number) => {
+    if (index < 0 || index >= count || seen.has(index)) return;
+    seen.add(index);
+    pages.push(index);
+  };
+  // Visible spread first, then radiate outward (forward before backward):
+  // e.g. focus 50 → 50, 51, 49, 52, 48, …
+  for (const index of focus) push(index);
+  if (!pages.length) push(pageIndex.value);
+  const lo = pages.reduce((a, b) => Math.min(a, b), pages[0] ?? pageIndex.value);
+  const hi = pages.reduce((a, b) => Math.max(a, b), pages[0] ?? pageIndex.value);
+  for (let distance = 1; seen.size < count; distance++) {
+    const before = pages.length;
+    push(hi + distance);
+    push(lo - distance);
+    if (pages.length === before) break;
+  }
+  try {
+    await invoke("set_extract_priority", { sessionId: book.sessionId, pages });
+  } catch {
+    // Extract may have finished between schedule and invoke.
+  }
+}
 
 export const pageCurrentLabel = computed(() => {
   const pages = shownPages.value.map((page) => page + 1);
@@ -2045,13 +2167,17 @@ export async function openComic(path: string) {
         const info = await invoke<Comic>("open_path", {
           path,
           readSubfolder: settings.readSubfolder,
+          pdfRasterize: settings.pdfRasterize,
           locale: i18n.global.locale.value,
           password: password ?? null,
         });
         comic.value = info;
         extracting.value = info.extracting;
-        extractDone.value = 0;
-        extractTotal.value = info.pages.length;
+        resetExtractProgress(info.extracting ? info.pages.length : 0);
+        if (info.extracting) {
+          extractReadyFlags.value = Array.from({ length: info.pages.length }, () => false);
+          scheduleExtractPriority();
+        }
         measuring.value = false;
         measureDone.value = countedMeasured(info.pages);
         measureTotal.value = info.pages.length;
@@ -2115,7 +2241,10 @@ export async function closeComic() {
   comic.value = null;
   pageIndex.value = 0;
   scrollOffset.value = 0;
+  extracting.value = false;
+  resetExtractProgress(0);
   window.clearTimeout(rememberTimer);
+  window.clearTimeout(extractPriorityTimer);
   clearPageRotations();
   clearOcrRegions();
   ocrEnabled.value = false;
@@ -2345,10 +2474,31 @@ export async function boot() {
   watch(settings, () => {
     if (ready) schedulePersistSettings();
   }, { deep: true });
+  // PDF rasterize ↔ extract: cancel in-flight work, drop the other mode's cache, reopen.
+  watch(
+    () => settings.pdfRasterize,
+    (next, prev) => {
+      if (prev === undefined || next === prev) return;
+      const path = comic.value?.path;
+      if (!path || !/\.pdf$/i.test(path)) return;
+      void (async () => {
+        try {
+          await upsertHistory();
+        } catch (error) {
+          console.error(error);
+        }
+        await openComic(path);
+      })();
+    },
+  );
   watch(pageIndex, () => {
     scheduleRemember();
+    scheduleExtractPriority();
     // Re-prioritize queue after a page turn (neighbors / book batch; do not cancel).
     if (ocrEnabled.value) scheduleTranslateBookResync();
+  });
+  watch(translationTargetPages, () => {
+    scheduleExtractPriority();
   });
   watch(translationTargetPages, (pages, prev) => {
     onTranslationTargetsChanged(pages, prev);
@@ -2468,8 +2618,26 @@ export async function boot() {
     if (!comic.value || progress.sessionId !== comic.value.sessionId) return;
     extractDone.value = progress.done;
     extractTotal.value = progress.total;
-    if (progress.finished) extracting.value = false;
-    if (progress.error) notifyError(progress.error);
+    if (progress.total > 0 && extractReadyFlags.value.length !== progress.total) {
+      extractReadyFlags.value = Array.from({ length: progress.total }, (_, i) => !!extractReadyFlags.value[i]);
+    }
+    if (progress.index != null && progress.index >= 0) {
+      const next = extractReadyFlags.value.slice();
+      next[progress.index] = true;
+      extractReadyFlags.value = next;
+    }
+    extractRunningIndex.value =
+      progress.finished || progress.running == null ? null : progress.running;
+    if (progress.finished) {
+      extracting.value = false;
+      extractRunningIndex.value = null;
+      if (progress.total > 0) {
+        extractReadyFlags.value = Array.from({ length: progress.total }, () => true);
+      }
+    }
+    if (progress.error && !/cancelled/i.test(progress.error)) {
+      notifyError(progress.error);
+    }
   });
   function applyPageMetric(book: Comic, metric: PageMetric) {
     const page = book.pages[metric.index];

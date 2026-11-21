@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::sync::atomic::{AtomicIsize, Ordering};
 use std::sync::{Condvar, Mutex};
 use std::time::UNIX_EPOCH;
 
@@ -25,6 +26,10 @@ pub struct CacheBackend {
     inner: Mutex<CacheInner>,
     cv: Condvar,
     cancel: std::sync::atomic::AtomicBool,
+    /// Preferred page indexes (front = highest). Demand from `wait` / UI bumps this.
+    priority: Mutex<Vec<usize>>,
+    /// Index currently being extracted, or -1.
+    running: AtomicIsize,
 }
 
 impl CacheBackend {
@@ -37,6 +42,8 @@ impl CacheBackend {
             }),
             cv: Condvar::new(),
             cancel: std::sync::atomic::AtomicBool::new(false),
+            priority: Mutex::new(Vec::new()),
+            running: AtomicIsize::new(-1),
         }
     }
 
@@ -46,7 +53,47 @@ impl CacheBackend {
     }
 
     pub fn is_cancelled(&self) -> bool {
-        self.cancel.load(std::sync::atomic::Ordering::SeqCst)
+        self.cancel.load(Ordering::SeqCst)
+    }
+
+    pub fn set_priority(&self, pages: Vec<usize>) {
+        let mut guard = self.priority.lock().unwrap_or_else(|err| err.into_inner());
+        *guard = pages;
+    }
+
+    pub fn boost_priority(&self, index: usize) {
+        let mut guard = self.priority.lock().unwrap_or_else(|err| err.into_inner());
+        guard.retain(|&page| page != index);
+        guard.insert(0, index);
+    }
+
+    pub fn set_running(&self, index: Option<usize>) {
+        self.running.store(
+            index.map(|value| value as isize).unwrap_or(-1),
+            Ordering::SeqCst,
+        );
+    }
+
+    pub fn running(&self) -> Option<usize> {
+        let value = self.running.load(Ordering::SeqCst);
+        if value < 0 {
+            None
+        } else {
+            Some(value as usize)
+        }
+    }
+
+    /// Next page that still needs extraction (UI priority order first, then lowest index).
+    /// Frontend typically sends a full radiate-from-focus list while extracting.
+    pub fn next_unready(&self) -> Option<usize> {
+        let inner = self.inner.lock().unwrap_or_else(|err| err.into_inner());
+        let priority = self.priority.lock().unwrap_or_else(|err| err.into_inner());
+        for &page in priority.iter() {
+            if inner.paths.get(page).is_some_and(|slot| slot.is_none()) {
+                return Some(page);
+            }
+        }
+        inner.paths.iter().position(|slot| slot.is_none())
     }
 
     pub fn mark(&self, index: usize, path: PathBuf) {
@@ -58,7 +105,8 @@ impl CacheBackend {
     }
 
     pub fn cancel(&self) {
-        self.cancel.store(true, std::sync::atomic::Ordering::SeqCst);
+        self.cancel.store(true, Ordering::SeqCst);
+        self.running.store(-1, Ordering::SeqCst);
         let mut guard = self.inner.lock().unwrap_or_else(|err| err.into_inner());
         guard.finished = true;
         if guard.error.is_none() {
@@ -68,6 +116,7 @@ impl CacheBackend {
     }
 
     pub fn finish(&self, error: Option<String>) {
+        self.running.store(-1, Ordering::SeqCst);
         let mut guard = self.inner.lock().unwrap_or_else(|err| err.into_inner());
         guard.finished = true;
         if error.is_some() {
@@ -77,6 +126,8 @@ impl CacheBackend {
     }
 
     pub fn wait(&self, index: usize) -> Result<PathBuf, String> {
+        // Prefer the page the UI is actually trying to show.
+        self.boost_priority(index);
         let mut guard = self.inner.lock().unwrap_or_else(|err| err.into_inner());
         loop {
             if let Some(Some(path)) = guard.paths.get(index) {
@@ -115,6 +166,40 @@ pub fn cache_key(path: &Path) -> String {
         hash = hash.wrapping_mul(0x100000001b3);
     }
     format!("{hash:016x}")
+}
+
+/// PDF rasterize vs image-extract must not share a cache directory.
+pub fn pdf_cache_key(path: &Path, rasterize: bool) -> String {
+    let mode = if rasterize { "pdf-r" } else { "pdf-i" };
+    format!("{}-{mode}", cache_key(path))
+}
+
+pub fn pdf_other_cache_key(path: &Path, rasterize: bool) -> String {
+    pdf_cache_key(path, !rasterize)
+}
+
+/// Remove a completed cache link and any in-progress dirs for `key`.
+pub fn purge_key(cache_root: &Path, key: &str) {
+    let link_path = cache_root.join(format!("{key}.link"));
+    if let Ok(link) = fs::read_to_string(&link_path) {
+        let dir = cache_root.join(link.trim());
+        let _ = fs::remove_dir_all(dir);
+    }
+    let _ = fs::remove_file(&link_path);
+    let prefix = format!("{key}-");
+    let Ok(entries) = fs::read_dir(cache_root) else {
+        return;
+    };
+    for entry in entries.flatten() {
+        let name = entry.file_name();
+        let name = name.to_string_lossy();
+        if name.starts_with(&prefix) {
+            let path = entry.path();
+            if path.is_dir() {
+                let _ = fs::remove_dir_all(path);
+            }
+        }
+    }
 }
 
 pub fn try_reuse(cache_root: &Path, key: &str, count: usize) -> Option<Vec<PathBuf>> {

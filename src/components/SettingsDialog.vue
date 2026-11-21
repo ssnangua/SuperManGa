@@ -6,7 +6,8 @@ import { type MessageKey } from "../i18n";
 import { notifyError, notifyInfo, notifySuccess } from "../lib/appToast";
 import { getCacheDir, getDefaultDataDir, migrateCacheDir, setCacheDir } from "../lib/cacheDir";
 import { sameFsPath } from "../lib/fsPath";
-import { refreshDataManifest } from "../lib/render/assets";
+import { fetchDataManifest } from "../lib/render/assets";
+import { checkForUpdates, updateUi } from "../lib/updateCheck";
 import {
   ASSOC_GROUPS,
   applyFileAssociations,
@@ -108,7 +109,7 @@ async function refreshCacheDir() {
   }
 }
 
-async function refreshManifestCatalog() {
+async function onFetchDataManifest() {
   if (manifestBusy.value) return;
   if (!inTauri()) {
     notifyError(t("desktopOnly"));
@@ -116,9 +117,9 @@ async function refreshManifestCatalog() {
   }
   manifestBusy.value = true;
   try {
-    const result = await refreshDataManifest(downloadNetworkConfig());
-    if (result?.updated) notifySuccess(t("refreshDataManifestDone"));
-    else notifyInfo(t("refreshDataManifestUnchanged"));
+    const result = await fetchDataManifest(downloadNetworkConfig());
+    if (result?.updated) notifySuccess(t("fetchDataManifestDone"));
+    else notifyInfo(t("fetchDataManifestUnchanged"));
   } catch (error) {
     notifyError(String(error));
   } finally {
@@ -325,6 +326,13 @@ async function applyAssociations() {
               </div>
               <p class="settings-hint">{{ t("readSubfolderHint") }}</p>
             </div>
+            <div class="settings-row">
+              <div class="settings-row-main">
+                <span class="settings-label">{{ t("pdfRasterize") }}</span>
+                <SwitchToggle v-model="settings.pdfRasterize" />
+              </div>
+              <p class="settings-hint settings-hint-preline">{{ t("pdfRasterizeHint") }}</p>
+            </div>
           </div>
           <div class="settings-body">
             <div class="form-row form-row-label-wide">
@@ -353,25 +361,43 @@ async function applyAssociations() {
           <div class="settings-body">
             <div class="settings-row">
               <div class="settings-row-main">
-                <span class="settings-label">{{ t("refreshDataManifest") }}</span>
-                <button
-                  type="button"
-                  :disabled="manifestBusy"
-                  @click="refreshManifestCatalog"
-                >
-                  <span v-if="manifestBusy" class="busy-label">
-                    <Icon name="loadingDotsRotate" />
-                    {{ t("refreshDataManifestAction") }}
-                  </span>
-                  <template v-else>{{ t("refreshDataManifestAction") }}</template>
-                </button>
+                <span class="settings-label">{{ t("fetchDataManifestOnStartup") }}</span>
+                <div class="settings-row-controls">
+                  <button
+                    v-if="!settings.fetchDataManifestOnStartup"
+                    type="button"
+                    :disabled="manifestBusy"
+                    @click="onFetchDataManifest"
+                  >
+                    <span v-if="manifestBusy" class="busy-label">
+                      <Icon name="loadingDotsRotate" />
+                      {{ t("fetchDataManifest") }}
+                    </span>
+                    <template v-else>{{ t("fetchDataManifest") }}</template>
+                  </button>
+                  <SwitchToggle v-model="settings.fetchDataManifestOnStartup" />
+                </div>
               </div>
-              <p class="settings-hint">{{ t("refreshDataManifestHint") }}</p>
+              <p class="settings-hint">{{ t("fetchDataManifestOnStartupHint") }}</p>
             </div>
             <div class="settings-row">
               <div class="settings-row-main">
                 <span class="settings-label">{{ t("checkUpdateOnStartup") }}</span>
-                <SwitchToggle v-model="settings.checkUpdateOnStartup" />
+                <div class="settings-row-controls">
+                  <button
+                    v-if="!settings.checkUpdateOnStartup"
+                    type="button"
+                    :disabled="updateUi.phase === 'checking'"
+                    @click="void checkForUpdates()"
+                  >
+                    <span v-if="updateUi.phase === 'checking'" class="busy-label">
+                      <Icon name="loadingDotsRotate" />
+                      {{ t("checkForUpdates") }}
+                    </span>
+                    <template v-else>{{ t("checkForUpdates") }}</template>
+                  </button>
+                  <SwitchToggle v-model="settings.checkUpdateOnStartup" />
+                </div>
               </div>
             </div>
           </div>
@@ -811,12 +837,20 @@ button.app-tab.on:not(:disabled) {
   margin-left: auto;
 }
 
-.app-modal-panel.settings-dialog .settings-row-main > button {
+.settings-row-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+
+.app-modal-panel.settings-dialog .settings-row-controls > button {
   width: auto;
   white-space: nowrap;
 }
 
-.app-modal-panel.settings-dialog .settings-row-main .busy-label {
+.app-modal-panel.settings-dialog .settings-row-controls .busy-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -1185,6 +1219,10 @@ button.app-tab.on:not(:disabled) {
   font-size: 12px;
   color: var(--muted);
   line-height: 1.4;
+}
+
+.settings-hint-preline {
+  white-space: pre-line;
 }
 
 .settings-hint-warning {

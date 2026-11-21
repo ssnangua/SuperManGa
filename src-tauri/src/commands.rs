@@ -51,13 +51,15 @@ pub async fn open_path(
     app: AppHandle,
     path: String,
     read_subfolder: bool,
+    pdf_rasterize: Option<bool>,
     locale: String,
     password: Option<String>,
 ) -> Result<OpenedComic, String> {
     let owner = window.label().to_string();
+    let pdf_rasterize = pdf_rasterize.unwrap_or(false);
     tauri::async_runtime::spawn_blocking(move || {
         crate::app_log::scope(owner, || {
-            open_path_sync(app, path, read_subfolder, locale, password)
+            open_path_sync(app, path, read_subfolder, pdf_rasterize, locale, password)
         })
     })
     .await
@@ -68,6 +70,7 @@ fn open_path_sync(
     app: AppHandle,
     path: String,
     read_subfolder: bool,
+    pdf_rasterize: bool,
     locale: String,
     password: Option<String>,
 ) -> Result<OpenedComic, String> {
@@ -77,6 +80,7 @@ fn open_path_sync(
         app.clone(),
         PathBuf::from(&path).as_path(),
         read_subfolder,
+        pdf_rasterize,
         &locale,
         session_id,
         password.as_deref(),
@@ -136,6 +140,22 @@ pub fn start_measure(
 ) -> Result<(), String> {
     let owner = window.label().to_string();
     crate::app_log::scope(owner, || archive::start_measure(app, session_id))
+}
+
+#[tauri::command]
+pub fn set_extract_priority(
+    app: AppHandle,
+    session_id: u64,
+    pages: Vec<usize>,
+) -> Result<(), String> {
+    let state = app.state::<AppState>();
+    let guard = lock(&state.session);
+    let session = guard.as_ref().ok_or_else(|| "no comic".to_string())?;
+    if session.id != session_id {
+        return Err("stale comic".into());
+    }
+    session.backend.set_extract_priority(pages);
+    Ok(())
 }
 
 #[tauri::command]

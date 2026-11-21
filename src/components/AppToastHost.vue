@@ -6,9 +6,6 @@ import { appToastItems, dismissAppToast, type AppToastKind } from "../lib/appToa
 import { maskModalOpen, maskModalToastZIndex } from "../lib/maskModal";
 import {
   chromeOverlay,
-  extracting,
-  extractDone,
-  extractTotal,
   opening,
 } from "../reader";
 import Icon from "./Icon.vue";
@@ -20,17 +17,10 @@ const { t } = useI18n();
 const toastHostStyle = computed(() =>
   maskModalOpen.value ? { zIndex: maskModalToastZIndex() } : undefined,
 );
-/** File open / extract — centered so it is obvious while the stage is empty or swapping. */
+/** File open only — extract progress lives on the seek bar (warning segments). */
 const centerStatus = computed(() => {
   if (opening.value) {
     return { key: "opening", text: t("opening"), loading: true };
-  }
-  if (extracting.value) {
-    return {
-      key: "extracting",
-      text: `${t("extracting")} ${extractDone.value}/${extractTotal.value}`,
-      loading: false,
-    };
   }
   return null;
 });
