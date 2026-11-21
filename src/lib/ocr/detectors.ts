@@ -57,7 +57,22 @@ export function normalizeTextDetectorId(value: unknown): TextDetectorId {
   if (typeof value === "string" && (TEXT_DETECTOR_IDS as readonly string[]).includes(value)) {
     return value as TextDetectorId;
   }
-  return "dbnet";
+  return "ctd";
+}
+
+/** Pack ids required for the primary detector and optional stage-2 / aux passes. */
+export function requiredDetectorAssetIds(
+  primary: TextDetectorId,
+  options?: { auxYolo?: boolean; saberRefine?: boolean },
+): string[] {
+  const ids: string[] = [];
+  const assetId = textDetectorMeta(primary).assetId;
+  if (assetId) ids.push(assetId);
+  if (options?.auxYolo && auxYoloAllowed(primary)) ids.push("detector-yolo");
+  if (options?.saberRefine && saberYoloRefineAllowed(primary)) {
+    ids.push("detector-saber-yolo");
+  }
+  return [...new Set(ids)];
 }
 
 export function textDetectorMeta(id: TextDetectorId): TextDetectorMeta {

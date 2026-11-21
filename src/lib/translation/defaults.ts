@@ -44,7 +44,7 @@ export function defaultTranslationSettings(): TranslationSettings {
     targetLang: detectSystemTargetLang(),
     sourceLang: "auto",
     ocrEngine: defaultOcrEngineId(),
-    textDetector: "dbnet",
+    textDetector: "ctd",
     enableAuxYolo: false,
     enableSaberYoloRefine: true,
     bookPreTranslate: true,

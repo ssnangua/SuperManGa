@@ -113,9 +113,9 @@ export const OCR_ENGINES: readonly OcrEngineMeta[] = [
 
 export const OCR_ENGINE_IDS: readonly OcrEngineId[] = OCR_ENGINES.map((e) => e.id);
 
-/** Platform default: Windows OCR on Windows; Manga OCR elsewhere (needs pack + runtime). */
+/** Default OCR engine (needs pack + ORT; Windows OCR remains available as a manual choice). */
 export function defaultOcrEngineId(): OcrEngineId {
-  return isWindowsDesktop() ? "windows" : "manga-ocr";
+  return "manga-ocr";
 }
 
 export function normalizeOcrEngineId(value: unknown): OcrEngineId {

@@ -20,7 +20,7 @@ export const NEURAL_PRIORITY_BATCH = 3;
 
 export const NEURAL_TARGET_SIZE_MIN = 512;
 export const NEURAL_TARGET_SIZE_MAX = 8192;
-export const NEURAL_TARGET_SIZE_DEFAULT = 2048;
+export const NEURAL_TARGET_SIZE_DEFAULT = 1600;
 
 export function clampNeuralTargetSize(value: unknown): number {
   const n = Math.round(Number(value));
@@ -332,17 +332,31 @@ async function srcToBitmapAndPng(src: string): Promise<{
   height: number;
   png: Uint8Array;
 }> {
-  const response = await fetch(src);
-  if (!response.ok) throw new Error(`fetch ${response.status}`);
-  const blob = await response.blob();
-  const bytes = new Uint8Array(await blob.arrayBuffer());
-  if (isAnimatedImage(bytes)) throw new Error(ANIMATED_IMAGE_SKIP);
-  const bitmap = await createImageBitmap(blob);
+  // Prefer fetch (works with CORS + CSP connect-src). Fall back to Image when
+  // packaged CSP blocks custom-protocol fetch — same idea as PageMedia.ensureSource.
   try {
-    const png = await imageToPngBytes(bitmap);
-    return { width: bitmap.width, height: bitmap.height, png };
-  } finally {
-    bitmap.close();
+    const response = await fetch(src);
+    if (!response.ok) throw new Error(`fetch ${response.status}`);
+    const blob = await response.blob();
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    if (isAnimatedImage(bytes)) throw new Error(ANIMATED_IMAGE_SKIP);
+    const bitmap = await createImageBitmap(blob);
+    try {
+      const png = await imageToPngBytes(bitmap);
+      return { width: bitmap.width, height: bitmap.height, png };
+    } finally {
+      bitmap.close();
+    }
+  } catch (error) {
+    if (isAnimatedImageSkip(error)) throw error;
+    const image = new Image();
+    image.crossOrigin = "anonymous";
+    image.decoding = "async";
+    image.src = src;
+    await image.decode().catch(() => undefined);
+    if (!image.naturalWidth) throw error instanceof Error ? error : new Error(String(error));
+    const png = await imageToPngBytes(image);
+    return { width: image.naturalWidth, height: image.naturalHeight, png };
   }
 }
 

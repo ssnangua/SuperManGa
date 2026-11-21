@@ -7,11 +7,11 @@ import { revealItemInDir } from "@tauri-apps/plugin-opener";
 import { load, type Store } from "@tauri-apps/plugin-store";
 import { getCacheDir, getReaderStorePath } from "./lib/cacheDir";
 import {
-  hasReadyOcrEngine,
-  pickReadyOcrEngine,
+  isTranslationPipelineReady,
   type OcrReadinessContext,
 } from "./lib/ocr/availability";
 import { installedOcrAssetIds, requiredOcrAssetIdsForEngine } from "./lib/ocr/assets";
+import { normalizeTextDetectorId } from "./lib/ocr/detectors";
 import { normalizeOcrEngineId } from "./lib/ocr/engines";
 import type { OcrPageResult, OcrRegion } from "./lib/ocr/types";
 import {
@@ -51,7 +51,11 @@ import {
   normalizeRenderProfile,
   type RenderProfile,
 } from "./lib/render/profile";
-import { neuralBatchPaused, setNeuralFocus } from "./lib/render/neural";
+import {
+  NEURAL_TARGET_SIZE_DEFAULT,
+  neuralBatchPaused,
+  setNeuralFocus,
+} from "./lib/render/neural";
 import { syncNeuralBook } from "./lib/render/neuralBook";
 import {
   clearAppToasts,
@@ -454,7 +458,7 @@ const defaultSettings = (): Settings => ({
   shortcuts: {},
   translation: defaultTranslationSettings(),
   cacheDir: "",
-  neuralTargetSize: 2048,
+  neuralTargetSize: NEURAL_TARGET_SIZE_DEFAULT,
   proxyEnabled: false,
   proxyType: "http",
   proxyHost: "127.0.0.1",
@@ -524,7 +528,7 @@ function applySettings(saved: Partial<Settings>) {
     settings.neuralTargetSize =
       Number.isFinite(target) && target > 0
         ? Math.min(8192, Math.max(512, target))
-        : 2048;
+        : NEURAL_TARGET_SIZE_DEFAULT;
   }
   settings.proxyEnabled = !!saved.proxyEnabled;
   settings.proxyType =
@@ -1004,10 +1008,18 @@ export function ocrReadinessContext(): OcrReadinessContext {
   };
 }
 
-/** True when at least one OCR backend can run (platform + packs + runtime). */
+/** True when the selected OCR + detector (+ refine/aux) packs are ready. */
 export function canEnableTranslation(): boolean {
   if (!inTauri()) return true;
-  return hasReadyOcrEngine(ocrReadinessContext());
+  return isTranslationPipelineReady(
+    {
+      ocrEngine: normalizeOcrEngineId(settings.translation.ocrEngine),
+      textDetector: normalizeTextDetectorId(settings.translation.textDetector),
+      enableAuxYolo: settings.translation.enableAuxYolo,
+      enableSaberYoloRefine: settings.translation.enableSaberYoloRefine,
+    },
+    ocrReadinessContext(),
+  );
 }
 
 export async function refreshTranslationPrereqs() {
@@ -1048,18 +1060,8 @@ export async function toggleTranslationMode() {
   await refreshTranslationPrereqs();
   if (!canEnableTranslation()) {
     notifyWarning(i18n.global.t("translationUnavailable"));
+    ocrAssetsOpen.value = true;
     return;
-  }
-  const picked = pickReadyOcrEngine(
-    normalizeOcrEngineId(settings.translation.ocrEngine),
-    ocrReadinessContext(),
-  );
-  if (!picked) {
-    notifyWarning(i18n.global.t("translationUnavailable"));
-    return;
-  }
-  if (picked !== settings.translation.ocrEngine) {
-    settings.translation.ocrEngine = picked;
   }
   ocrEnabled.value = true;
   // Fresh pass so geometry fixes / cache bumps are applied.
@@ -1073,18 +1075,8 @@ export async function retranslateCurrentPage(index = pageIndex.value) {
   await refreshTranslationPrereqs();
   if (!canEnableTranslation()) {
     notifyWarning(i18n.global.t("translationUnavailable"));
+    ocrAssetsOpen.value = true;
     return;
-  }
-  const picked = pickReadyOcrEngine(
-    normalizeOcrEngineId(settings.translation.ocrEngine),
-    ocrReadinessContext(),
-  );
-  if (!picked) {
-    notifyWarning(i18n.global.t("translationUnavailable"));
-    return;
-  }
-  if (picked !== settings.translation.ocrEngine) {
-    settings.translation.ocrEngine = picked;
   }
   ocrEnabled.value = true;
   if (ocrBusy.value || ocrEnsureRunning) {
