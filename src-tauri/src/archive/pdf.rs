@@ -1,9 +1,10 @@
 //! PDF support:
 //! - Path B1 (rasterize on): local/downloaded pdfium full-page rasterization.
-//! - Path B2 (rasterize off): pdfium decrypt + export embedded image *files* only
-//!   (jpg/png/gif/webp). No page rasterization fallback.
-//! - Path A: no pdfium — lopdf walks pages in order and exports image *files*;
-//!   byte-scrape is only a fallback when the page tree yields nothing.
+//! - Path B2 (rasterize off + pdfium): decrypt if needed, export embedded image
+//!   *files* only (jpg/png/gif/webp). No page rasterization fallback.
+//! - Path A (rasterize off, unencrypted, no pdfium): lopdf page-order extract,
+//!   then byte-scrape if the page tree yields nothing.
+//! Rasterize and encryption both require pdfium (download attempted when missing).
 //! Runtime download from GitHub is best-effort only (often blocked on some networks).
 
 use std::collections::HashSet;
@@ -57,52 +58,65 @@ pub fn plan_open(
     rasterize: bool,
 ) -> Result<PdfPlan, String> {
     let encrypted = pdf_is_encrypted(path);
+    if encrypted && password.is_none() {
+        return Err(ERR_PASSWORD_REQUIRED.to_string());
+    }
 
-    // Whenever pdfium is available, never take Path A.
+    // Prefer local pdfium for B1/B2 whenever present.
     if let Ok(pdfium) = try_load_pdfium_local(app) {
         return plan_with_pdfium(pdfium, path, locale, password, rasterize);
     }
 
-    // Encrypted PDFs need pdfium to decrypt — prompt before any download attempt.
-    if encrypted {
-        if password.is_none() {
-            return Err(ERR_PASSWORD_REQUIRED.to_string());
-        }
+    // Rasterize and encryption both hard-require pdfium — try a best-effort download.
+    if rasterize || encrypted {
         if let Ok(pdfium) = try_load_pdfium_with_download(app) {
             return plan_with_pdfium(pdfium, path, locale, password, rasterize);
+        }
+        if encrypted {
+            return Err(tr(
+                locale,
+                &format!(
+                    "无法打开加密 PDF：未找到 {}。请重新安装应用，或将该文件放到程序目录后重试。",
+                    library_file_name()
+                ),
+                &format!(
+                    "Cannot open encrypted PDF: {} is missing. Reinstall the app, or place the library next to the executable and retry.",
+                    library_file_name()
+                ),
+            ));
         }
         return Err(tr(
             locale,
             &format!(
-                "无法打开加密 PDF：未找到 {}。请重新安装应用，或将该文件放到程序目录后重试。",
+                "PDF 栅格化需要 {}。请重新安装应用，或将该文件放到程序目录后重试；也可在设置中关闭「PDF 使用栅格化」。",
                 library_file_name()
             ),
             &format!(
-                "Cannot open encrypted PDF: {} is missing. Reinstall the app, or place the library next to the executable and retry.",
+                "PDF rasterize requires {}. Reinstall the app, or place the library next to the executable and retry; or turn off Rasterize PDF in Settings.",
                 library_file_name()
             ),
         ));
     }
 
-    // Path A: no pdfium — page-ordered extract (lopdf), then byte-scrape fallback.
+    // Path A: rasterize off + unencrypted + no pdfium.
     let images = extract_embedded_images(path)?;
     if !images.is_empty() {
         return Ok(PdfPlan::Embedded { images });
     }
 
-    // Last resort: try downloading pdfium, then B1/B2.
+    // Path A empty: last chance download for B2 extract.
     if let Ok(pdfium) = try_load_pdfium_with_download(app) {
-        return plan_with_pdfium(pdfium, path, locale, password, rasterize);
+        return plan_with_pdfium(pdfium, path, locale, password, false);
     }
 
     Err(tr(
         locale,
         &format!(
-            "无法打开此 PDF：未找到 {}，且无法抽取页面图片。请重新安装应用，或将该文件放到程序目录后重试。",
+            "无法打开此 PDF：未找到可导出的原始图片，且未找到 {}。请重新安装应用，或将该文件放到程序目录后重试。",
             library_file_name()
         ),
         &format!(
-            "Cannot open this PDF: {} is missing and no embedded page images were found. Reinstall the app, or place the library next to the executable and retry.",
+            "Cannot open this PDF: no extractable images found, and {} is missing. Reinstall the app, or place the library next to the executable and retry.",
             library_file_name()
         ),
     ))
