@@ -68,14 +68,18 @@ Uses a synthetic 24-page book to exercise the UI.
 ### 2.3 Local build and Windows portable package
 
 ```bash
-npm run build       # all platforms: tauri build --no-bundle (no installers)
-npm run build:win   # Windows: compile + portable zip
+npm run build         # all platforms: tauri build --no-bundle (no installers)
+npm run build:win     # Windows: compile + portable zip
+npm run build:mac     # macOS: dmg (cross-compile with -- --target …)
+npm run build:linux   # Linux: deb
 ```
 
 | Script | Role |
 |---|---|
 | `build` | Frontend + Rust with `--no-bundle`; **safe on any host** |
 | `build:win` | Windows only: `build`, then pack `supermanga.exe` (+ pdfium) into `SuperManGa-*-windows-x64.zip` |
+| `build:mac` | macOS only: `tauri build --bundles dmg` |
+| `build:linux` | Linux only: `tauri build --bundles deb` |
 
 Windows artifact:
 
@@ -85,7 +89,7 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 
 Unpack to a folder like `SuperManGa-*-windows-x64/` containing `SuperManGa.exe` and `pdfium.dll` (when found). Release filenames stay **ASCII, no spaces**.
 
-**CI:** the Windows job runs `npm run build:win`; macOS / Linux run `npx tauri build --bundles dmg|deb`.
+**CI:** the Windows job runs `npm run build:win`; macOS / Linux run `npm run build:mac` / `build:linux`.
 
 On first run the app creates `SuperManGaData/` next to the exe (settings, secrets, extract/model caches). You can carry the folder with the exe on removable media; if that location is not writable, it falls back to the OS app-data directory.
 
@@ -114,18 +118,36 @@ Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)
 
 You can also run **Release** via `workflow_dispatch` to collect build artifacts without publishing a GitHub Release.
 
-### 2.5 Offline full data pack (cloud-drive distribution)
+### 2.5 Windows full offline package (cloud-drive distribution)
 
-For “unzip and run” without further ORT/model downloads:
+For a **single zip** users can unpack and run (app + ORT/models; no separate app download or online fetch):
 
 ```bash
-npm run bundle:offline
-# writes dist-offline/SuperManGaData/data/ (manifest + versioned runtime/detector/ocr/neural folders)
+# Need a portable zip (or at least target/release/supermanga.exe)
+npm run build:win          # skip if portable already exists
+# Optional: build data zips locally
+cd tools/pack-data && python pack.py && cd ../..
+
+npm run bundle:win-full
+# Output:
+#   src-tauri/target/release/bundle/portable/SuperManGa-*-full-windows-x64.zip
 ```
 
-Place `SuperManGaData` next to `SuperManGa.exe` (and `pdfium.dll`) before uploading.
+Layout:
 
-Assets are hosted on GitHub Release tag **`data`** (`manifest.json` + `{stem}-v{ver}.zip`). Manifest entries are `{version,bytes,sha256}`; `bytes` drives UI download size and `sha256` rejects corrupt zips after download. The app ships a seed manifest. Settings → General → Fetch Latest Asset Catalog on Startup (`fetchDataManifestOnStartup`, default on) fetches after launch on a short timeout. When off, you can pull the remote `manifest.json` manually. Local layout is `SuperManGaData/data/{stem}-v{ver}/`. Build zips with [`tools/pack-data/`](tools/pack-data/).
+```
+SuperManGa-*-full-windows-x64/
+├── SuperManGa.exe
+├── pdfium.dll
+└── SuperManGaData/data/   # manifest + versioned runtime/detector/ocr/neural folders
+```
+
+Reuse rules:
+
+- Existing `…/portable/SuperManGa-*-windows-x64.zip` → **no app rebuild**; if only `supermanga.exe` exists, runs `pack-portable.mjs` only
+- Existing `tools/pack-data/data/{pack}.zip` (and `manifest.json` there) → **no GitHub download** for that pack; missing packs fall back to Release tag `data`
+
+Assets can also live on GitHub Release tag **`data`** (`manifest.json` + `{stem}-v{ver}.zip`). Manifest entries are `{version,bytes,sha256}`; `bytes` drives UI download size and `sha256` rejects corrupt zips after download. The app ships a seed manifest. Settings → General → Fetch Latest Asset Catalog on Startup (`fetchDataManifestOnStartup`, default on) fetches after launch on a short timeout. When off, you can pull the remote `manifest.json` manually. Local layout is `SuperManGaData/data/{stem}-v{ver}/`. Build zips with [`tools/pack-data/`](tools/pack-data/).
 
 Runtime selection:
 
@@ -143,11 +165,11 @@ Offline packs must include the **CPU** flavor. GPU ORT zips do not ship full CUD
 |---|---|
 | [`scripts/fetch-pdfium.mjs`](scripts/fetch-pdfium.mjs) | Download pdfium for the host or `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` into `src-tauri/resources/pdfium/` |
 | [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | Pack `target/release/supermanga.exe` into a Windows portable zip (with pdfium when available) |
-| [`scripts/bundle-offline-data.mjs`](scripts/bundle-offline-data.mjs) | Build multi-flavor ORT + models `SuperManGaData` (Win x64) |
+| [`scripts/bundle-win-full.mjs`](scripts/bundle-win-full.mjs) | Merge portable + data packs → `SuperManGa-*-full-windows-x64.zip` (prefers local pack-data / existing portable) |
 | [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | Ensure locale key parity in `src/i18n.ts` and scan for undeclared `$t` / `t(` keys |
 | [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | Copy `package.json` version to Cargo / tauri.conf / README; runs from `npm version` |
 
-Common npm scripts: `dev`, `fetch:pdfium`, `build`, `build:win`, `bundle:offline`, `sync-version`, `preview`.
+Common npm scripts: `dev`, `fetch:pdfium`, `build:win`, `build:mac`, `build:linux`, `bundle:win-full`, `sync-version`, `preview`.
 
 ---
 
@@ -164,6 +186,7 @@ SuperManGa/
 ├── scripts/
 │   ├── fetch-pdfium.mjs
 │   ├── pack-portable.mjs
+│   ├── bundle-win-full.mjs
 │   └── check-i18n.mjs
 ├── tools/                    # Offline tooling (not shipped in the app)
 │   ├── pack-data/            # Build data Release zips + manifest

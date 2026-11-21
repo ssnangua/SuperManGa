@@ -25,25 +25,28 @@ jobs:
           - os: windows-latest
             name: Windows-x64
             rust_target: ""
-            args: --no-bundle
             build_win: true
           - os: macos-latest
             name: macOS-arm64
             rust_target: aarch64-apple-darwin
-            args: --target aarch64-apple-darwin --bundles dmg
+            npm_build: build:mac
+            extra_args: --target aarch64-apple-darwin
           # Apple Silicon runner 交叉编译 Intel；本项目无 Electron 原生 .node，一般可用。
           - os: macos-latest
             name: macOS-x64
             rust_target: x86_64-apple-darwin
-            args: --target x86_64-apple-darwin --bundles dmg
+            npm_build: build:mac
+            extra_args: --target x86_64-apple-darwin
           - os: ubuntu-22.04
             name: Linux-x64
             rust_target: ""
-            args: --bundles deb
+            npm_build: build:linux
+            extra_args: ""
           - os: ubuntu-24.04-arm
             name: Linux-arm64
             rust_target: ""
-            args: --bundles deb
+            npm_build: build:linux
+            extra_args: ""
 
     steps:
       - name: Checkout
@@ -108,10 +111,10 @@ jobs:
         env:
           PDFIUM_TARGET: ${{ matrix.rust_target }}
 
-      - name: Build Tauri app
+      - name: Build macOS / Linux
         if: ${{ !matrix.build_win }}
         # beforeBuildCommand runs scripts/fetch-pdfium.mjs (honors TAURI_ENV_TARGET_TRIPLE).
-        run: npx tauri build ${{ matrix.args }}
+        run: npm run ${{ matrix.npm_build }} -- ${{ matrix.extra_args }}
         env:
           PDFIUM_TARGET: ${{ matrix.rust_target }}
 

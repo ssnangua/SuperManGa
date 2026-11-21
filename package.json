@@ -9,9 +9,10 @@
     "dev": "tauri dev",
     "fetch:pdfium": "node scripts/fetch-pdfium.mjs",
     "predev": "node scripts/fetch-pdfium.mjs --optional",
-    "build": "tauri build --no-bundle",
     "build:win": "tauri build --no-bundle && node scripts/pack-portable.mjs",
-    "bundle:offline": "node scripts/bundle-offline-data.mjs",
+    "build:mac": "tauri build --bundles dmg",
+    "build:linux": "tauri build --bundles deb",
+    "bundle:win-full": "node scripts/bundle-win-full.mjs",
     "sync-version": "node scripts/sync-version.mjs",
     "version": "node scripts/sync-version.mjs",
     "preview": "vite preview"
