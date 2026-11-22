@@ -477,8 +477,7 @@ async function pumpQueue() {
           jobId: job.jobId,
         });
         if (epoch !== pumpEpoch) break;
-        if (!result.webp?.length) throw new Error("neural upscale returned empty webp");
-        const data = await webpToBitmap(result.webp);
+        const data = await bitmapFromUpscaleResult(job.key, result.webp);
         putCached(job.key, data);
         markDone(job.pageIndex);
         for (const waiter of job.waiters) waiter.resolve(data);
@@ -530,16 +529,42 @@ async function webpToBitmap(webp: number[] | Uint8Array): Promise<ImageBitmap> {
   return createImageBitmap(new Blob([copy], { type: "image/webp" }));
 }
 
+/** Load a cached result via custom protocol (avoids multi‑MB IPC on Linux WebKit). */
+async function webpFromDiskKey(key: string): Promise<ImageBitmap> {
+  const url = neuralResultUrl(key);
+  if (!url) throw new Error("empty neural cache key");
+  const response = await fetch(url);
+  if (!response.ok) throw new Error(`neural cache fetch ${response.status}`);
+  const blob = await response.blob();
+  return createImageBitmap(blob);
+}
+
+async function bitmapFromUpscaleResult(
+  key: string,
+  webp: number[] | Uint8Array | null | undefined,
+): Promise<ImageBitmap> {
+  if (webp && webp.length > 0) return webpToBitmap(webp);
+  if (key) return webpFromDiskKey(key);
+  throw new Error("neural upscale returned empty webp");
+}
+
 async function loadDiskHit(assetId: string, key: string): Promise<NeuralFrame | null> {
   if (!key) return null;
   const mem = getCached(key);
   if (mem) return mem;
   try {
-    const loaded = await neuralResultLoad(assetId, key);
-    if (!loaded?.webp?.length) return null;
-    const bitmap = await webpToBitmap(loaded.webp);
-    putCached(key, bitmap);
-    return bitmap;
+    // Prefer protocol fetch; fall back to IPC only if protocol fails.
+    try {
+      const bitmap = await webpFromDiskKey(key);
+      putCached(key, bitmap);
+      return bitmap;
+    } catch {
+      const loaded = await neuralResultLoad(assetId, key);
+      if (!loaded?.webp?.length) return null;
+      const bitmap = await webpToBitmap(loaded.webp);
+      putCached(key, bitmap);
+      return bitmap;
+    }
   } catch {
     return null;
   }

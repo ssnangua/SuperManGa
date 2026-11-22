@@ -377,3 +377,21 @@ pub fn path_stamp(path: String, read_subfolder: bool) -> Result<String, String> 
     parts.sort();
     Ok(parts.join("|"))
 }
+
+/// Copy a PNG (or other image::*-decodable buffer) to the system clipboard as RGBA.
+/// Prefer this over `navigator.clipboard.write` on macOS/Linux WebViews.
+#[tauri::command]
+pub fn copy_image_to_clipboard(png: Vec<u8>) -> Result<(), String> {
+    let rgba = image::load_from_memory(&png)
+        .map_err(|err| format!("decode image: {err}"))?
+        .to_rgba8();
+    let (width, height) = rgba.dimensions();
+    let mut clipboard = arboard::Clipboard::new().map_err(|err| format!("clipboard: {err}"))?;
+    clipboard
+        .set_image(arboard::ImageData {
+            width: width as usize,
+            height: height as usize,
+            bytes: std::borrow::Cow::Owned(rgba.into_raw()),
+        })
+        .map_err(|err| format!("clipboard set_image: {err}"))
+}

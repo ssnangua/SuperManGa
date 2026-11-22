@@ -41,6 +41,8 @@ ndarray = "0.17"
 half = "2"
 ort = { version = "2.0.0-rc.15", default-features = false, features = ["load-dynamic", "ndarray", "half", "std", "cuda", "coreml"] }
 lopdf = { version = "0.47", default-features = false }
+# Image clipboard (macOS/Linux WebView ClipboardItem is unreliable).
+arboard = { version = "3", features = ["wayland-data-control"] }
 
 [profile.release]
 codegen-units = 1

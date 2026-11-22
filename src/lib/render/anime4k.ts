@@ -94,12 +94,34 @@ export class Anime4kPresenter {
     return this.strength;
   }
 
-  static isSupported() {
+  /** HTMLCanvas WebGL float support (what attachSource actually uses). */
+  static htmlCanvasFloatOk(): boolean {
     try {
-      return ImageUpscaler.isSupported();
+      const canvas = document.createElement("canvas");
+      const gl =
+        canvas.getContext("webgl", { failIfMajorPerformanceCaveat: false }) ||
+        canvas.getContext("experimental-webgl");
+      if (!gl || !("getExtension" in gl)) return false;
+      const ctx = gl as WebGLRenderingContext;
+      const ok =
+        !!ctx.getExtension("OES_texture_float") &&
+        !!ctx.getExtension("OES_texture_float_linear");
+      ctx.getExtension("WEBGL_lose_context")?.loseContext();
+      return ok;
     } catch {
       return false;
     }
+  }
+
+  static isSupported() {
+    // Library probe uses OffscreenCanvas(0,0), which fails on many WebKitGTK builds
+    // even when HTMLCanvas float textures work.
+    try {
+      if (ImageUpscaler.isSupported()) return true;
+    } catch {
+      // fall through
+    }
+    return Anime4kPresenter.htmlCanvasFloatOk();
   }
 
   draw(
@@ -110,9 +132,6 @@ export class Anime4kPresenter {
     objectFit: "fill" | "contain-top" = "fill",
     dpr = 1,
   ) {
-    if (!Anime4kPresenter.isSupported()) {
-      throw new Error("Anime4K WebGL extensions unavailable");
-    }
     const natural = sourcePixelSize(image);
     const cssW = displayW / Math.max(0.01, dpr);
     const cssH = displayH / Math.max(0.01, dpr);
@@ -130,18 +149,7 @@ export class Anime4kPresenter {
     if (!ctx) return;
     ctx.clearRect(0, 0, displayW, displayH);
 
-    const needsTiles =
-      natural.width > edge || natural.height > edge;
-
-    try {
-      if (!needsTiles) {
-        this.runSingle(image, natural.width, natural.height, preset, mag, ctx, map);
-        return;
-      }
-      this.runTiled(image, natural.width, natural.height, preset, mag, edge, ctx, map);
-    } catch {
-      this.disposePipeline();
-      // Fallback: plain blit keeps the page readable if GPU chokes mid-tile.
+    const blit = () => {
       ctx.drawImage(
         image,
         0,
@@ -153,6 +161,25 @@ export class Anime4kPresenter {
         natural.width * map.scaleX,
         natural.height * map.scaleY,
       );
+    };
+
+    // Soft-fail: never throw to PageMedia — Linux WebGL float paths are flaky.
+    if (!Anime4kPresenter.isSupported()) {
+      blit();
+      return;
+    }
+
+    const needsTiles = natural.width > edge || natural.height > edge;
+
+    try {
+      if (!needsTiles) {
+        this.runSingle(image, natural.width, natural.height, preset, mag, ctx, map);
+        return;
+      }
+      this.runTiled(image, natural.width, natural.height, preset, mag, edge, ctx, map);
+    } catch {
+      this.disposePipeline();
+      blit();
     }
   }
 
@@ -174,7 +201,15 @@ export class Anime4kPresenter {
       return;
     }
     this.disposePipeline();
-    this.upscaler = new ImageUpscaler(preset);
+    // Constructor caches ImageUpscaler.isSupported(); patch so OffscreenCanvas
+    // failures on WebKitGTK do not permanently disable upscale().
+    const prev = ImageUpscaler.isSupported;
+    ImageUpscaler.isSupported = () => Anime4kPresenter.htmlCanvasFloatOk();
+    try {
+      this.upscaler = new ImageUpscaler(preset);
+    } finally {
+      ImageUpscaler.isSupported = prev;
+    }
     this.tileIn = createCanvas(tileW, tileH);
     this.tileOut = createCanvas(tileW * mag, tileH * mag);
     this.upscaler.attachSource(this.tileIn, this.tileOut);

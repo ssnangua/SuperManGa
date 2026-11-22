@@ -89,6 +89,7 @@ pub fn run() {
             commands::set_context_menu,
             commands::apply_file_associations,
             commands::path_stamp,
+            commands::copy_image_to_clipboard,
             commands::relaunch_app,
             update::check_app_update,
             neural_sr::models::list_image_assets,

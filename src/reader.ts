@@ -2393,14 +2393,16 @@ async function fetchPageBlob(index: number): Promise<Blob> {
 }
 
 async function writeClipboardImage(blob: Blob) {
-  if (!navigator.clipboard?.write) throw new Error("clipboard unavailable");
   const type = blob.type && blob.type.startsWith("image/") ? blob.type : "image/png";
-  try {
-    await navigator.clipboard.write([new ClipboardItem({ [type]: blob })]);
-  } catch {
-    const png = type === "image/png" ? blob : await blobToPng(blob);
-    await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
+  const png = type === "image/png" ? blob : await blobToPng(blob);
+  // macOS WKWebView / Linux WebKitGTK often reject ClipboardItem image writes.
+  if (inTauri()) {
+    const bytes = new Uint8Array(await png.arrayBuffer());
+    await invoke("copy_image_to_clipboard", { png: Array.from(bytes) });
+    return;
   }
+  if (!navigator.clipboard?.write) throw new Error("clipboard unavailable");
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
 }
 
 async function blobToPng(blob: Blob): Promise<Blob> {

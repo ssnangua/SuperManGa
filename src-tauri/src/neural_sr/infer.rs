@@ -371,7 +371,8 @@ fn neural_upscale_inner(
     let results_root = resolve_results_root(&app)?;
     if !cache_key.is_empty() {
         if let Some(webp) = results::load_cached_webp(&results_root, &cache_key)? {
-            // Avoid RGBA round-trip on hit; frontend decodes WebP the same as disk loads.
+            // Do not ship WebP over IPC (Linux WebKit chokes on multi‑MB payloads).
+            // Empty `webp` tells the frontend to fetch via the neural protocol.
             crate::app_log::info(
                 "neural",
                 format!("cache-hit {label} bytes={}", webp.len()),
@@ -379,7 +380,7 @@ fn neural_upscale_inner(
             return Ok(UpscaleResult {
                 width: 0,
                 height: 0,
-                webp,
+                webp: Vec::new(),
             });
         }
     }
@@ -452,17 +453,24 @@ fn neural_upscale_inner(
         return Err(CANCELLED.into());
     }
     let _ = results::store_cached_webp(&app, &cache_key, &webp);
+    let on_disk = !cache_key.is_empty()
+        && results::load_cached_webp(&results_root, &cache_key)
+            .ok()
+            .flatten()
+            .is_some_and(|bytes| !bytes.is_empty());
     crate::app_log::info(
         "neural",
         format!(
-            "done {label} out={width}x{height} bytes={} elapsed={:.1}ms",
+            "done {label} out={width}x{height} bytes={} elapsed={:.1}ms disk={}",
             webp.len(),
-            started.elapsed().as_secs_f64() * 1000.0
+            started.elapsed().as_secs_f64() * 1000.0,
+            on_disk
         ),
     );
     Ok(UpscaleResult {
         width,
         height,
-        webp,
+        // Prefer disk + protocol on the frontend when possible (avoids huge IPC).
+        webp: if on_disk { Vec::new() } else { webp },
     })
 }
