@@ -292,7 +292,7 @@ SuperManGa/
 | [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | Pack `target/release/supermanga.exe` into a Windows portable zip (with pdfium when available) |
 | [`scripts/bundle-win-full.mjs`](scripts/bundle-win-full.mjs) | Merge portable + data packs → `SuperManGa-*-full-windows-x64.zip` (prefers local pack-data / existing portable) |
 | [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | Ensure locale key parity in `src/i18n.ts` and scan for undeclared `$t` / `t(` keys |
-| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | Copy `package.json` version to Cargo / tauri.conf / README; runs from `npm version` |
+| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | Copy `package.json` version to Cargo.toml, Cargo.lock, tauri.conf, and README; runs from `npm version` |
 
 Common npm scripts: `dev`, `fetch:pdfium`, `build:win`, `build:mac`, `build:linux`, `bundle:win-full`, `sync-version`, `preview`.
 

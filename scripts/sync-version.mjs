@@ -1,8 +1,13 @@
 /**
- * Copy package.json version into Cargo.toml, tauri.conf.json, and README download links.
+ * Copy package.json version into Cargo.toml, Cargo.lock, tauri.conf.json,
+ * and README download links.
  *
  * Used by `npm version patch|minor|major` (lifecycle: version) so the bump
  * is not limited to package.json. Also: `npm run sync-version`.
+ *
+ * Cargo.lock must be updated in the same commit: bumping only Cargo.toml
+ * leaves the lockfile stale until the next `cargo` run, so it often escapes
+ * the version commit and shows up as an unstaged change after push.
  */
 import { execFileSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
@@ -44,6 +49,22 @@ if (cargoNext === cargo && !cargo.includes(`version = "${version}"`)) {
   process.exit(1);
 }
 writeIfChanged(cargoPath, cargoNext);
+
+// Keep the local package version in Cargo.lock in sync (no dependency churn).
+const lockPath = "src-tauri/Cargo.lock";
+const lock = readFileSync(join(root, lockPath), "utf8");
+const lockNext = lock.replace(
+  /(name = "supermanga"\r?\nversion = )"[^"]+"/,
+  `$1"${version}"`,
+);
+const lockVersionRe = new RegExp(
+  `name = "supermanga"\\r?\\nversion = "${version.replace(/\./g, "\\.")}"`,
+);
+if (lockNext === lock && !lockVersionRe.test(lock)) {
+  console.error('Could not update name = "supermanga" version in Cargo.lock');
+  process.exit(1);
+}
+writeIfChanged(lockPath, lockNext);
 
 const readmes = ["README.md", "README_en.md", "README_ja.md", "README_ko.md"];
 if (previous && previous !== version) {

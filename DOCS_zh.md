@@ -292,7 +292,7 @@ SuperManGa/
 | [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | 将 `target/release/supermanga.exe` 打成 Windows portable zip，并附带 pdfium |
 | [`scripts/bundle-win-full.mjs`](scripts/bundle-win-full.mjs) | 合并 portable + 数据包 → `SuperManGa-*-full-windows-x64.zip`（优先本地 pack-data / 已有 portable） |
 | [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | 检查 `src/i18n.ts` 各语言键一致，并扫描源码中未声明的 `$t` / `t(` 键 |
-| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | 把 `package.json` 的 version 同步到 Cargo / tauri.conf / README；`npm version` 会自动跑 |
+| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | 把 `package.json` 的 version 同步到 Cargo.toml、Cargo.lock、tauri.conf、README；`npm version` 会自动跑 |
 
 常用 npm scripts：`dev`、`fetch:pdfium`、`build:win`、`build:mac`、`build:linux`、`bundle:win-full`、`sync-version`、`preview`。
 
