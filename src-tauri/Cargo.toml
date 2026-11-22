@@ -1,6 +1,6 @@
 [package]
 name = "supermanga"
-version = "0.1.9"
+version = "1.0.0"
 description = "A local manga and webtoon reader"
 authors = ["ssnangua"]
 edition = "2024"
