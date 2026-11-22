@@ -38,13 +38,13 @@
 
 ## 下载
 
-按操作系统选择安装包 `v0.1.7`（也可前往 [Releases](https://github.com/ssnangua/SuperManGa/releases) 查看全部版本与更新说明）：
+按操作系统选择安装包 `v0.1.8`（也可前往 [Releases](https://github.com/ssnangua/SuperManGa/releases) 查看全部版本与更新说明）：
 
 | 系统 | 下载 | 最低系统版本 |
 | --- | --- | --- |
-| Windows | [![便携版 x64](https://img.shields.io/badge/便携版-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.7/SuperManGa-0.1.7-windows-x64.zip) | Windows 10+ |
-| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.7/SuperManGa-0.1.7-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.7/SuperManGa-0.1.7-macos-x64.dmg) | macOS 10.15+（Apple Silicon 需 11+） |
-| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.7/SuperManGa-0.1.7-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.7/SuperManGa-0.1.7-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
+| Windows | [![便携版 x64](https://img.shields.io/badge/便携版-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-windows-x64.zip) | Windows 10+ |
+| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-macos-x64.dmg) | macOS 10.15+（Apple Silicon 需 11+） |
+| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
 > ONNX 运行环境 / 超分模型 / 文字检测器模型 / OCR 模型 **没有打进安装包**，要使用神经网络超分 / OCR 翻译功能，需在应用内自行下载。
