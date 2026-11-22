@@ -53,9 +53,7 @@ Pick an installer for your OS (`v0.1.3`). You can also browse all builds on [Rel
 <summary>macOS install and usage</summary>
 
 1. Open the matching `.dmg` and drag `SuperManGa.app` into Applications (or any folder).
-2. If the first launch is blocked (“cannot be verified”): go to **System Settings → Privacy & Security** and click **Open Anyway**; or **Control-click → Open** the `.app`; or run `xattr -dr com.apple.quarantine /Applications/SuperManGa.app` (adjust the path).
-
-Current releases are not Apple-notarized, so Gatekeeper may block downloads — this is expected.
+2. Current releases are not Apple-notarized. If the first launch is blocked (“cannot be verified”): go to **System Settings → Privacy & Security** and click **Open Anyway**; or **Control-click → Open** the `.app`; or run `xattr -dr com.apple.quarantine /Applications/SuperManGa.app` (adjust the path).
 
 </details>
 

@@ -53,9 +53,7 @@ OS에 맞는 `v0.1.3` 패키지를 선택하세요. 전체 버전은 [Releases](
 <summary>macOS 설치 및 사용</summary>
 
 1. 해당 아키텍처 `.dmg`를 열고 `SuperManGa.app`을 응용 프로그램(또는 원하는 폴더)으로 드래그합니다.
-2. 처음 실행 시 확인되지 않은 개발자라고 나오면: **시스템 설정 → 개인정보 보호 및 보안**에서 **그래도 열기**; 또는 `.app`을 **우클릭 → 열기**; 또는 `xattr -dr com.apple.quarantine /Applications/SuperManGa.app` (경로는 실제 위치에 맞게 변경).
-
-현재 배포본은 Apple 공증 서명이 없어, 다운로드 후 Gatekeeper에 막히는 것은 예상된 동작입니다.
+2. 현재 배포본은 Apple 공증 서명이 없습니다. 처음 실행 시 확인되지 않은 개발자라고 나오면: **시스템 설정 → 개인정보 보호 및 보안**에서 **그래도 열기**; 또는 `.app`을 **우클릭 → 열기**; 또는 `xattr -dr com.apple.quarantine /Applications/SuperManGa.app` (경로는 실제 위치에 맞게 변경).
 
 </details>
 

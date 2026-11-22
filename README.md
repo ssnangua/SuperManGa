@@ -53,9 +53,7 @@
 <summary>macOS 安装与使用</summary>
 
 1. 打开对应架构的 `.dmg`，将 `SuperManGa.app` 拖到「应用程序」（或任意目录）。
-2. 首次打开若提示无法验证开发者：到 **系统设置 → 隐私与安全性** 点 **仍要打开**；或对 `.app` **右键 → 打开**；或执行 `xattr -dr com.apple.quarantine /Applications/SuperManGa.app`（路径按实际位置改）。
-
-当前发版尚未做 Apple 公证签名，从网上下载时会出现上述拦截，属预期行为。
+2. 当前发版尚未做 Apple 公证签名，首次打开若提示无法验证开发者：到 **系统设置 → 隐私与安全性** 点 **仍要打开**；或对 `.app` **右键 → 打开**；或执行 `xattr -dr com.apple.quarantine /Applications/SuperManGa.app`（路径按实际位置改）。
 
 </details>
 

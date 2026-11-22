@@ -53,9 +53,7 @@ OS に合わせて `v0.1.3` を選んでください（全バージョンは [Re
 <summary>macOS のインストールと使い方</summary>
 
 1. 対応アーキテクチャの `.dmg` を開き、`SuperManGa.app` を「アプリケーション」へドラッグします（任意のフォルダでも可）。
-2. 初回起動で開発元を確認できないと出る場合：**システム設定 → プライバシーとセキュリティ** で **このまま開く**；または `.app` を **右クリック → 開く**；または `xattr -dr com.apple.quarantine /Applications/SuperManGa.app`（パスは実際の場所に合わせて変更）。
-
-現状の配布物は Apple の公証署名がないため、ダウンロード後に Gatekeeper で止められるのは想定どおりです。
+2. 現状の配布物は Apple の公証署名がありません。初回起動で開発元を確認できないと出る場合：**システム設定 → プライバシーとセキュリティ** で **このまま開く**；または `.app` を **右クリック → 開く**；または `xattr -dr com.apple.quarantine /Applications/SuperManGa.app`（パスは実際の場所に合わせて変更）。
 
 </details>
 
