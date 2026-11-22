@@ -45,10 +45,7 @@ pub struct EmbeddedImage {
     pub bytes: Vec<u8>,
 }
 
-/// Stable error token for the frontend password dialog (locale-independent).
-pub const ERR_PASSWORD_REQUIRED: &str = "pdf_password_required";
-/// Stable error token when a password was supplied but rejected.
-pub const ERR_PASSWORD_INCORRECT: &str = "pdf_password_incorrect";
+pub use super::{ERR_PASSWORD_INCORRECT, ERR_PASSWORD_REQUIRED};
 
 pub fn plan_open(
     app: &AppHandle,

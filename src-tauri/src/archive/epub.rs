@@ -71,6 +71,7 @@ pub fn open_book(path: &Path) -> Result<(Vec<String>, ZipBook), String> {
         ZipBook {
             path: path.to_path_buf(),
             indices,
+            password: None,
         },
     ))
 }

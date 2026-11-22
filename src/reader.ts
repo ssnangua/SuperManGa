@@ -1387,8 +1387,11 @@ export const bookmarkDialog = reactive({
 export const opening = ref(false);
 export const showEmpty = ref(false);
 
-const PDF_PASSWORD_REQUIRED = "pdf_password_required";
-const PDF_PASSWORD_INCORRECT = "pdf_password_incorrect";
+const PASSWORD_REQUIRED = "password_required";
+const PASSWORD_INCORRECT = "password_incorrect";
+/** Legacy tokens kept so older builds / cached backends still prompt. */
+const LEGACY_PASSWORD_REQUIRED = "pdf_password_required";
+const LEGACY_PASSWORD_INCORRECT = "pdf_password_incorrect";
 
 export type PdfPasswordPromptState = {
   wrong: boolean;
@@ -1404,7 +1407,7 @@ export function resolvePdfPasswordPrompt(value: string | null) {
   prompt.resolve(value);
 }
 
-function askPdfPassword(wrong: boolean): Promise<string | null> {
+function askFilePassword(wrong: boolean): Promise<string | null> {
   return new Promise((resolve) => {
     const previous = pdfPasswordPrompt.value;
     if (previous) previous.resolve(null);
@@ -1412,8 +1415,17 @@ function askPdfPassword(wrong: boolean): Promise<string | null> {
   });
 }
 
-function isPdfPasswordError(message: string) {
-  return message === PDF_PASSWORD_REQUIRED || message === PDF_PASSWORD_INCORRECT;
+function isPasswordIncorrect(message: string) {
+  return message === PASSWORD_INCORRECT || message === LEGACY_PASSWORD_INCORRECT;
+}
+
+function isPasswordError(message: string) {
+  return (
+    message === PASSWORD_REQUIRED ||
+    message === PASSWORD_INCORRECT ||
+    message === LEGACY_PASSWORD_REQUIRED ||
+    message === LEGACY_PASSWORD_INCORRECT
+  );
 }
 export const extracting = ref(false);
 export const extractDone = ref(0);
@@ -2215,9 +2227,9 @@ export async function openComic(path: string) {
         return;
       } catch (error) {
         const message = asError(error);
-        if (isPdfPasswordError(message)) {
+        if (isPasswordError(message)) {
           opening.value = false;
-          const next = await askPdfPassword(message === PDF_PASSWORD_INCORRECT);
+          const next = await askFilePassword(isPasswordIncorrect(message));
           if (next == null) return;
           password = next;
           opening.value = true;

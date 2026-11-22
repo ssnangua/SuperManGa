@@ -24,6 +24,18 @@ use mobi::MobiBook;
 use names::{file_title, tr};
 use sevenz::SevenBook;
 
+/// Stable error token for the frontend password dialog (locale-independent).
+pub const ERR_PASSWORD_REQUIRED: &str = "password_required";
+/// Stable error token when a password was supplied but rejected.
+pub const ERR_PASSWORD_INCORRECT: &str = "password_incorrect";
+
+fn normalize_password(password: Option<&str>) -> Option<String> {
+    password
+        .map(str::trim)
+        .filter(|value| !value.is_empty())
+        .map(str::to_owned)
+}
+
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PageDto {
@@ -144,7 +156,11 @@ fn zip_stat(book: &ZipBook, index: usize, rel: &str) -> FileStat {
     let Some(&zip_index) = book.indices.get(index) else {
         return FileStat::default();
     };
-    let Ok(entry) = archive.by_index(zip_index) else {
+    let entry = match book.password.as_deref() {
+        Some(password) => archive.by_index_decrypt(zip_index, password.as_bytes()),
+        None => archive.by_index(zip_index),
+    };
+    let Ok(entry) = entry else {
         return FileStat {
             path: Some(join_inner(&book.path, rel)),
             ..FileStat::default()
@@ -207,21 +223,23 @@ pub fn open(
     }
     // Many "cbz"/"cbr" dumps are mislabeled; prefer file magic over extension.
     let kind = sniff_archive_kind(path);
+    let password = normalize_password(password);
+    let password = password.as_deref();
     match ext.as_str() {
         "zip" | "cbz" => match kind {
-            ArchiveKind::Rar => open_rar(app, path, locale, session_id),
-            ArchiveKind::SevenZ => open_7z(app, path, locale, session_id),
-            _ => open_zip(path, locale),
+            ArchiveKind::Rar => open_rar(app, path, locale, session_id, password),
+            ArchiveKind::SevenZ => open_7z(app, path, locale, session_id, password),
+            _ => open_zip(path, locale, password),
         },
         "rar" | "cbr" => match kind {
-            ArchiveKind::Zip => open_zip(path, locale),
-            ArchiveKind::SevenZ => open_7z(app, path, locale, session_id),
-            _ => open_rar(app, path, locale, session_id),
+            ArchiveKind::Zip => open_zip(path, locale, password),
+            ArchiveKind::SevenZ => open_7z(app, path, locale, session_id, password),
+            _ => open_rar(app, path, locale, session_id, password),
         },
         "7z" => match kind {
-            ArchiveKind::Zip => open_zip(path, locale),
-            ArchiveKind::Rar => open_rar(app, path, locale, session_id),
-            _ => open_7z(app, path, locale, session_id),
+            ArchiveKind::Zip => open_zip(path, locale, password),
+            ArchiveKind::Rar => open_rar(app, path, locale, session_id, password),
+            _ => open_7z(app, path, locale, session_id, password),
         },
         "epub" => open_epub(path, locale),
         "pdf" => open_pdf(app, path, locale, session_id, password, pdf_rasterize),
@@ -325,7 +343,7 @@ fn open_folder(
     })
 }
 
-fn open_zip(path: &Path, locale: &str) -> Result<Loaded, String> {
+fn open_zip(path: &Path, locale: &str, password: Option<&str>) -> Result<Loaded, String> {
     let total = Instant::now();
     let list_started = Instant::now();
     let (rels, indices) = cbz::list(path)?;
@@ -333,6 +351,18 @@ fn open_zip(path: &Path, locale: &str) -> Result<Loaded, String> {
     if rels.is_empty() {
         return Err(no_images(locale));
     }
+    let encrypted = cbz::any_encrypted(path, &indices)?;
+    let password = if encrypted {
+        match password {
+            None => return Err(ERR_PASSWORD_REQUIRED.to_string()),
+            Some(password) => {
+                cbz::verify_password(path, &indices, password)?;
+                Some(password.to_owned())
+            }
+        }
+    } else {
+        None
+    };
     let count = rels.len();
     crate::app_log::info(
         "archive",
@@ -349,6 +379,7 @@ fn open_zip(path: &Path, locale: &str) -> Result<Loaded, String> {
         backend: Arc::new(Backend::Zip(ZipBook {
             path: path.to_path_buf(),
             indices,
+            password,
         })),
         extracting: false,
         initial_index: None,
@@ -390,10 +421,7 @@ fn open_pdf(
     password: Option<&str>,
     rasterize: bool,
 ) -> Result<Loaded, String> {
-    let password = password
-        .map(str::trim)
-        .filter(|value| !value.is_empty())
-        .map(str::to_owned);
+    let password = password.map(str::to_owned);
     let root = cache_root(&app)?;
     // Stop any in-flight extract/rasterize before deleting sibling-mode cache dirs.
     // Otherwise a mid-write page can fail with "path not found" and toast via fail().
@@ -518,12 +546,25 @@ fn start_cache(
     })
 }
 
-fn open_7z(app: AppHandle, path: &Path, locale: &str, session_id: u64) -> Result<Loaded, String> {
-    let (solid, rels, originals) = sevenz::list(path)?;
+fn open_7z(
+    app: AppHandle,
+    path: &Path,
+    locale: &str,
+    session_id: u64,
+    password: Option<&str>,
+) -> Result<Loaded, String> {
+    let (solid, encrypted, rels, originals) = sevenz::list(path, password)?;
+    if rels.is_empty() {
+        return Err(no_images(locale));
+    }
+    if encrypted && password.is_none() {
+        return Err(ERR_PASSWORD_REQUIRED.to_string());
+    }
+    if encrypted || password.is_some() {
+        sevenz::verify_password(path, &originals[0], password)?;
+    }
+    let password = password.map(str::to_owned);
     if !solid {
-        if rels.is_empty() {
-            return Err(no_images(locale));
-        }
         return Ok(Loaded {
             root: path.to_path_buf(),
             title: names::title_of(path),
@@ -531,6 +572,7 @@ fn open_7z(app: AppHandle, path: &Path, locale: &str, session_id: u64) -> Result
             backend: Arc::new(Backend::Seven(SevenBook {
                 path: path.to_path_buf(),
                 names: originals,
+                password,
             })),
             extracting: false,
             initial_index: None,
@@ -539,17 +581,34 @@ fn open_7z(app: AppHandle, path: &Path, locale: &str, session_id: u64) -> Result
     let archive_path = path.to_path_buf();
     let key = cache::cache_key(path);
     start_cache(app, path, rels, locale, session_id, &key, &[], move |job| {
-        sevenz::extract(archive_path, originals, job);
+        sevenz::extract(archive_path, originals, password, job);
     })
 }
 
-fn open_rar(app: AppHandle, path: &Path, locale: &str, session_id: u64) -> Result<Loaded, String> {
-    let rels = rar::list(path)?;
+fn open_rar(
+    app: AppHandle,
+    path: &Path,
+    locale: &str,
+    session_id: u64,
+    password: Option<&str>,
+) -> Result<Loaded, String> {
+    let password_bytes = password.map(str::as_bytes);
+    let (rels, encrypted) = rar::list(path, password_bytes)?;
+    if rels.is_empty() {
+        return Err(no_images(locale));
+    }
+    if encrypted && password.is_none() {
+        return Err(ERR_PASSWORD_REQUIRED.to_string());
+    }
+    if encrypted || password.is_some() {
+        rar::verify_password(path, &rels[0], password_bytes)?;
+    }
     let archive_path = path.to_path_buf();
     let names = rels.clone();
+    let password = password.map(str::to_owned);
     let key = cache::cache_key(path);
     start_cache(app, path, rels, locale, session_id, &key, &[], move |job| {
-        rar::extract(archive_path, names, job);
+        rar::extract(archive_path, names, password, job);
     })
 }
 
@@ -612,6 +671,7 @@ pub fn start_measure(app: AppHandle, session_id: u64) -> Result<(), String> {
             Backend::Seven(book) => sevenz::probe(
                 book.path.clone(),
                 book.names.clone(),
+                book.password.clone(),
                 session_id,
                 &alive,
                 &mut |done| ticker.update(done),
