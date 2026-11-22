@@ -38,13 +38,13 @@
 
 ## ダウンロード
 
-OS に合わせて `v0.1.4` を選んでください（全バージョンは [Releases](https://github.com/ssnangua/SuperManGa/releases)）：
+OS に合わせて `v0.1.5` を選んでください（全バージョンは [Releases](https://github.com/ssnangua/SuperManGa/releases)）：
 
 | OS | ダウンロード | 最低 OS |
 | --- | --- | --- |
-| Windows | [![Portable x64](https://img.shields.io/badge/Portable-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-windows-x64.zip) | Windows 10+ |
-| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-macos-x64.dmg) | macOS 10.15+（Apple Silicon は 11+） |
-| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
+| Windows | [![Portable x64](https://img.shields.io/badge/Portable-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.5/SuperManGa-0.1.5-windows-x64.zip) | Windows 10+ |
+| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.5/SuperManGa-0.1.5-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.5/SuperManGa-0.1.5-macos-x64.dmg) | macOS 10.15+（Apple Silicon は 11+） |
+| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.5/SuperManGa-0.1.5-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.5/SuperManGa-0.1.5-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
 > ONNX ランタイム / 超解像モデル / 文字検出モデル / OCR モデルは **インストーラに含まれません**。ニューラル超解像や OCR 翻訳を使う場合はアプリ内でダウンロードしてください。
