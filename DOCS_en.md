@@ -180,15 +180,15 @@ Reuse rules:
 
 Assets can also live on GitHub Release tag **`data`** (`manifest.json` + `{stem}-v{ver}.zip`). Manifest entries are `{version,bytes,sha256}`; `bytes` drives UI download size and `sha256` rejects corrupt zips after download. The app ships a seed manifest. Settings → General → Fetch Latest Asset Catalog on Startup (`fetchDataManifestOnStartup`, default on) fetches after launch on a short timeout. When off, you can pull the remote `manifest.json` manually. Local layout is `SuperManGaData/data/{stem}-v{ver}/`. Build zips with [`tools/pack-data/`](tools/pack-data/).
 
-Runtime selection:
+Runtime selection (per-platform download; stem like `runtime-{os}-{arch}-{flavor}`, e.g. `runtime-macos-arm64-cpu`):
 
 | Machine | Behavior |
 |---|---|
-| Matching CUDA `runtime-cuda*-v…` | Use CUDA ORT; GPU EP when usable |
-| No CUDA / no GPU pack, but `runtime-cpu-v…` present | Auto-select CPU; shows Ready |
-| CUDA pack only, no CPU pack | Shows Initialize; must download CPU |
+| Matching local `runtime-*-cuda*-v…` | Use CUDA ORT; GPU EP when usable |
+| No CUDA / no GPU pack, but local `runtime-*-cpu-v…` present | Auto-select CPU; shows Ready |
+| CUDA pack only, no local CPU pack | Shows Initialize; must download CPU |
 
-Offline packs must include the **CPU** flavor. GPU ORT zips do not ship full CUDA/cuDNN.
+Offline packs must include the local **CPU** flavor. ORT CUDA packs are Windows/Linux x64 only; macOS uses the same CPU pack and enables the **CoreML** EP at inference time (Apple GPU / Neural Engine). ONNX model packs are cross-platform. macOS Intel (x64) uses the last official prebuild **ORT 1.23.0** (`runtime-macos-x64-cpu`); other platforms use 1.30.
 
 ### 2.8 Helper scripts
 

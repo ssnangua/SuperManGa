@@ -4,8 +4,9 @@ use std::path::{Path, PathBuf};
 use serde::{Deserialize, Serialize};
 use tauri::{AppHandle, Emitter};
 
-use super::cuda::{cuda_ep_usable, recommended_flavor, RuntimeFlavor};
+use super::cuda::{platform_supports_cuda, recommended_flavor, RuntimeFlavor};
 use super::download::NetworkConfig;
+use super::ort_env::{active_accelerator, recommended_accelerator};
 use crate::data_packs;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -20,6 +21,12 @@ pub struct NeuralRuntimeStatus {
     pub approx_bytes: u64,
     pub flavor: String,
     pub recommended_flavor: String,
+    /// Active hardware EP when ready: `none` | `cuda` | `coreml`.
+    pub accelerator: String,
+    /// Preferred EP for this machine (even before init): `none` | `cuda` | `coreml`.
+    pub recommended_accelerator: String,
+    /// This OS/arch can use CUDA ORT packs (Windows/Linux x64).
+    pub cuda_capable: bool,
     pub gpu: bool,
 }
 
@@ -30,8 +37,43 @@ fn runtime_approx_bytes(flavor: RuntimeFlavor) -> u64 {
     }
 }
 
+fn host_os() -> &'static str {
+    #[cfg(target_os = "windows")]
+    {
+        "windows"
+    }
+    #[cfg(target_os = "macos")]
+    {
+        "macos"
+    }
+    #[cfg(all(not(target_os = "windows"), not(target_os = "macos")))]
+    {
+        "linux"
+    }
+}
+
+fn host_arch() -> &'static str {
+    #[cfg(target_arch = "x86_64")]
+    {
+        "x64"
+    }
+    #[cfg(target_arch = "aarch64")]
+    {
+        "arm64"
+    }
+    #[cfg(not(any(target_arch = "x86_64", target_arch = "aarch64")))]
+    {
+        "unknown"
+    }
+}
+
+/// Manifest / zip key: `{os}-{arch}-{flavor}` e.g. `macos-arm64-cpu`.
+fn runtime_pack_key(flavor: RuntimeFlavor) -> String {
+    format!("{}-{}-{}", host_os(), host_arch(), flavor.as_str())
+}
+
 fn runtime_stem(flavor: RuntimeFlavor) -> String {
-    data_packs::pack_stem("runtime", flavor.as_str())
+    data_packs::pack_stem("runtime", &runtime_pack_key(flavor))
 }
 
 pub fn library_name() -> &'static str {
@@ -110,9 +152,10 @@ pub fn library_path(app: &AppHandle) -> Option<PathBuf> {
 
 pub fn installed_runtime_version(app: &AppHandle) -> Option<String> {
     let flavor = installed_flavor(app);
+    let key = runtime_pack_key(flavor);
     let manifest = data_packs::load_manifest(app).ok()?;
     manifest
-        .version("runtime", flavor.as_str())
+        .version("runtime", &key)
         .map(|s| s.to_string())
         .or_else(|| {
             // Fall back: parse from folder name if selected
@@ -151,13 +194,15 @@ pub fn neural_runtime_status(app: AppHandle) -> Result<NeuralRuntimeStatus, Stri
     let _ = data_packs::load_manifest(&app)?;
     let recommended = recommended_flavor();
     let manifest = data_packs::load_manifest(&app)?;
-    let pack_meta = manifest.pack("runtime", recommended.as_str());
+    let pack_meta = manifest.pack("runtime", &runtime_pack_key(recommended));
     let approx_bytes = pack_meta
         .map(|m| m.bytes)
         .filter(|&n| n > 0)
         .unwrap_or_else(|| runtime_approx_bytes(recommended));
     let selected = select_runtime(&app);
     let outdated = runtime_outdated(&app, selected.as_ref().map(|(f, _)| *f));
+    let rec_accel = recommended_accelerator();
+    let cuda_capable = platform_supports_cuda();
     let Some((flavor, lib)) = selected else {
         return Ok(NeuralRuntimeStatus {
             ready: false,
@@ -168,11 +213,15 @@ pub fn neural_runtime_status(app: AppHandle) -> Result<NeuralRuntimeStatus, Stri
             approx_bytes,
             flavor: RuntimeFlavor::Cpu.as_str().into(),
             recommended_flavor: recommended.as_str().into(),
+            accelerator: "none".into(),
+            recommended_accelerator: rec_accel.as_str().into(),
+            cuda_capable,
             gpu: false,
         });
     };
     let bytes = fs::metadata(&lib).map(|m| m.len()).unwrap_or(0);
     let version = installed_runtime_version(&app);
+    let accel = active_accelerator(&app);
     Ok(NeuralRuntimeStatus {
         ready: true,
         outdated,
@@ -182,7 +231,10 @@ pub fn neural_runtime_status(app: AppHandle) -> Result<NeuralRuntimeStatus, Stri
         approx_bytes,
         flavor: flavor.as_str().into(),
         recommended_flavor: recommended.as_str().into(),
-        gpu: cuda_ep_usable(flavor),
+        accelerator: accel.as_str().into(),
+        recommended_accelerator: rec_accel.as_str().into(),
+        cuda_capable,
+        gpu: accel.is_gpu(),
     })
 }
 

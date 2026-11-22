@@ -180,15 +180,15 @@ SuperManGa-*-full-windows-x64/
 
 资源统一也可放在 GitHub Release tag **`data`**（`manifest.json` + `{stem}-v{ver}.zip`）。清单条目为 `{version,bytes,sha256}`；`bytes` 供界面显示下载大小，`sha256` 在下载后校验坏包。应用内置 seed 清单；设置 → 通用 →「启动时获取最新资源清单」（`fetchDataManifestOnStartup`，默认开）启动后后台短超时静默获取。关闭后可手动拉取远程 `manifest.json`。本机目录为 `SuperManGaData/data/{stem}-v{ver}/`。打 zip 可用 [`tools/pack-data/`](tools/pack-data/)。
 
-运行时选型：
+运行时选型（按平台下载，stem 形如 `runtime-{os}-{arch}-{flavor}`，例如 `runtime-macos-arm64-cpu`）：
 
 | 本机条件 | 行为 |
 |---|---|
-| 有匹配 CUDA 的 `runtime-cuda*-v…` | 选用 CUDA ORT，可用则走 GPU EP |
-| 无 CUDA / 无 GPU 包，但有 `runtime-cpu-v…` | 自动选用 CPU，显示已就绪 |
-| 只有 CUDA 包、没有 CPU 包 | 显示「初始化」，需下载 CPU 包 |
+| 有匹配本机的 `runtime-*-cuda*-v…` | 选用 CUDA ORT，可用则走 GPU EP |
+| 无 CUDA / 无 GPU 包，但有本机 `runtime-*-cpu-v…` | 自动选用 CPU，显示已就绪 |
+| 只有 CUDA 包、没有本机 CPU 包 | 显示「初始化」，需下载 CPU 包 |
 
-完整离线包须带上 **CPU** flavor。ORT GPU 包不含完整 CUDA/cuDNN。
+完整离线包须带上本机 **CPU** flavor。ORT CUDA 包仅 Windows/Linux x64；macOS 用同一套 CPU 包，推理时自动挂 **CoreML** EP（Apple GPU / Neural Engine）。ONNX 模型包不分平台。macOS Intel（x64）使用官方最后一版预编译 **ORT 1.23.0**（`runtime-macos-x64-cpu`）；其余平台为 1.30。
 
 ### 2.8 辅助脚本
 

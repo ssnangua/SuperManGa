@@ -11,6 +11,29 @@ use tauri::AppHandle;
 use super::cuda::{cuda_ep_usable, prepare_runtime_search_path};
 use super::runtime::{installed_flavor, installed_runtime_version, library_path};
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Accelerator {
+    None,
+    Cuda,
+    #[cfg(target_os = "macos")]
+    CoreMl,
+}
+
+impl Accelerator {
+    pub fn as_str(self) -> &'static str {
+        match self {
+            Self::None => "none",
+            Self::Cuda => "cuda",
+            #[cfg(target_os = "macos")]
+            Self::CoreMl => "coreml",
+        }
+    }
+
+    pub fn is_gpu(self) -> bool {
+        !matches!(self, Self::None)
+    }
+}
+
 struct OrtState {
     lib_path: PathBuf,
     version: String,
@@ -53,11 +76,45 @@ pub fn ensure_ort(app: &AppHandle) -> Result<&'static Environment, String> {
     state.env.as_ref().map_err(|err| err.clone())
 }
 
-pub fn want_cuda(app: &AppHandle) -> bool {
-    cuda_ep_usable(installed_flavor(app))
+/// Preferred hardware EP for this OS (independent of whether the pack is downloaded).
+pub fn recommended_accelerator() -> Accelerator {
+    #[cfg(target_os = "macos")]
+    {
+        Accelerator::CoreMl
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        if super::cuda::recommended_flavor().is_cuda() {
+            Accelerator::Cuda
+        } else {
+            Accelerator::None
+        }
+    }
 }
 
-pub fn build_session(env: &Environment, onnx: &Path, use_cuda: bool) -> Result<Session, String> {
+/// Active EP given the installed ORT pack flavor.
+pub fn active_accelerator(app: &AppHandle) -> Accelerator {
+    let flavor = installed_flavor(app);
+    if cuda_ep_usable(flavor) {
+        return Accelerator::Cuda;
+    }
+    #[cfg(target_os = "macos")]
+    {
+        let _ = flavor;
+        Accelerator::CoreMl
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        let _ = flavor;
+        Accelerator::None
+    }
+}
+
+pub fn build_session(
+    env: &Environment,
+    onnx: &Path,
+    accelerator: Accelerator,
+) -> Result<Session, String> {
     let mut builder = Session::builder(env)
         .map_err(|err| err.to_string())?
         .with_optimization_level(GraphOptimizationLevel::Level2)
@@ -68,10 +125,21 @@ pub fn build_session(env: &Environment, onnx: &Path, use_cuda: bool) -> Result<S
                 .unwrap_or(4),
         )
         .unwrap_or_else(|err| err.recover());
-    if use_cuda {
-        builder = builder
-            .with_execution_providers([ort::ep::CUDA::default().build()])
-            .unwrap_or_else(|err| err.recover());
+    match accelerator {
+        Accelerator::Cuda => {
+            builder = builder
+                .with_execution_providers([ort::ep::CUDA::default().build()])
+                .unwrap_or_else(|err| err.recover());
+        }
+        #[cfg(target_os = "macos")]
+        Accelerator::CoreMl => {
+            builder = builder
+                .with_execution_providers([ort::ep::CoreML::default()
+                    .with_compute_units(ort::ep::coreml::ComputeUnits::All)
+                    .build()])
+                .unwrap_or_else(|err| err.recover());
+        }
+        Accelerator::None => {}
     }
     builder
         .commit_from_file(onnx)
@@ -88,10 +156,18 @@ pub fn is_cuda_runtime_error(err: &str) -> bool {
 
 pub fn open_session(app: &AppHandle, onnx: &Path) -> Result<Session, String> {
     let env = ensure_ort(app)?;
-    let use_cuda = want_cuda(app);
-    match build_session(env, onnx, use_cuda) {
+    let accel = active_accelerator(app);
+    match build_session(env, onnx, accel) {
         Ok(s) => Ok(s),
-        Err(err) if use_cuda && is_cuda_runtime_error(&err) => build_session(env, onnx, false),
+        Err(err)
+            if matches!(accel, Accelerator::Cuda) && is_cuda_runtime_error(&err) =>
+        {
+            build_session(env, onnx, Accelerator::None)
+        }
+        #[cfg(target_os = "macos")]
+        Err(_) if matches!(accel, Accelerator::CoreMl) => {
+            build_session(env, onnx, Accelerator::None)
+        }
         Err(err) => Err(err),
     }
 }

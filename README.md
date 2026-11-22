@@ -47,7 +47,7 @@
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
-> 运行环境 / 超分模型 / 文字检测器模型 / OCR 模型 **没有打进安装包**，要使用神经网络超分 / OCR 翻译功能，需在应用内自行下载。
+> ONNX 运行环境 / 超分模型 / 文字检测器模型 / OCR 模型 **没有打进安装包**，要使用神经网络超分 / OCR 翻译功能，需在应用内自行下载。
 
 <details>
 <summary>macOS 安装与使用</summary>
@@ -114,11 +114,22 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 > - PDF 会栅格化到本地缓存；加密的 PDF 会弹密码框
 > - 不支持 KFX / 有 DRM 的 Kindle 电子书
 
+### ONNX 运行环境
+
+超分和翻译依赖 ONNX 运行环境：
+
+| 系统 | 运行环境 |
+| --- | --- |
+| Windows x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+| macOS arm64 | `CPU`（推理时自动启用 CoreML） |
+| macOS x64 | `CPU`（ORT 1.23.0；推理时自动启用 CoreML） |
+| Linux arm64 | `CPU` |
+| Linux x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+
 ### 神经网络超分
 
 | 类型 | 说明 |
 | --- | --- |
-| 运行环境 | `CPU` / `CUDA 12` / `CUDA 13`（有匹配 `CUDA` 包时优先 GPU） |
 | 超分模型 | `MangaJaNai 2x` / `Real-ESRGAN Anime 2x` |
 
 > [!NOTE]
@@ -130,7 +141,6 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 | 类型 | 选项 |
 | --- | --- |
-| 运行环境 | `CPU` / `CUDA 12` / `CUDA 13`（有匹配 `CUDA` 包时优先 GPU） |
 | 文字检测器 | `DBNet` / `CTD` / `YOLO` / `SaberYOLO` |
 | OCR 引擎 | `系统 OCR`（仅 Windows） / `Manga OCR` / `PaddleOCR` / `MIT 48px` / `EasyOCR` |
 

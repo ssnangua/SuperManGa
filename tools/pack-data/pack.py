@@ -7,7 +7,8 @@ Output: tools/pack-data/data/{stem}-v{ver}.zip + manifest.json
 
 Examples:
   python pack.py
-  python pack.py --only runtime,detector-yolo
+  python pack.py --only runtime
+  python pack.py --only runtime-macos-arm64-cpu,detector-yolo
   python pack.py --version 1.0.0 --ort-version 1.30.0
   HF_MIRROR=https://hf-mirror.com python pack.py --only ocr
 """
@@ -19,7 +20,6 @@ import hashlib
 import json
 import os
 import shutil
-import sys
 import urllib.request
 import zipfile
 from datetime import datetime, timezone
@@ -31,19 +31,38 @@ CACHE = ROOT / ".cache"
 EXPORT_OUT = ROOT.parent / "export-detectors" / "out"
 
 ORT_VERSION_DEFAULT = "1.30.0"
+# Official ORT dropped osx-x64 after 1.23.0 (NuGet RID + GitHub tarball); pin Intel Mac separately.
+ORT_VERSION_MACOS_X64 = "1.23.0"
 ASSET_VERSION_DEFAULT = "1.0.0"
 
 HF = os.environ.get("HF_MIRROR", "https://huggingface.co").rstrip("/")
 GH_MIT = "https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3"
 
-# section -> key -> list of (dest_name, source)
+# Runtime packs are per OS/arch (native ORT libs). Key → zip stem `runtime-{key}`.
+# Example: windows-x64-cpu → runtime-windows-x64-cpu-v1.30.0.zip
+# (os, arch, flavor, nuget_rid) — rid None = fetch from GitHub ORT release tarball.
+RUNTIME_TARGETS: list[tuple[str, str, str, str | None]] = [
+    ("windows", "x64", "cpu", "win-x64"),
+    ("macos", "arm64", "cpu", "osx-arm64"),
+    # Last official Intel Mac prebuild (NuGet osx-x64); version via ort_version_for_target().
+    ("macos", "x64", "cpu", "osx-x64"),
+    ("linux", "x64", "cpu", "linux-x64"),
+    ("linux", "arm64", "cpu", "linux-arm64"),
+    ("windows", "x64", "cuda12", "win-x64"),
+    ("windows", "x64", "cuda13", "win-x64"),
+    ("linux", "x64", "cuda12", "linux-x64"),
+    ("linux", "x64", "cuda13", "linux-x64"),
+]
+
+
+def ort_version_for_target(os_name: str, arch: str, default: str) -> str:
+    if os_name == "macos" and arch == "x64":
+        return ORT_VERSION_MACOS_X64
+    return default
+
+# Non-runtime section -> key -> list of (dest_name, source)
 # source: ("url", url) | ("local", path) | ("nuget", flavor)
 PACKS: dict[str, dict[str, list[tuple[str, tuple[str, str]]]]] = {
-    "runtime": {
-        "cpu": [("__runtime__", ("nuget", "cpu"))],
-        "cuda12": [("__runtime__", ("nuget", "cuda12"))],
-        "cuda13": [("__runtime__", ("nuget", "cuda13"))],
-    },
     "detector": {
         "dbnet": [
             (
@@ -207,16 +226,21 @@ def download(url: str, dest: Path, force: bool = False) -> None:
     partial.replace(dest)
 
 
-def nuget_url(flavor: str, version: str) -> str:
+def runtime_key(os_name: str, arch: str, flavor: str) -> str:
+    return f"{os_name}-{arch}-{flavor}"
+
+
+def nuget_url(flavor: str, version: str, rid: str) -> str:
     ver = version.lower()
     if flavor == "cpu":
         pkg = "microsoft.ml.onnxruntime"
         return f"https://globalcdn.nuget.org/packages/{pkg}.{ver}.nupkg"
-    pkg = (
-        "microsoft.ml.onnxruntime.gpu.windows"
-        if sys.platform.startswith("win")
-        else "microsoft.ml.onnxruntime.gpu.linux"
-    )
+    if rid.startswith("win"):
+        pkg = "microsoft.ml.onnxruntime.gpu.windows"
+    elif rid.startswith("linux"):
+        pkg = "microsoft.ml.onnxruntime.gpu.linux"
+    else:
+        raise ValueError(f"no CUDA NuGet package for rid={rid}")
     if flavor == "cuda12":
         return (
             "https://aiinfra.pkgs.visualstudio.com/PublicPackages/_packaging/"
@@ -225,16 +249,25 @@ def nuget_url(flavor: str, version: str) -> str:
     return f"https://globalcdn.nuget.org/packages/{pkg}.{ver}.nupkg"
 
 
-def host_rid() -> str:
-    if sys.platform.startswith("win"):
-        return "win-x64"
-    if sys.platform == "darwin":
-        return "osx-arm64" if os.uname().machine == "arm64" else "osx-x64"
-    return "linux-x64"
+def github_ort_tarball_url(os_name: str, arch: str, version: str) -> str:
+    """Fallback when a RID is missing from the NuGet package (e.g. osx-x64 in 1.30)."""
+    ver = version.lstrip("v")
+    if os_name == "macos" and arch == "x64":
+        name = f"onnxruntime-osx-x86_64-{ver}.tgz"
+    elif os_name == "macos" and arch == "arm64":
+        name = f"onnxruntime-osx-arm64-{ver}.tgz"
+    elif os_name == "linux" and arch == "x64":
+        name = f"onnxruntime-linux-x64-{ver}.tgz"
+    elif os_name == "linux" and arch == "arm64":
+        name = f"onnxruntime-linux-aarch64-{ver}.tgz"
+    elif os_name == "windows" and arch == "x64":
+        name = f"onnxruntime-win-x64-{ver}.zip"
+    else:
+        raise ValueError(f"no GitHub ORT tarball for {os_name}-{arch}")
+    return f"https://github.com/microsoft/onnxruntime/releases/download/v{ver}/{name}"
 
 
-def extract_runtime_dlls(nupkg: Path, staging: Path) -> None:
-    rid = host_rid()
+def extract_runtime_from_nupkg(nupkg: Path, staging: Path, rid: str) -> None:
     staging.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(nupkg, "r") as zf:
         prefix = f"runtimes/{rid}/native/"
@@ -257,6 +290,58 @@ def extract_runtime_dlls(nupkg: Path, staging: Path) -> None:
             raise RuntimeError(f"no native libs for {rid} in {nupkg.name}")
 
 
+def _is_ort_native(name: str) -> bool:
+    base = Path(name).name
+    if not base or base.startswith("."):
+        return False
+    lower = base.lower()
+    if lower.endswith(".lib"):
+        return False
+    return (
+        lower.endswith(".dll")
+        or lower.endswith(".dylib")
+        or ".so" in lower
+    )
+
+
+def extract_runtime_from_github_archive(archive: Path, staging: Path) -> None:
+    """Flatten lib/ natives from official ORT GitHub zip/tgz into staging."""
+    import tarfile
+
+    staging.mkdir(parents=True, exist_ok=True)
+    written: list[str] = []
+
+    def consider(path_in_archive: str) -> bool:
+        parts = path_in_archive.replace("\\", "/").split("/")
+        return "lib" in parts and _is_ort_native(path_in_archive)
+
+    is_zip = archive.name.lower().endswith(".zip")
+    if is_zip:
+        with zipfile.ZipFile(archive, "r") as zf:
+            for info in zf.infolist():
+                name = info.filename.replace("\\", "/")
+                if info.is_dir() or not consider(name):
+                    continue
+                base = Path(name).name
+                with zf.open(info) as src, open(staging / base, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+                written.append(base)
+    else:
+        with tarfile.open(archive, "r:*") as tf:
+            for member in tf.getmembers():
+                if not member.isfile() or not consider(member.name):
+                    continue
+                base = Path(member.name).name
+                src = tf.extractfile(member)
+                if src is None:
+                    continue
+                with src, open(staging / base, "wb") as dst:
+                    shutil.copyfileobj(src, dst)
+                written.append(base)
+    if not written:
+        raise RuntimeError(f"no native ORT libs in {archive.name}")
+
+
 def zip_dir(src_dir: Path, zip_path: Path) -> None:
     zip_path.parent.mkdir(parents=True, exist_ok=True)
     if zip_path.exists():
@@ -276,6 +361,60 @@ def file_sha256(path: Path) -> str:
                 break
             h.update(chunk)
     return h.hexdigest()
+
+
+def pack_runtime_one(
+    os_name: str,
+    arch: str,
+    flavor: str,
+    rid: str | None,
+    version: str,
+    *,
+    skip_download: bool,
+    force: bool,
+) -> dict | None:
+    key = runtime_key(os_name, arch, flavor)
+    stem = f"runtime-{key}"
+    folder_name = f"{stem}-v{version}"
+    zip_path = OUT / f"{folder_name}.zip"
+    staging = CACHE / "staging" / folder_name
+    if staging.exists():
+        shutil.rmtree(staging)
+    staging.mkdir(parents=True, exist_ok=True)
+
+    try:
+        try:
+            if rid is not None:
+                url = nuget_url(flavor, version, rid)
+                # CPU nupkg is cross-RID; CUDA nupkgs are OS-specific.
+                cache_tag = rid.split("-", 1)[0] if flavor != "cpu" else "any"
+                cached = CACHE / f"ort-{flavor}-{cache_tag}-{version}.nupkg"
+                if not skip_download:
+                    download(url, cached, force=force)
+                elif not cached.is_file():
+                    log(f"  SKIP {stem}: no nupkg cache")
+                    return None
+                extract_runtime_from_nupkg(cached, staging, rid)
+            else:
+                url = github_ort_tarball_url(os_name, arch, version)
+                cached = CACHE / Path(url).name
+                if not skip_download:
+                    download(url, cached, force=force)
+                elif not cached.is_file():
+                    log(f"  SKIP {stem}: no GitHub archive cache")
+                    return None
+                extract_runtime_from_github_archive(cached, staging)
+        except Exception as err:
+            log(f"  SKIP {stem}: {err}")
+            return None
+        zip_dir(staging, zip_path)
+        digest = file_sha256(zip_path)
+        size = zip_path.stat().st_size
+        log(f"  wrote {zip_path.relative_to(ROOT)} ({size} bytes, sha256={digest[:12]}…)")
+        return {"version": version, "bytes": size, "sha256": digest}
+    finally:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
 
 
 def pack_one(
@@ -321,16 +460,6 @@ def pack_one(
                         log(f"  SKIP {stem}: no cache for {dest_name}")
                         return None
                     shutil.copy2(cached, staging / dest_name)
-            elif kind == "nuget":
-                flavor = src
-                url = nuget_url(flavor, version)
-                cached = CACHE / f"ort-{flavor}-{version}.nupkg"
-                if not skip_download:
-                    download(url, cached, force=force)
-                elif not cached.is_file():
-                    log(f"  SKIP {stem}: no nupkg cache")
-                    return None
-                extract_runtime_dlls(cached, staging)
             else:
                 raise ValueError(kind)
         zip_dir(staging, zip_path)
@@ -355,6 +484,19 @@ def match_only(only: set[str] | None, section: str, key: str) -> bool:
         return True
     stem = f"{section}-{key}"
     return section in only or stem in only or key in only
+
+
+def match_runtime_only(only: set[str] | None, key: str, flavor: str) -> bool:
+    if only is None:
+        return True
+    stem = f"runtime-{key}"
+    return (
+        "runtime" in only
+        or stem in only
+        or key in only
+        or flavor in only
+        or f"runtime-{flavor}" in only
+    )
 
 
 def normalize_entry(raw) -> dict | None:
@@ -424,14 +566,26 @@ def manifest_from_existing_zips(
         "ocr": {},
         "neural": {},
     }
+    for os_name, arch, flavor, _rid in RUNTIME_TARGETS:
+        key = runtime_key(os_name, arch, flavor)
+        if not match_runtime_only(only, key, flavor):
+            continue
+        stem = f"runtime-{key}"
+        prefer = ort_version_for_target(os_name, arch, ort_version)
+        log(f"\n[runtime/{key}]")
+        resolved = resolve_existing_zip(stem, prefer)
+        if not resolved:
+            log(f"  SKIP {stem}: no zip in data/")
+            continue
+        version, zip_path = resolved
+        entries["runtime"][key] = meta_from_existing_zip(zip_path, version)
     for section, keys in PACKS.items():
         for key in keys:
             if not match_only(only, section, key):
                 continue
             stem = f"{section}-{key}"
-            preferred = ort_version if section == "runtime" else asset_version
             log(f"\n[{section}/{key}]")
-            resolved = resolve_existing_zip(stem, preferred)
+            resolved = resolve_existing_zip(stem, asset_version)
             if not resolved:
                 log(f"  SKIP {stem}: no zip in data/")
                 continue
@@ -442,7 +596,10 @@ def manifest_from_existing_zips(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--only", help="Comma list: runtime,detector,ocr,neural or full stems")
+    parser.add_argument(
+        "--only",
+        help="Comma list: runtime,cpu,detector,ocr,neural or stems like runtime-macos-arm64-cpu",
+    )
     parser.add_argument("--version", default=ASSET_VERSION_DEFAULT, help="Non-runtime asset version")
     parser.add_argument("--ort-version", default=ORT_VERSION_DEFAULT, help="Runtime ORT version")
     parser.add_argument("--skip-download", action="store_true")
@@ -475,11 +632,29 @@ def main() -> int:
         "neural": {},
     }
 
+    for os_name, arch, flavor, rid in RUNTIME_TARGETS:
+        key = runtime_key(os_name, arch, flavor)
+        if not match_runtime_only(only, key, flavor):
+            continue
+        ver = ort_version_for_target(os_name, arch, args.ort_version)
+        log(f"\n[runtime/{key}] v{ver}")
+        meta = pack_runtime_one(
+            os_name,
+            arch,
+            flavor,
+            rid,
+            ver,
+            skip_download=args.skip_download,
+            force=args.force,
+        )
+        if meta:
+            entries["runtime"][key] = meta
+
     for section, keys in PACKS.items():
         for key in keys:
             if not match_only(only, section, key):
                 continue
-            ver = args.ort_version if section == "runtime" else args.version
+            ver = args.version
             log(f"\n[{section}/{key}] v{ver}")
             meta = pack_one(
                 section,
@@ -492,6 +667,7 @@ def main() -> int:
                 entries[section][key] = meta
 
     # Merge with existing manifest so partial --only runs keep other keys.
+    # Drop legacy runtime keys (cpu / cuda12 without OS-arch prefix).
     existing_path = OUT / "manifest.json"
     if existing_path.is_file():
         try:
@@ -501,6 +677,8 @@ def main() -> int:
                 if isinstance(prev, dict):
                     merged: dict[str, dict] = {}
                     for k, v in prev.items():
+                        if section == "runtime" and k in ("cpu", "cuda12", "cuda13"):
+                            continue
                         norm = normalize_entry(v)
                         if norm:
                             merged[k] = norm

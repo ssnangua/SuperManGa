@@ -47,7 +47,7 @@ Pick an installer for your OS (`v0.1.4`). You can also browse all builds on [Rel
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
-> Runtime / upscale models / text detectors / OCR models are **not** bundled. Download them in-app when you need neural upscaling or OCR translation.
+> ONNX Runtime / upscale models / text detectors / OCR models are **not** bundled. Download them in-app when you need neural upscaling or OCR translation.
 
 <details>
 <summary>macOS install and usage</summary>
@@ -114,11 +114,22 @@ Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if d
 > - PDF is rasterized to cache; encrypted PDFs prompt for a password
 > - KFX and DRM-protected Kindle books are not supported
 
+### ONNX Runtime
+
+Upscaling and translation need an ONNX Runtime pack:
+
+| Platform | Runtime |
+| --- | --- |
+| Windows x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+| macOS arm64 | `CPU` (CoreML enabled automatically at inference) |
+| macOS x64 | `CPU` (ORT 1.23.0; CoreML enabled automatically at inference) |
+| Linux arm64 | `CPU` |
+| Linux x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+
 ### Neural upscaling
 
 | Type | Notes |
 | --- | --- |
-| Runtime | `CPU` / `CUDA 12` / `CUDA 13` (matching CUDA pack preferred for GPU) |
 | Models | `MangaJaNai 2x` / `Real-ESRGAN Anime 2x` |
 
 > [!NOTE]
@@ -130,7 +141,6 @@ A text detector finds regions on the page; OCR reads them; then a translation pr
 
 | Type | Options |
 | --- | --- |
-| Runtime | `CPU` / `CUDA 12` / `CUDA 13` (matching CUDA pack preferred for GPU) |
 | Detectors | `DBNet` / `CTD` / `YOLO` / `SaberYOLO` |
 | OCR engines | `System OCR` (Windows only) / `Manga OCR` / `PaddleOCR` / `MIT 48px` / `EasyOCR` |
 

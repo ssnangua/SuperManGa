@@ -31,6 +31,9 @@ const runtimeStatus = ref<NeuralRuntimeStatus>({
   approxBytes: 83_000_000,
   flavor: "cpu",
   recommendedFlavor: "cpu",
+  accelerator: "none",
+  recommendedAccelerator: "none",
+  cudaCapable: false,
   gpu: false,
 });
 let unlistenProgress: (() => void) | null = null;

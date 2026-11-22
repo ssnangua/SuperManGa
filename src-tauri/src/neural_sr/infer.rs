@@ -9,13 +9,15 @@ use ort::value::{Tensor, TensorElementType};
 use tauri::{AppHandle, WebviewWindow};
 
 use super::cache::resolve_results_root;
-use super::cuda::cuda_ep_usable;
 use super::models::{model_onnx_path, model_scale};
-use super::ort_env::{build_session, ensure_ort, is_cuda_runtime_error};
+use super::ort_env::{
+    active_accelerator, build_session, ensure_ort, is_cuda_runtime_error, Accelerator,
+};
 use super::results::{self, CANCELLED};
-use super::runtime::installed_flavor;
 
 static CUDA_EP_OK: AtomicBool = AtomicBool::new(true);
+#[cfg(target_os = "macos")]
+static COREML_EP_OK: AtomicBool = AtomicBool::new(true);
 static RUNNING_JOB: AtomicU64 = AtomicU64::new(0);
 static CANCEL_JOB: AtomicU64 = AtomicU64::new(0);
 
@@ -120,8 +122,13 @@ fn extract_output_rgba(outputs: &SessionOutputs<'_>) -> Result<RgbaImage, String
     rgba_from_planar(&shape, |i| flat[i])
 }
 
-fn want_cuda_ep(app: &AppHandle) -> bool {
-    CUDA_EP_OK.load(Ordering::Relaxed) && cuda_ep_usable(installed_flavor(app))
+fn want_accelerator(app: &AppHandle) -> Accelerator {
+    match active_accelerator(app) {
+        Accelerator::Cuda if CUDA_EP_OK.load(Ordering::Relaxed) => Accelerator::Cuda,
+        #[cfg(target_os = "macos")]
+        Accelerator::CoreMl if COREML_EP_OK.load(Ordering::Relaxed) => Accelerator::CoreMl,
+        _ => Accelerator::None,
+    }
 }
 
 fn run_tile(session: &mut Session, tile: &RgbaImage, use_f16: bool) -> Result<RgbaImage, String> {
@@ -387,15 +394,16 @@ fn neural_upscale_inner(
     let src = decode_rgba(&image_png)?;
     let (src_w, src_h) = src.dimensions();
 
-    let use_cuda = want_cuda_ep(&app);
+    let accel = want_accelerator(&app);
     crate::app_log::info(
         "neural",
         format!(
-            "start {label} asset={asset_id} src={src_w}x{src_h} threshold={target_width}x{target_height} scale={scale}x cuda={use_cuda}"
+            "start {label} asset={asset_id} src={src_w}x{src_h} threshold={target_width}x{target_height} scale={scale}x accel={}",
+            accel.as_str()
         ),
     );
     let started = Instant::now();
-    let mut session = build_session(env, &onnx, use_cuda)?;
+    let mut session = build_session(env, &onnx, accel)?;
     let tiled = |session: &mut Session| {
         upscale_tiled(&app, &label, session, &src, scale, job_id)
     };
@@ -405,13 +413,25 @@ fn neural_upscale_inner(
             crate::app_log::info("neural", format!("cancelled {label}"));
             return Err(err);
         }
-        Err(err) if use_cuda && is_cuda_runtime_error(&err) => {
+        Err(err)
+            if matches!(accel, Accelerator::Cuda) && is_cuda_runtime_error(&err) =>
+        {
             crate::app_log::warn(
                 "neural",
                 format!("cuda failed, fallback to cpu: {err}"),
             );
             CUDA_EP_OK.store(false, Ordering::Relaxed);
-            session = build_session(env, &onnx, false)?;
+            session = build_session(env, &onnx, Accelerator::None)?;
+            tiled(&mut session)?
+        }
+        #[cfg(target_os = "macos")]
+        Err(err) if matches!(accel, Accelerator::CoreMl) => {
+            crate::app_log::warn(
+                "neural",
+                format!("coreml failed, fallback to cpu: {err}"),
+            );
+            COREML_EP_OK.store(false, Ordering::Relaxed);
+            session = build_session(env, &onnx, Accelerator::None)?;
             tiled(&mut session)?
         }
         Err(err) => {

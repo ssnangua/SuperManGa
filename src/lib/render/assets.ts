@@ -45,6 +45,12 @@ export interface NeuralRuntimeStatus {
   approxBytes: number;
   flavor: string;
   recommendedFlavor: string;
+  /** Active EP when ready: `none` | `cuda` | `coreml`. */
+  accelerator: string;
+  /** Preferred EP for this machine: `none` | `cuda` | `coreml`. */
+  recommendedAccelerator: string;
+  /** Windows/Linux x64 can use CUDA ORT packs. */
+  cudaCapable: boolean;
   gpu: boolean;
 }
 
@@ -138,6 +144,9 @@ export async function neuralRuntimeStatus(): Promise<NeuralRuntimeStatus> {
       approxBytes: 80_000_000,
       flavor: "cpu",
       recommendedFlavor: "cpu",
+      accelerator: "none",
+      recommendedAccelerator: "none",
+      cudaCapable: false,
       gpu: false,
     };
   }

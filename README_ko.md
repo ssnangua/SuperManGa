@@ -47,7 +47,7 @@ OS에 맞는 `v0.1.4` 패키지를 선택하세요. 전체 버전은 [Releases](
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
-> 런타임 / 업스케일 모델 / 문자 검출 모델 / OCR 모델은 **설치 패키지에 포함되지 않습니다**. 신경망 업스케일·OCR 번역을 쓰려면 앱에서 직접 다운로드하세요.
+> ONNX 런타임 / 업스케일 모델 / 문자 검출 모델 / OCR 모델은 **설치 패키지에 포함되지 않습니다**. 신경망 업스케일·OCR 번역을 쓰려면 앱에서 직접 다운로드하세요.
 
 <details>
 <summary>macOS 설치 및 사용</summary>
@@ -114,11 +114,22 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 > - PDF는 캐시에 래스터화. 암호화 PDF는 비밀번호 입력
 > - KFX 및 DRM Kindle 전자책은 미지원
 
+### ONNX 런타임
+
+업스케일과 번역에는 ONNX 런타임이 필요합니다:
+
+| 플랫폼 | 런타임 |
+| --- | --- |
+| Windows x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+| macOS arm64 | `CPU` (추론 시 CoreML 자동 사용) |
+| macOS x64 | `CPU` (ORT 1.23.0; 추론 시 CoreML 자동 사용) |
+| Linux arm64 | `CPU` |
+| Linux x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+
 ### 신경망 업스케일
 
 | 종류 | 설명 |
 | --- | --- |
-| 런타임 | `CPU` / `CUDA 12` / `CUDA 13` (맞는 CUDA 패키지가 있으면 GPU 우선) |
 | 모델 | `MangaJaNai 2x` / `Real-ESRGAN Anime 2x` |
 
 > [!NOTE]
@@ -130,7 +141,6 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 | 종류 | 옵션 |
 | --- | --- |
-| 런타임 | `CPU` / `CUDA 12` / `CUDA 13` (맞는 CUDA 패키지가 있으면 GPU 우선) |
 | 검출기 | `DBNet` / `CTD` / `YOLO` / `SaberYOLO` |
 | OCR | `시스템 OCR`(Windows만) / `Manga OCR` / `PaddleOCR` / `MIT 48px` / `EasyOCR` |
 

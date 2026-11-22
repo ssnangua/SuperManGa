@@ -15,7 +15,9 @@ tools/pack-data/
 ```bash
 cd tools/pack-data
 python pack.py
-python pack.py --only runtime
+python pack.py --only runtime          # all OS/arch CPU + CUDA packs
+python pack.py --only cpu              # CPU packs only (all platforms)
+python pack.py --only runtime-macos-arm64-cpu
 python pack.py --only detector-yolo,detector-dbnet
 # Already have zips — only rebuild manifest (bytes + sha256):
 python pack.py --manifest-only
@@ -23,6 +25,10 @@ python pack.py --manifest-only
 # Windows PowerShell:
 $env:HF_MIRROR="https://hf-mirror.com"; python pack.py --only ocr,neural
 ```
+
+**Runtime** zips are per OS/arch (native libs), e.g. `runtime-windows-x64-cpu-v1.30.0.zip`, `runtime-macos-arm64-cpu-v1.30.0.zip`. Detector / OCR / neural **ONNX** packs stay cross-platform (one zip for all OS).
+
+`runtime-macos-x64-cpu` is pinned to **ORT 1.23.0** (last official NuGet `osx-x64` / GitHub `onnxruntime-osx-x86_64`); other platforms default to `--ort-version` (1.30.0).
 
 Do **not** re-pack from `.cache` just to refresh hashes: zip metadata can change `sha256` even when file contents are the same. Prefer `--manifest-only` against the uploaded zips.
 

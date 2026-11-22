@@ -29,6 +29,9 @@ const runtimeStatus = ref<NeuralRuntimeStatus>({
   approxBytes: 83_000_000,
   flavor: "cpu",
   recommendedFlavor: "cpu",
+  accelerator: "none",
+  recommendedAccelerator: "none",
+  cudaCapable: false,
   gpu: false,
 });
 let unlistenProgress: (() => void) | null = null;
@@ -40,29 +43,35 @@ const runtimeSizeText = computed(() =>
   formatBytes(runtimeStatus.value.approxBytes || 83_000_000),
 );
 
+function readyLabel(status: NeuralRuntimeStatus) {
+  if (status.accelerator === "cuda") return t("neuralRuntimeReadyCuda");
+  if (status.accelerator === "coreml") return t("neuralRuntimeReadyCoreml");
+  return t("neuralRuntimeReady");
+}
+
 const runtimeButtonLabel = computed(() => {
   if (runtimeBusy.value) return null;
   if (runtimeOutdated.value) return t("neuralRuntimeUpdate");
-  if (runtimeReady.value) {
-    return runtimeStatus.value.gpu
-      ? t("neuralRuntimeReadyCuda")
-      : t("neuralRuntimeReady");
-  }
+  if (runtimeReady.value) return readyLabel(runtimeStatus.value);
   return t("neuralRuntimeInit");
 });
 
 const runtimeHint = computed(() => {
-  const rec = runtimeStatus.value.recommendedFlavor;
-  const flavor = runtimeStatus.value.flavor;
-  if (!runtimeReady.value) {
-    return rec.startsWith("cuda")
-      ? t("neuralRuntimeHintUpgradeGpu")
-      : t("neuralRuntimeHintCpu");
+  const status = runtimeStatus.value;
+  const recAccel = status.recommendedAccelerator;
+  const accel = status.accelerator;
+  if (!status.ready) {
+    if (recAccel === "cuda") return t("neuralRuntimeHintUpgradeGpu");
+    if (recAccel === "coreml") return t("neuralRuntimeHintCoremlInit");
+    if (status.cudaCapable) return t("neuralRuntimeHintCpuCudaTip");
+    return t("neuralRuntimeHintCpu");
   }
-  if (rec.startsWith("cuda") && !flavor.startsWith("cuda")) {
+  if (recAccel === "cuda" && accel !== "cuda") {
     return t("neuralRuntimeHintUpgradeGpu");
   }
-  if (runtimeStatus.value.gpu) return t("neuralRuntimeHintCuda");
+  if (accel === "cuda") return t("neuralRuntimeHintCuda");
+  if (accel === "coreml") return t("neuralRuntimeHintCoreml");
+  if (status.cudaCapable) return t("neuralRuntimeHintCpuCudaTip");
   return t("neuralRuntimeHintCpu");
 });
 
@@ -89,11 +98,7 @@ async function initRuntime() {
     if (wasOutdated) {
       runtimeRestartOpen.value = true;
     } else {
-      notifySuccess(
-        runtimeStatus.value.gpu
-          ? t("neuralRuntimeReadyCuda")
-          : t("neuralRuntimeReady"),
-      );
+      notifySuccess(readyLabel(runtimeStatus.value));
     }
   } catch (error) {
     notifyError(String(error));

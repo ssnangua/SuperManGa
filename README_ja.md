@@ -47,7 +47,7 @@ OS に合わせて `v0.1.4` を選んでください（全バージョンは [Re
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.4/SuperManGa-0.1.4-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
-> ランタイム / 超解像モデル / 文字検出モデル / OCR モデルは **インストーラに含まれません**。ニューラル超解像や OCR 翻訳を使う場合はアプリ内でダウンロードしてください。
+> ONNX ランタイム / 超解像モデル / 文字検出モデル / OCR モデルは **インストーラに含まれません**。ニューラル超解像や OCR 翻訳を使う場合はアプリ内でダウンロードしてください。
 
 <details>
 <summary>macOS のインストールと使い方</summary>
@@ -114,11 +114,22 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 > - PDF はキャッシュへラスタライズ。暗号化 PDF はパスワード入力
 > - KFX および DRM 付き Kindle は非対応
 
+### ONNX ランタイム
+
+超解像と翻訳は ONNX ランタイムが必要です：
+
+| プラットフォーム | ランタイム |
+| --- | --- |
+| Windows x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+| macOS arm64 | `CPU`（推論時に CoreML を自動有効化） |
+| macOS x64 | `CPU`（ORT 1.23.0；推論時に CoreML を自動有効化） |
+| Linux arm64 | `CPU` |
+| Linux x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+
 ### ニューラル超解像
 
 | 種類 | 説明 |
 | --- | --- |
-| ランタイム | `CPU` / `CUDA 12` / `CUDA 13`（対応する CUDA パックがあれば GPU 優先） |
 | モデル | `MangaJaNai 2x` / `Real-ESRGAN Anime 2x` |
 
 > [!NOTE]
@@ -130,7 +141,6 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 | 種類 | 選択肢 |
 | --- | --- |
-| ランタイム | `CPU` / `CUDA 12` / `CUDA 13`（対応する CUDA パックがあれば GPU 優先） |
 | 検出器 | `DBNet` / `CTD` / `YOLO` / `SaberYOLO` |
 | OCR | `システム OCR`（Windows のみ） / `Manga OCR` / `PaddleOCR` / `MIT 48px` / `EasyOCR` |
 

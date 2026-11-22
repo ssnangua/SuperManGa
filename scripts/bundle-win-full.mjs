@@ -238,7 +238,9 @@ function packEntries(manifest, { skipRuntime, skipModels }) {
     });
   };
   if (!skipRuntime) {
+    // Full Windows zip only needs this host's ORT natives.
     for (const [key, raw] of Object.entries(manifest.runtime || {})) {
+      if (!String(key).startsWith("windows-x64-")) continue;
       push("runtime", key, raw);
     }
   }

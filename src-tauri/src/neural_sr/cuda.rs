@@ -32,11 +32,16 @@ struct DetectedCuda {
 
 static DETECTED: OnceLock<DetectedCuda> = OnceLock::new();
 
-fn gpu_ort_supported() -> bool {
+/// Whether this build/OS can use ORT CUDA packs (Windows/Linux x64 only).
+pub fn platform_supports_cuda() -> bool {
     cfg!(all(
         any(target_os = "windows", target_os = "linux"),
         target_arch = "x86_64"
     ))
+}
+
+fn gpu_ort_supported() -> bool {
+    platform_supports_cuda()
 }
 
 pub fn recommended_flavor() -> RuntimeFlavor {

@@ -330,18 +330,24 @@ const messages = {
     neuralRuntimeInit: "初始化",
     neuralRuntimeReady: "已就绪",
     neuralRuntimeReadyCuda: "已就绪（CUDA）",
+    neuralRuntimeReadyCoreml: "已就绪（CoreML）",
     neuralRuntimeUpdate: "更新",
     neuralRuntimeUpdatedRestart: "运行环境已更新，需重启应用以应用更新。",
     initRuntimeFirst: "需要初始化运行环境",
     prompt: "提示",
     later: "稍后",
     restartApp: "重启应用",
-    neuralRuntimeHintCpu:
-      "未检测到可用的 CUDA，将使用 CPU 进行超分。安装 CUDA 12.8+ 或 CUDA 13 与 cuDNN 9 后可改用 GPU 加速。",
+    neuralRuntimeHintCpu: "将使用 CPU 进行神经网络超分 / OCR。",
+    neuralRuntimeHintCpuCudaTip:
+      "未检测到可用的 CUDA，将使用 CPU。安装 CUDA 12.8+ 或 CUDA 13 与 cuDNN 9 后可改用 GPU 加速。",
     neuralRuntimeHintCuda:
-      "已使用 CUDA GPU 加速超分。缺少 cuDNN 时会自动回退到 CPU。",
+      "已使用 CUDA GPU 加速。缺少 cuDNN 时会自动回退到 CPU。",
+    neuralRuntimeHintCoreml:
+      "已通过 CoreML 使用 Apple GPU / 神经网络引擎加速；不可用时会回退到 CPU。",
     neuralRuntimeHintUpgradeGpu:
-      "检测到 CUDA，初始化或更新运行环境后将使用 GPU 加速进行超分（需匹配的 CUDA/cuDNN）。",
+      "检测到 CUDA，初始化或更新运行环境后将使用 GPU 加速（需匹配的 CUDA/cuDNN）。",
+    neuralRuntimeHintCoremlInit:
+      "初始化运行环境后，将通过 CoreML 使用 Apple GPU / 神经网络引擎加速。",
     assetInstalling: "正在安装",
     neuralResultsSize: "磁盘占用",
     neuralClearResults: "清除缓存",
@@ -869,18 +875,24 @@ const messages = {
     neuralRuntimeInit: "初始化",
     neuralRuntimeReady: "已就緒",
     neuralRuntimeReadyCuda: "已就緒（CUDA）",
+    neuralRuntimeReadyCoreml: "已就緒（CoreML）",
     neuralRuntimeUpdate: "更新",
     neuralRuntimeUpdatedRestart: "執行環境已更新，需重啟應用以套用更新。",
     initRuntimeFirst: "需要初始化執行環境",
     prompt: "提示",
     later: "稍後",
     restartApp: "重啟應用",
-    neuralRuntimeHintCpu:
-      "未偵測到可用的 CUDA，超分將使用 CPU。安裝 CUDA 12.8+ 或 CUDA 13 與 cuDNN 9 後可改用 GPU。",
+    neuralRuntimeHintCpu: "將使用 CPU 進行神經網路超分 / OCR。",
+    neuralRuntimeHintCpuCudaTip:
+      "未偵測到可用的 CUDA，將使用 CPU。安裝 CUDA 12.8+ 或 CUDA 13 與 cuDNN 9 後可改用 GPU 加速。",
     neuralRuntimeHintCuda:
-      "已使用 CUDA GPU 加速超分。缺少 cuDNN 時會自動回退到 CPU。",
+      "已使用 CUDA GPU 加速。缺少 cuDNN 時會自動回退到 CPU。",
+    neuralRuntimeHintCoreml:
+      "已透過 CoreML 使用 Apple GPU / 神經網路引擎加速；不可用時會回退到 CPU。",
     neuralRuntimeHintUpgradeGpu:
-      "已偵測到 CUDA，初始化或更新執行環境後將使用 GPU 加速超分（需匹配的 CUDA/cuDNN）。",
+      "已偵測到 CUDA，初始化或更新執行環境後將使用 GPU 加速（需匹配的 CUDA/cuDNN）。",
+    neuralRuntimeHintCoremlInit:
+      "初始化執行環境後，將透過 CoreML 使用 Apple GPU / 神經網路引擎加速。",
     assetInstalling: "正在安裝",
     neuralResultsSize: "磁碟佔用",
     neuralClearResults: "清除快取",
@@ -1422,6 +1434,7 @@ const messages = {
     neuralRuntimeInit: "Initialize",
     neuralRuntimeReady: "Ready",
     neuralRuntimeReadyCuda: "Ready (CUDA)",
+    neuralRuntimeReadyCoreml: "Ready (CoreML)",
     neuralRuntimeUpdate: "Update",
     neuralRuntimeUpdatedRestart:
       "Runtime updated. Restart the app to apply it.",
@@ -1429,12 +1442,17 @@ const messages = {
     prompt: "Notice",
     later: "Later",
     restartApp: "Restart",
-    neuralRuntimeHintCpu:
-      "No usable CUDA detected; neural upscaling uses the CPU. Install CUDA 12.8+ or CUDA 13 with cuDNN 9 to use the GPU.",
+    neuralRuntimeHintCpu: "Neural upscaling / OCR will use the CPU.",
+    neuralRuntimeHintCpuCudaTip:
+      "No usable CUDA detected; using the CPU. Install CUDA 12.8+ or CUDA 13 with cuDNN 9 for GPU acceleration.",
     neuralRuntimeHintCuda:
-      "Neural upscaling uses CUDA. Missing cuDNN falls back to the CPU.",
+      "Using CUDA GPU acceleration. Missing cuDNN falls back to the CPU.",
+    neuralRuntimeHintCoreml:
+      "Using Apple GPU / Neural Engine via CoreML; falls back to CPU if unavailable.",
     neuralRuntimeHintUpgradeGpu:
-      "CUDA detected. Initialize or update the runtime to GPU-accelerate neural upscaling (matching CUDA/cuDNN required).",
+      "CUDA detected. Initialize or update the runtime for GPU acceleration (matching CUDA/cuDNN required).",
+    neuralRuntimeHintCoremlInit:
+      "After you initialize the runtime, CoreML will use the Apple GPU / Neural Engine.",
     assetInstalling: "Installing",
     neuralResultsSize: "Disk Usage",
     neuralClearResults: "Clear Cache",
@@ -1979,6 +1997,7 @@ const messages = {
     neuralRuntimeInit: "初期化",
     neuralRuntimeReady: "準備完了",
     neuralRuntimeReadyCuda: "準備完了（CUDA）",
+    neuralRuntimeReadyCoreml: "準備完了（CoreML）",
     neuralRuntimeUpdate: "更新",
     neuralRuntimeUpdatedRestart:
       "ランタイムを更新しました。反映するには再起動が必要です。",
@@ -1986,12 +2005,17 @@ const messages = {
     prompt: "お知らせ",
     later: "後で",
     restartApp: "再起動",
-    neuralRuntimeHintCpu:
-      "利用可能な CUDA がありません。超解像は CPU で実行します。GPU を使うには CUDA 12.8+ または CUDA 13 と cuDNN 9 を入れてください。",
+    neuralRuntimeHintCpu: "ニューラル超解像 / OCR は CPU で実行します。",
+    neuralRuntimeHintCpuCudaTip:
+      "利用可能な CUDA がありません。CPU で実行します。GPU を使うには CUDA 12.8+ または CUDA 13 と cuDNN 9 を入れてください。",
     neuralRuntimeHintCuda:
-      "超解像は CUDA GPU で実行します。cuDNN がない場合は CPU に戻します。",
+      "CUDA GPU で加速します。cuDNN がない場合は CPU に戻します。",
+    neuralRuntimeHintCoreml:
+      "CoreML 経由で Apple GPU / Neural Engine を使います。使えない場合は CPU に戻します。",
     neuralRuntimeHintUpgradeGpu:
-      "CUDA を検出しました。ランタイムを初期化または更新すると GPU で超解像できます（対応する CUDA/cuDNN が必要です）。",
+      "CUDA を検出しました。ランタイムを初期化または更新すると GPU 加速できます（対応する CUDA/cuDNN が必要です）。",
+    neuralRuntimeHintCoremlInit:
+      "ランタイムを初期化すると、CoreML 経由で Apple GPU / Neural Engine を使います。",
     assetInstalling: "インストール中",
     neuralResultsSize: "ディスク使用量",
     neuralClearResults: "キャッシュを削除",
@@ -2534,6 +2558,7 @@ const messages = {
     neuralRuntimeInit: "초기화",
     neuralRuntimeReady: "준비됨",
     neuralRuntimeReadyCuda: "준비됨 (CUDA)",
+    neuralRuntimeReadyCoreml: "준비됨 (CoreML)",
     neuralRuntimeUpdate: "업데이트",
     neuralRuntimeUpdatedRestart:
       "런타임을 업데이트했습니다. 적용하려면 앱을 다시 시작하세요.",
@@ -2541,12 +2566,17 @@ const messages = {
     prompt: "알림",
     later: "나중에",
     restartApp: "다시 시작",
-    neuralRuntimeHintCpu:
-      "사용 가능한 CUDA가 없어 초해상도는 CPU로 실행됩니다. GPU를 쓰려면 CUDA 12.8+ 또는 CUDA 13과 cuDNN 9를 설치하세요.",
+    neuralRuntimeHintCpu: "신경망 업스케일 / OCR은 CPU로 실행됩니다.",
+    neuralRuntimeHintCpuCudaTip:
+      "사용 가능한 CUDA가 없어 CPU로 실행됩니다. GPU를 쓰려면 CUDA 12.8+ 또는 CUDA 13과 cuDNN 9를 설치하세요.",
     neuralRuntimeHintCuda:
-      "초해상도는 CUDA GPU로 실행됩니다. cuDNN이 없으면 CPU로 돌아갑니다.",
+      "CUDA GPU로 가속합니다. cuDNN이 없으면 CPU로 돌아갑니다.",
+    neuralRuntimeHintCoreml:
+      "CoreML로 Apple GPU / Neural Engine을 사용합니다. 불가하면 CPU로 돌아갑니다.",
     neuralRuntimeHintUpgradeGpu:
-      "CUDA를 감지했습니다. 런타임을 초기화하거나 업데이트하면 GPU로 초해상도할 수 있습니다(맞는 CUDA/cuDNN 필요).",
+      "CUDA를 감지했습니다. 런타임을 초기화하거나 업데이트하면 GPU 가속할 수 있습니다(맞는 CUDA/cuDNN 필요).",
+    neuralRuntimeHintCoremlInit:
+      "런타임을 초기화하면 CoreML로 Apple GPU / Neural Engine을 사용합니다.",
     assetInstalling: "설치 중",
     neuralResultsSize: "디스크 사용량",
     neuralClearResults: "캐시 지우기",

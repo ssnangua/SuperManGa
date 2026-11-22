@@ -1,21 +1,51 @@
 {
   "schema": 2,
-  "updatedAt": "2026-11-20T03:17:11Z",
+  "updatedAt": "2026-11-22T06:46:18Z",
   "runtime": {
-    "cpu": {
+    "windows-x64-cpu": {
       "version": "1.30.0",
       "bytes": 6249285,
-      "sha256": "dfca99ceb22396eb01d65fa2dc4e04cb382fd1cf3178e656e1153a8ac031e4e4"
+      "sha256": "4908d9dadd3db9acf6de892fdf0c41cde2bba31d50f220a8b555e689a64468ba"
     },
-    "cuda12": {
+    "macos-arm64-cpu": {
+      "version": "1.30.0",
+      "bytes": 12952275,
+      "sha256": "20cdb2f68d5cf0e51137e5cbc23570fa5b43e41f4abb058ef20a3302786d2a0e"
+    },
+    "macos-x64-cpu": {
+      "version": "1.23.0",
+      "bytes": 11631401,
+      "sha256": "1197b882beb866e7cac1430346d7971dc66df7cec630578e14a4320a0e4be979"
+    },
+    "linux-x64-cpu": {
+      "version": "1.30.0",
+      "bytes": 11364394,
+      "sha256": "732b9a204fcb604b6005bd7957df1ba4a0f6a78c78b44be34a36f4be32d1f97a"
+    },
+    "linux-arm64-cpu": {
+      "version": "1.30.0",
+      "bytes": 10391901,
+      "sha256": "806dd617935e6e07534e2d2b3d8e86c15cbb5bccb8e89b6f888db9a1d11cc614"
+    },
+    "windows-x64-cuda12": {
       "version": "1.30.0",
       "bytes": 243761793,
-      "sha256": "beb04f5d39600de8dad145c841b3097134fbf2ea1ae342bc71f9d4f9cdf7e7da"
+      "sha256": "334b4d6fc4ab4f33b0aedc0fc877a88fddca1a65736c71846cd0f086cb225243"
     },
-    "cuda13": {
+    "windows-x64-cuda13": {
       "version": "1.30.0",
       "bytes": 153048039,
-      "sha256": "69564b37869bd133d0fdd74ca66a5e8117505d73275d2eee88b3405ae01e0981"
+      "sha256": "a1e95c81255c7a24d968724647c5fcf70270b47f86d2a8f42362c60059d79cf7"
+    },
+    "linux-x64-cuda12": {
+      "version": "1.30.0",
+      "bytes": 440759209,
+      "sha256": "00357b4169307178e834fe100114121881b5bc1852a8ca36031a9292bf966412"
+    },
+    "linux-x64-cuda13": {
+      "version": "1.30.0",
+      "bytes": 236065916,
+      "sha256": "b3aa9f575940e83fcd58d1f5fbbc99e0b6f88a613c6a9fd9b6bd930edfe2be56"
     }
   },
   "detector": {
