@@ -2,9 +2,13 @@
 import { useI18n } from "vue-i18n";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import {
+  assetDownloadPercentFor,
+  assetJobKey,
+  isAssetDownloading,
+} from "../lib/assetDownload";
+import {
   OCR_ASSET_CATALOG,
   installOcrAsset,
-  listenAssetProgress,
   listOcrAssets,
   type OcrAssetInfo,
 } from "../lib/ocr/assets";
@@ -20,8 +24,6 @@ import Icon from "./Icon.vue";
 const { t } = useI18n();
 
 const rows = ref<OcrAssetInfo[]>([]);
-const busyId = ref<string | null>(null);
-const progressPercent = ref<number | null>(null);
 const runtimeStatus = ref<NeuralRuntimeStatus>({
   ready: false,
   outdated: false,
@@ -36,7 +38,18 @@ const runtimeStatus = ref<NeuralRuntimeStatus>({
   cudaCapable: false,
   gpu: false,
 });
-let unlistenProgress: (() => void) | null = null;
+
+function ocrJob(id: string) {
+  return assetJobKey("ocr", id);
+}
+
+function isOcrBusy(id: string) {
+  return isAssetDownloading(ocrJob(id));
+}
+
+function ocrProgress(id: string) {
+  return assetDownloadPercentFor(ocrJob(id));
+}
 
 const runtimeReady = computed(() => runtimeStatus.value.ready);
 const ocrRows = computed(() => rows.value.filter((row) => row.kind === "ocr"));
@@ -96,7 +109,7 @@ function assetButtonLabel(row: OcrAssetInfo) {
 }
 
 function assetActionDisabled(row: OcrAssetInfo) {
-  if (busyId.value === row.id) return true;
+  if (isOcrBusy(row.id)) return true;
   if (row.installed && !row.outdated) return true;
   if (!runtimeReady.value) return true;
   return false;
@@ -127,21 +140,19 @@ function showInstallTip(event: PointerEvent, row: OcrAssetInfo) {
 
 async function install(id: string) {
   const row = rows.value.find((item) => item.id === id);
-  if (busyId.value || !runtimeReady.value) return;
+  if (!runtimeReady.value) return;
   if (row?.installed && !row.outdated) return;
-  busyId.value = id;
-  progressPercent.value = null;
+  const alreadyBusy = isOcrBusy(id);
+  if (!alreadyBusy && rows.value.some((r) => r.id !== id && isOcrBusy(r.id))) return;
   const updating = !!row?.outdated;
   try {
     await installOcrAsset(id, downloadNetworkConfig());
     await refresh();
+    if (alreadyBusy) return;
     void refreshTranslationPrereqs();
     notifySuccess(updating ? t("assetUpdated") : t("assetInstalled"));
   } catch (error) {
-    notifyError(String(error));
-  } finally {
-    busyId.value = null;
-    progressPercent.value = null;
+    if (!alreadyBusy) notifyError(String(error));
   }
 }
 
@@ -154,19 +165,15 @@ watch(ocrAssetsOpen, (open) => {
   }
 });
 
-onMounted(async () => {
+onMounted(() => {
   if (ocrAssetsOpen.value) {
     void refreshRuntime();
     void refresh();
   }
-  unlistenProgress = await listenAssetProgress((event) => {
-    if (event.id === busyId.value) progressPercent.value = event.percent;
-  });
 });
 
 onUnmounted(() => {
   hideAppTip();
-  unlistenProgress?.();
 });
 </script>
 
@@ -194,9 +201,9 @@ onUnmounted(() => {
                 @pointerleave="hideAppTip"
               >
                 <button type="button" :disabled="assetActionDisabled(row)" @click="install(row.id)">
-                  <span v-if="busyId === row.id" class="busy-label">
+                  <span v-if="isOcrBusy(row.id)" class="busy-label">
                     <Icon name="loadingDotsRotate" />
-                    <template v-if="progressPercent != null">{{ progressPercent }}%</template>
+                    <template v-if="ocrProgress(row.id) != null">{{ ocrProgress(row.id) }}%</template>
                     <template v-else>{{
                       row.outdated ? t("assetUpdating") : t("assetInstalling")
                     }}</template>

@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { runAssetDownload } from "../assetDownload";
 import type { DownloadNetworkConfig } from "../render/assets";
 import { networkPayload } from "../render/assets";
 import {
@@ -180,14 +181,16 @@ export async function listOcrAssets(): Promise<OcrAssetInfo[]> {
 export async function installOcrAsset(id: string, network: DownloadNetworkConfig): Promise<void> {
   const item = OCR_ASSET_CATALOG.find((entry) => entry.id === id);
   if (!item) throw new Error("unknown asset");
-  if (!inTauri()) {
-    localStorage.setItem(`asset:${id}`, "1");
-    return;
-  }
-  await invoke("install_ocr_asset", {
-    id: item.id,
-    packStem: item.packStem,
-    network: networkPayload(network),
+  return runAssetDownload("ocr", id, async () => {
+    if (!inTauri()) {
+      localStorage.setItem(`asset:${id}`, "1");
+      return;
+    }
+    await invoke("install_ocr_asset", {
+      id: item.id,
+      packStem: item.packStem,
+      network: networkPayload(network),
+    });
   });
 }
 

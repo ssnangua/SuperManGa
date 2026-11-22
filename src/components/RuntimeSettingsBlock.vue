@@ -1,9 +1,12 @@
 <script setup lang="ts">
 import { useI18n } from "vue-i18n";
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
+import {
+  assetDownloadPercentFor,
+  isAssetDownloading,
+} from "../lib/assetDownload";
 import {
   initNeuralRuntime,
-  listenNeuralProgress,
   neuralRuntimeStatus,
   type NeuralRuntimeStatus,
 } from "../lib/render/assets";
@@ -18,8 +21,8 @@ const { t } = useI18n();
 
 const props = defineProps<{ active?: boolean }>();
 
-const runtimeBusy = ref(false);
-const progressPercent = ref<number | null>(null);
+const RUNTIME_JOB = "runtime";
+
 const runtimeStatus = ref<NeuralRuntimeStatus>({
   ready: false,
   outdated: false,
@@ -34,7 +37,9 @@ const runtimeStatus = ref<NeuralRuntimeStatus>({
   cudaCapable: false,
   gpu: false,
 });
-let unlistenProgress: (() => void) | null = null;
+
+const runtimeBusy = computed(() => isAssetDownloading(RUNTIME_JOB));
+const progressPercent = computed(() => assetDownloadPercentFor(RUNTIME_JOB));
 
 const runtimeReady = computed(() => runtimeStatus.value.ready);
 const runtimeOutdated = computed(() => runtimeStatus.value.outdated);
@@ -88,23 +93,21 @@ async function refreshRuntime() {
 }
 
 async function initRuntime() {
-  if (runtimeBusy.value || (runtimeReady.value && !runtimeOutdated.value)) return;
-  runtimeBusy.value = true;
-  progressPercent.value = null;
+  if (runtimeReady.value && !runtimeOutdated.value) return;
+  // Join in-flight download if any; do not start a second one.
+  const alreadyBusy = runtimeBusy.value;
   const wasOutdated = runtimeOutdated.value;
   try {
     runtimeStatus.value = await initNeuralRuntime(downloadNetworkConfig());
     void refreshTranslationPrereqs();
+    if (alreadyBusy) return;
     if (wasOutdated) {
       runtimeRestartOpen.value = true;
     } else {
       notifySuccess(readyLabel(runtimeStatus.value));
     }
   } catch (error) {
-    notifyError(String(error));
-  } finally {
-    runtimeBusy.value = false;
-    progressPercent.value = null;
+    if (!alreadyBusy) notifyError(String(error));
   }
 }
 
@@ -115,15 +118,8 @@ watch(
   },
 );
 
-onMounted(async () => {
-  unlistenProgress = await listenNeuralProgress((event) => {
-    if (event.kind === "runtime") progressPercent.value = event.percent;
-  });
+onMounted(() => {
   void refreshRuntime();
-});
-
-onUnmounted(() => {
-  unlistenProgress?.();
 });
 </script>
 

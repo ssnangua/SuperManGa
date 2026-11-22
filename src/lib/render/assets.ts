@@ -1,5 +1,6 @@
 import { invoke } from "@tauri-apps/api/core";
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
+import { runAssetDownload } from "../assetDownload";
 
 function inTauri() {
   return typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
@@ -122,14 +123,16 @@ export async function installImageAsset(
 ): Promise<void> {
   const item = IMAGE_ASSET_CATALOG.find((entry) => entry.id === id);
   if (!item) throw new Error("unknown asset");
-  if (!inTauri()) {
-    localStorage.setItem(`asset:${id}`, "1");
-    return;
-  }
-  await invoke("install_image_asset", {
-    id: item.id,
-    packStem: item.packStem,
-    network: networkPayload(network),
+  return runAssetDownload("model", id, async () => {
+    if (!inTauri()) {
+      localStorage.setItem(`asset:${id}`, "1");
+      return;
+    }
+    await invoke("install_image_asset", {
+      id: item.id,
+      packStem: item.packStem,
+      network: networkPayload(network),
+    });
   });
 }
 
@@ -156,11 +159,13 @@ export async function neuralRuntimeStatus(): Promise<NeuralRuntimeStatus> {
 export async function initNeuralRuntime(
   network: DownloadNetworkConfig,
 ): Promise<NeuralRuntimeStatus> {
-  if (!inTauri()) {
-    return neuralRuntimeStatus();
-  }
-  return invoke<NeuralRuntimeStatus>("init_neural_runtime", {
-    network: networkPayload(network),
+  return runAssetDownload("runtime", "ort", async () => {
+    if (!inTauri()) {
+      return neuralRuntimeStatus();
+    }
+    return invoke<NeuralRuntimeStatus>("init_neural_runtime", {
+      network: networkPayload(network),
+    });
   });
 }
 

@@ -3,9 +3,13 @@ import { useI18n } from "vue-i18n";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import {
+  assetDownloadPercentFor,
+  assetJobKey,
+  isAssetDownloading,
+} from "../lib/assetDownload";
+import {
   IMAGE_ASSET_CATALOG,
   installImageAsset,
-  listenNeuralProgress,
   listImageAssets,
   neuralRuntimeStatus,
   type ImageAssetInfo,
@@ -13,15 +17,12 @@ import {
 } from "../lib/render/assets";
 import { notifyError, notifySuccess } from "../lib/appToast";
 import { hideAppTip, showAppTip } from "../lib/appTip";
-import { neuralAssetsOpen, downloadNetworkConfig, setRenderProfile } from "../reader";
-import { neuralProfileForAsset } from "../lib/render/profile";
+import { neuralAssetsOpen, downloadNetworkConfig } from "../reader";
 import AppModal from "./AppModal.vue";
 import Icon from "./Icon.vue";
 
 const { t } = useI18n();
 const rows = ref<ImageAssetInfo[]>([]);
-const busyId = ref<string | null>(null);
-const progressPercent = ref<number | null>(null);
 const runtimeStatus = ref<NeuralRuntimeStatus>({
   ready: false,
   outdated: false,
@@ -36,7 +37,18 @@ const runtimeStatus = ref<NeuralRuntimeStatus>({
   cudaCapable: false,
   gpu: false,
 });
-let unlistenProgress: (() => void) | null = null;
+
+function modelJob(id: string) {
+  return assetJobKey("model", id);
+}
+
+function isModelBusy(id: string) {
+  return isAssetDownloading(modelJob(id));
+}
+
+function modelProgress(id: string) {
+  return assetDownloadPercentFor(modelJob(id));
+}
 
 const runtimeReady = computed(() => runtimeStatus.value.ready);
 const modelRows = computed(() => rows.value.filter((row) => row.kind === "neural"));
@@ -67,7 +79,7 @@ function assetButtonLabel(row: ImageAssetInfo) {
 }
 
 function assetActionDisabled(row: ImageAssetInfo) {
-  if (busyId.value === row.id) return true;
+  if (isModelBusy(row.id)) return true;
   if (row.installed && !row.outdated) return true;
   if (!runtimeReady.value) return true;
   return false;
@@ -106,21 +118,18 @@ async function refresh() {
 
 async function install(id: string) {
   const row = rows.value.find((item) => item.id === id);
-  if (busyId.value || !runtimeReady.value) return;
+  if (!runtimeReady.value) return;
   if (row?.installed && !row.outdated) return;
-  busyId.value = id;
-  progressPercent.value = null;
+  const alreadyBusy = isModelBusy(id);
+  if (!alreadyBusy && rows.value.some((r) => r.id !== id && isModelBusy(r.id))) return;
   const updating = !!row?.outdated;
   try {
     await installImageAsset(id, downloadNetworkConfig());
     await refresh();
-    setRenderProfile(neuralProfileForAsset(id));
+    if (alreadyBusy) return;
     notifySuccess(updating ? t("assetUpdated") : t("assetInstalled"));
   } catch (error) {
-    notifyError(String(error));
-  } finally {
-    busyId.value = null;
-    progressPercent.value = null;
+    if (!alreadyBusy) notifyError(String(error));
   }
 }
 
@@ -133,10 +142,7 @@ watch(neuralAssetsOpen, (open) => {
   }
 });
 
-onMounted(async () => {
-  unlistenProgress = await listenNeuralProgress((event) => {
-    progressPercent.value = event.percent;
-  });
+onMounted(() => {
   if (neuralAssetsOpen.value) {
     void refreshRuntime();
     void refresh();
@@ -145,7 +151,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   hideAppTip();
-  unlistenProgress?.();
 });
 </script>
 
@@ -173,9 +178,9 @@ onUnmounted(() => {
                 @pointerleave="hideAppTip"
               >
                 <button type="button" :disabled="assetActionDisabled(row)" @click="install(row.id)">
-                  <span v-if="busyId === row.id" class="busy-label">
+                  <span v-if="isModelBusy(row.id)" class="busy-label">
                     <Icon name="loadingDotsRotate" />
-                    <template v-if="progressPercent != null">{{ progressPercent }}%</template>
+                    <template v-if="modelProgress(row.id) != null">{{ modelProgress(row.id) }}%</template>
                     <template v-else>{{
                       row.outdated ? t("assetUpdating") : t("assetInstalling")
                     }}</template>
