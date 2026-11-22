@@ -1,6 +1,6 @@
 # Developer Documentation
 
-This document is for developers and maintainers. Short install / build notes live in [README_en.md](README_en.md).
+This document is for developers and maintainers. User-facing notes live in [README_en.md](README_en.md).
 
 ---
 
@@ -19,7 +19,7 @@ This document is for developers and maintainers. Short install / build notes liv
 
 ## 1. Overview
 
-SuperManGa is a **Vue 3 + Tauri 2** desktop app: open one folder, archive, or ebook at a time; read as a continuous vertical webtoon scroll, or as single- / double-page flips. Optional neural upscaling, bubble text detection, OCR, and online translation overlays.
+SuperManGa is a **Vue 3 + Tauri 2** desktop app: open one folder, archive, or ebook at a time; read as a continuous vertical webtoon scroll, or as single- / double-page flips. Optional neural upscaling and translation (text detection → OCR → online translation).
 
 | Layer | Stack |
 |---|---|
@@ -27,9 +27,9 @@ SuperManGa is a **Vue 3 + Tauri 2** desktop app: open one folder, archive, or eb
 | Desktop shell | Tauri 2, Rust |
 | Native deps | pdfium (fetched per platform), ONNX Runtime (downloaded on demand), UnRAR (RAR/CBR) |
 
-Page images are served through a custom protocol (Windows / Android: `http://comic.localhost`; elsewhere: `comic://localhost`) so archives are never converted wholesale to base64. Upscale results use the `neural` protocol the same way.
+Page images are served through a custom protocol (Windows / Android: `http://comic.localhost`; elsewhere: `comic://localhost`). Upscale results use the `neural` protocol the same way.
 
-**Primary verification is on Windows.** CI also builds macOS (arm64 + x64) and Linux (x64 + arm64) packages. File associations, context menu, WebView2 checks, Windows Media OCR, and the primary-instance mutex are Windows-specific.
+File associations, context menu, WebView2 checks, Windows Media OCR, and the primary-instance mutex are Windows-specific.
 
 ---
 
@@ -43,7 +43,7 @@ Page images are served through a custom protocol (Windows / Android: `http://com
 | **Rust** | Stable toolchain compatible with Tauri 2 |
 | **Windows** | Visual Studio **C++ build tools**; **WebView2** Evergreen (usually present on Win10/11; portable builds check at startup and show a native prompt + Microsoft download link if missing) |
 | **Linux** | `webkit2gtk-4.1` and build deps (see CI: `libwebkit2gtk-4.1-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `patchelf`, etc.) |
-| **macOS** | Xcode CLT; system WKWebView (not WebView2) |
+| **macOS** | Xcode CLT; system WKWebView |
 
 ### 2.2 Local development
 
@@ -54,7 +54,7 @@ npm run dev
 ```
 
 - `npm run dev` runs `predev` first (`fetch-pdfium.mjs --optional`); a failed fetch does not block.
-- Encrypted / vector PDFs need pdfium; release `beforeBuildCommand` and CI fetch per target and bundle it.
+- Encrypted PDFs / PDF rasterization need pdfium; release `beforeBuildCommand` and CI fetch per target and bundle it.
 - Dev server defaults to `http://localhost:1420` (`devUrl` in `tauri.conf.json`).
 
 **Browser demo (no local files):**
@@ -85,13 +85,14 @@ Windows artifact:
 
 ```
 src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
+└── SuperManGa-*-windows-x64
+    ├── SuperManGa.exe
+    └── pdfium.dll
 ```
 
-Unpack to a folder like `SuperManGa-*-windows-x64/` containing `SuperManGa.exe` and `pdfium.dll` (when found). Release filenames stay **ASCII, no spaces**.
+**Windows:** On first run the app creates `SuperManGaData/` next to the exe (falls back to the OS app-data directory if not writable).
 
-**CI:** the Windows job runs `npm run build:win`; macOS / Linux run `npm run build:mac` / `build:linux`.
-
-**Windows:** On first run the app creates `SuperManGaData/` next to the exe (portable; falls back to the OS app-data directory if not writable). **macOS / Linux:** Default is `SuperManGaData/` under the OS app-data directory (so upgrading a `.app` / package does not wipe data).
+**macOS / Linux:** Default is `SuperManGaData/` under the OS app-data directory (not inside the `.app`, so upgrades do not wipe data).
 
 ### 2.4 GitHub Actions release
 
@@ -120,24 +121,27 @@ You can also run **Release** via `workflow_dispatch` to collect build artifacts 
 
 ### 2.5 macOS install and usage
 
-1. Open the matching `.dmg` and drag `SuperManGa.app` into Applications (or any folder).
-2. The first launch of a download may be blocked by Gatekeeper (“cannot be verified” / unidentified developer).
+Current releases are not Developer ID–signed or notarized, so Gatekeeper may block launch (“cannot be verified” / unidentified developer).
 
-**Why:** Release builds are not Developer ID–signed or notarized: `tauri.conf.json` sets `bundle.macOS.signingIdentity` to `"-"` (ad-hoc) and `hardenedRuntime` to `false`, and CI does not notarize. Downloaded `.dmg` / `.app` files get `com.apple.quarantine`.
+`tauri.conf.json` sets `bundle.macOS.signingIdentity` to `"-"` (ad-hoc) and `hardenedRuntime` to `false`, and CI does not notarize. Downloaded `.dmg` / `.app` files get `com.apple.quarantine`.
 
 **User workaround:**
 
-1. After a blocked open, go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** (confirm once more).
+1. Go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** (confirm once more).
 2. Or **Control-click → Open** the `.app` (more likely to prompt than a normal double-click).
 3. Or clear quarantine, then open: `xattr -dr com.apple.quarantine /Applications/SuperManGa.app` (adjust the path).
 
-**Proper fix (maintainers):** join the [Apple Developer Program](https://developer.apple.com/programs/), sign with a **Developer ID Application** certificate, enable `hardenedRuntime`, and **notarize + staple** the `.app` / `.dmg`. Wire certificate + `APPLE_ID` / Team ID / app-specific password (or API key) into CI secrets. Until then, docs/FAQ should mention the workaround above.
+**Proper fix (maintainers):**
+
+Join the [Apple Developer Program](https://developer.apple.com/programs/), sign with a **Developer ID Application** certificate, enable `hardenedRuntime`, and **notarize + staple** the `.app` / `.dmg`. Wire certificate + `APPLE_ID` / Team ID / app-specific password (or API key) into CI secrets.
+
+Until then, docs/FAQ should mention the workaround above.
 
 ### 2.6 Linux install and usage
 
-`.deb` packages are built on Ubuntu 22.04 (glibc **2.35**) so they run on Debian 12 / Ubuntu 22.04+. Do not switch CI runners to 24.04 — that would require `GLIBC_2.39`.
+`.deb` packages are built on Ubuntu 22.04 (glibc **2.35**) so they run on Debian 12 / Ubuntu 22.04+.
 
-Debian/Ubuntu family only. Run in the directory that contains the `.deb` (the leading `./` is required):
+Run in the directory that contains the `.deb` (the leading `./` is required):
 
 ```bash
 # x64
@@ -149,9 +153,43 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if dependencies are missing. After install, launch from the app menu or run `supermanga`.
 
-### 2.7 Windows full offline package (cloud-drive distribution)
+### 2.7 ONNX runtime & models
 
-For a **single zip** users can unpack and run (app + ORT/models; no separate app download or online fetch):
+Use [`tools/pack-data/`](tools/pack-data/) to pack runtimes and models. Output is a set of `{stem}-v{ver}.zip` files plus a `manifest.json`, all published on GitHub Release tag **`data`**.
+
+On disk:
+
+```
+<data root>/SuperManGaData/data/
+├── {stem}-v{ver}/
+└── manifest.json
+```
+
+Manifest entries are `{ version, bytes, sha256 }`:
+- `version`: asset version
+- `bytes`: download size shown in the UI
+- `sha256`: reject corrupt zips after download
+
+The app ships a seed manifest. Settings → General → Fetch Latest Asset Catalog on Startup (`fetchDataManifestOnStartup`, default on):
+- On: after launch, silent background fetch with a short timeout
+- Off: pull manually
+
+Runtime selection (per-platform download; stem like `runtime-{os}-{arch}-{flavor}`, e.g. `runtime-macos-arm64-cpu`):
+
+| Machine | Behavior |
+|---|---|
+| Matching local `runtime-*-cuda*-v…` | Use CUDA ORT; GPU EP when usable |
+| No CUDA / no GPU pack, but local `runtime-*-cpu-v…` present | Auto-select CPU; shows Ready |
+| CUDA pack only, no local CPU pack | Shows Initialize; must download CPU |
+
+- ORT CUDA packs are Windows/Linux x64 only
+- macOS uses the same CPU pack and enables the **CoreML** EP at inference time (Apple GPU / Neural Engine)
+- macOS Intel (x64) uses the last official prebuild **ORT 1.23.0** (`runtime-macos-x64-cpu`); other platforms use 1.30
+- ONNX model packs are cross-platform
+
+### 2.8 Windows full offline package
+
+For **unpack-and-run upscaling / translation**, build a full offline package (app + ONNX runtime + all models):
 
 ```bash
 # Need a portable zip (or at least target/release/supermanga.exe)
@@ -178,29 +216,7 @@ Reuse rules:
 - Existing `…/portable/SuperManGa-*-windows-x64.zip` → **no app rebuild**; if only `supermanga.exe` exists, runs `pack-portable.mjs` only
 - Existing `tools/pack-data/data/{pack}.zip` (and `manifest.json` there) → **no GitHub download** for that pack; missing packs fall back to Release tag `data`
 
-Assets can also live on GitHub Release tag **`data`** (`manifest.json` + `{stem}-v{ver}.zip`). Manifest entries are `{version,bytes,sha256}`; `bytes` drives UI download size and `sha256` rejects corrupt zips after download. The app ships a seed manifest. Settings → General → Fetch Latest Asset Catalog on Startup (`fetchDataManifestOnStartup`, default on) fetches after launch on a short timeout. When off, you can pull the remote `manifest.json` manually. Local layout is `SuperManGaData/data/{stem}-v{ver}/`. Build zips with [`tools/pack-data/`](tools/pack-data/).
-
-Runtime selection (per-platform download; stem like `runtime-{os}-{arch}-{flavor}`, e.g. `runtime-macos-arm64-cpu`):
-
-| Machine | Behavior |
-|---|---|
-| Matching local `runtime-*-cuda*-v…` | Use CUDA ORT; GPU EP when usable |
-| No CUDA / no GPU pack, but local `runtime-*-cpu-v…` present | Auto-select CPU; shows Ready |
-| CUDA pack only, no local CPU pack | Shows Initialize; must download CPU |
-
-Offline packs must include the local **CPU** flavor. ORT CUDA packs are Windows/Linux x64 only; macOS uses the same CPU pack and enables the **CoreML** EP at inference time (Apple GPU / Neural Engine). ONNX model packs are cross-platform. macOS Intel (x64) uses the last official prebuild **ORT 1.23.0** (`runtime-macos-x64-cpu`); other platforms use 1.30.
-
-### 2.8 Helper scripts
-
-| Script | Role |
-|---|---|
-| [`scripts/fetch-pdfium.mjs`](scripts/fetch-pdfium.mjs) | Download pdfium for the host or `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` into `src-tauri/resources/pdfium/` |
-| [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | Pack `target/release/supermanga.exe` into a Windows portable zip (with pdfium when available) |
-| [`scripts/bundle-win-full.mjs`](scripts/bundle-win-full.mjs) | Merge portable + data packs → `SuperManGa-*-full-windows-x64.zip` (prefers local pack-data / existing portable) |
-| [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | Ensure locale key parity in `src/i18n.ts` and scan for undeclared `$t` / `t(` keys |
-| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | Copy `package.json` version to Cargo / tauri.conf / README; runs from `npm version` |
-
-Common npm scripts: `dev`, `fetch:pdfium`, `build:win`, `build:mac`, `build:linux`, `bundle:win-full`, `sync-version`, `preview`.
+Offline packs must include the local **CPU** flavor.
 
 ---
 
@@ -264,6 +280,18 @@ SuperManGa/
         ├── ocr/              # Detectors + OCR engines
         └── translation/      # Online translation providers
 ```
+
+#### Helper scripts
+
+| Script | Role |
+|---|---|
+| [`scripts/fetch-pdfium.mjs`](scripts/fetch-pdfium.mjs) | Download pdfium for the host or `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` into `src-tauri/resources/pdfium/` |
+| [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | Pack `target/release/supermanga.exe` into a Windows portable zip (with pdfium when available) |
+| [`scripts/bundle-win-full.mjs`](scripts/bundle-win-full.mjs) | Merge portable + data packs → `SuperManGa-*-full-windows-x64.zip` (prefers local pack-data / existing portable) |
+| [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | Ensure locale key parity in `src/i18n.ts` and scan for undeclared `$t` / `t(` keys |
+| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | Copy `package.json` version to Cargo / tauri.conf / README; runs from `npm version` |
+
+Common npm scripts: `dev`, `fetch:pdfium`, `build:win`, `build:mac`, `build:linux`, `bundle:win-full`, `sync-version`, `preview`.
 
 ---
 
@@ -357,7 +385,7 @@ Bookmarks are read/written by Rust `load_bookmarks` / `save_bookmarks` / `delete
 
 ---
 
-### C) Neural upscale
+### C) Neural upscaling (Neural SR)
 
 Download ORT and model packs on demand → `neural_upscale` inference → write into `upscaled/` → frontend reads WebP via the `neural` protocol.
 
@@ -380,7 +408,9 @@ sequenceDiagram
   PROT-->>UI: image/webp
 ```
 
-Modules: `neural_sr/{download,runtime,infer,cache,results,models,ort_env,cuda}`; frontend `lib/render/neural.ts`, `NeuralAssetsDialog`, `NeuralSettingsPanel`. Protocol origin: `http://neural.localhost` on Windows/Android, `neural://localhost` elsewhere.
+Modules: `neural_sr/{download,runtime,infer,cache,results,models,ort_env,cuda}`;
+frontend `lib/render/neural.ts`, `NeuralAssetsDialog`, `NeuralSettingsPanel`.
+Protocol origin: `http://neural.localhost` on Windows/Android, `neural://localhost` elsewhere.
 
 ---
 
@@ -397,7 +427,7 @@ flowchart LR
 ```
 
 - **Detectors** (optional aux YOLO merge, SaberYOLO OBB refine): weights downloaded from Release `data` into `SuperManGaData/data/`.
-- **OCR:** Windows Media OCR is Windows-only; others are mostly ONNX and need an initialized ORT.
+- **OCR:** Windows Media OCR is Windows-only; others are cross-platform ONNX.
 - **Translation:** secrets prefer the OS keyring; on failure, an app-bound encrypted file under `SuperManGaData/secrets/`.
 - Frontend can pre-translate the whole book or only the current page / neighbors; book pre-translate / pre-upscale background queues radiate from the current page (forward then backward). Results render in `OcrOverlay`.
 
@@ -407,11 +437,11 @@ Commands: `ocr_translate_page`, `cancel_ocr_translate`, `translate_text_cmd`.
 
 ### E) Settings & SuperManGaData layout
 
-**Default root (release):**  
-- Windows: `<exe_dir>/SuperManGaData` when writable; else OS app data  
+**Release default root:**  
+- Windows: `<exe_dir>/SuperManGaData` (falls back to OS app data if not writable)  
 - macOS / Linux: `<OS app data>/SuperManGaData`  
 
-**Debug:** always `<OS app data>/SuperManGaData`.  
+**Debug** always uses `<OS app data>/SuperManGaData`.  
 Custom path is recorded in `data-root.json` under the fixed OS app-data directory (locator always stays there).
 
 ```
@@ -506,25 +536,42 @@ Translation target languages are not limited to UI locales (OCR / translation ma
 
 - Folders, `.zip`, `.cbz`, `.epub`: ready to page after open; EPUB pulls spine images (fixed-layout manga style); text-heavy EPUBs with almost no images report missing art.
 - `.rar`, `.cbr`, solid `.7z`, `.pdf`: extract / render into cache with progress.
-- PDF: Settings → Rasterize PDF (default off). With local pdfium (or a best-effort download): on → full-page rasterize (B1); off → export embedded images only (B2; decrypt first if encrypted). **Rasterize and encryption both require pdfium** — if download fails, error out (do not silently fall back to scrape). Path A (lopdf page-order, then byte-scrape) only when rasterize is off, the PDF is unencrypted, and pdfium is missing. Cache keys are tagged `pdf-r` / `pdf-i`; toggling the setting purges the other mode’s cache and, if that PDF is open, cancels in-flight work and reopens with the new path. B1 pre-renders the whole book in the background, fills MediaBox sizes on open, and orders the extract queue radiating from the current page (forward then backward); progress is shown as warning-colored seek segments (priority: neural/translate → extract → measure), not a centered “Extracting” toast.
 - `.mobi` / `.azw3` / `.azw`: DRM-free resource-region images; DRM is rejected explicitly. No KFX.
+
+Extract progress is shown as warning-colored seek segments (priority: neural/translate → extract → measure).
 
 ### UnRAR
 
-RAR / CBR reading uses the official [unrar](https://www.rarlab.com/) decompression library (via `unrar-ng`, extract-only). UnRAR’s license terms are separate from this project’s code and must not be treated as part of the project license. See [RARLAB](https://www.rarlab.com/license.htm).
+RAR / CBR reading uses the official [unrar](https://www.rarlab.com/) decompression library (via `unrar-ng`, extract-only).
+UnRAR’s license terms are separate from this project’s code and must not be treated as part of the project license. See [RARLAB](https://www.rarlab.com/license.htm).
+
+### PDF and pdfium
+
+- Without pdfium
+  - **Unencrypted** and **rasterize off**: scrape images directly (lopdf page-order, then byte-scrape) ← “Path A”
+  - **Encrypted** or **rasterize on**: try downloading pdfium; on success use B1 or B2; on failure, error out (do not silently fall back to scrape)
+- With pdfium
+  - **Rasterize on**: full-page rasterize (cache key `pdf-r`) ← “Path B1”
+  - **Rasterize off**: export embedded images (cache key `pdf-i`) ← “Path B2”
+
+**Rasterize and encryption both require pdfium** — if download fails, error out; do not silently fall back to Path A scrape (Path A only when pdfium is missing, the PDF is unencrypted, and rasterize is off).
+
+Cache keys are tagged `pdf-r` / `pdf-i`; toggling the setting purges the other mode’s cache and, if that PDF is open, cancels in-flight work and reopens with the new path.
+
+B1 pre-renders the whole book in the background, fills MediaBox sizes on open, and orders the extract queue radiating from the current page (forward then backward).
 
 ---
 
 ## 8. Appendix: detector export
 
-Detector weights are **not** shipped in the installer. Export ONNX with [`tools/export-detectors`](tools/export-detectors) → pack with [`tools/pack-data`](tools/pack-data) into `detector-*-v*.zip` → upload Release tag **`data`**.
+Export ONNX with [`tools/export-detectors`](tools/export-detectors) → pack with [`tools/pack-data`](tools/pack-data) into `detector-*-v*.zip` → upload Release tag **`data`**.
 
 Requires Python 3.10+; source weights are not in this repo.
 
 <details>
 <summary>Where to get source weights</summary>
 
-- **DBNet** (`detect-20241225.ckpt`): [detect-20241225.ckpt](https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/detect-20241225.ckpt) from manga-image-translator. If you already have [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) / [BallonsTranslator](https://github.com/dmMaze/BallonsTranslator), check `models/default/` or Ballons `data/models`.
+- **DBNet** (`detect-20241225.ckpt`): [detect-20241225.ckpt](https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/detect-20241225.ckpt) from manga-image-translator. Or from [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) `models/default/` / [BallonsTranslator](https://github.com/dmMaze/BallonsTranslator) `data/models`.
 - **YSGYolo** (`ysgyolo_*.pt`): Hugging Face [`YSGforMTL/YSGYoloDetector`](https://huggingface.co/YSGforMTL/YSGYoloDetector).
 - **SaberYOLO** (`saber_yolo.pt`): From [Saber-Translator Releases](https://github.com/MashiroSaber03/Saber-Translator/releases) `models.zip` volumes or a full install’s `models/saber_yolo/`.
 - **CTD:** `pack-data` downloads the MIT public ONNX; no local export.

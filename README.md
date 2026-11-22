@@ -47,7 +47,7 @@
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
-> ONNX 运行环境 / 超分模型 / 文字检测器模型 / OCR 模型 **没有打进安装包**，要使用神经网络超分 / OCR 翻译功能，需在应用内自行下载。
+> ONNX 运行环境 / 超分模型 / 文字检测器模型 / OCR 模型 **没有打进安装包**，要使用超分 / 翻译功能，需在应用内自行下载。
 
 <details>
 <summary>macOS 安装与使用</summary>
@@ -188,7 +188,11 @@ API 密钥加密保存在系统凭据库（失败则回退到文件加密），*
 
 ### 应用数据
 
-Windows 下，首次运行会在可执行文件目录创建 `SuperManGaData/`（可携；不可写则回退系统应用数据目录）。macOS / Linux 默认写在系统应用数据目录下的 `SuperManGaData/`，升级安装包不会清掉数据。
+Windows 下，首次运行会在可执行文件目录创建 `SuperManGaData/`。
+
+macOS / Linux 默认写在系统应用数据目录下的 `SuperManGaData/`。
+
+**设置 → 常规** 里可自定义 **数据目录**。
 
 ## 常见问题
 

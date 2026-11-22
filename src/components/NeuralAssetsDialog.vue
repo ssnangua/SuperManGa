@@ -121,7 +121,6 @@ async function install(id: string) {
   if (!runtimeReady.value) return;
   if (row?.installed && !row.outdated) return;
   const alreadyBusy = isModelBusy(id);
-  if (!alreadyBusy && rows.value.some((r) => r.id !== id && isModelBusy(r.id))) return;
   const updating = !!row?.outdated;
   try {
     await installImageAsset(id, downloadNetworkConfig());

@@ -47,7 +47,7 @@ OS に合わせて `v0.1.8` を選んでください（全バージョンは [Re
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
-> ONNX ランタイム / 超解像モデル / 文字検出モデル / OCR モデルは **インストーラに含まれません**。ニューラル超解像や OCR 翻訳を使う場合はアプリ内でダウンロードしてください。
+> ONNX ランタイム / 超解像モデル / 文字検出モデル / OCR モデルは **インストーラに含まれません**。超解像 / 翻訳を使う場合はアプリ内でダウンロードしてください。
 
 <details>
 <summary>macOS のインストールと使い方</summary>
@@ -188,7 +188,11 @@ API キーは OS 資格情報ストアに暗号化保存（失敗時はファイ
 
 ### アプリデータ
 
-Windows では初回起動時、実行ファイルと同じ場所に `SuperManGaData/` を作成します（ポータブル；書けない場合はシステム AppData へ）。macOS / Linux ではシステム AppData 配下の `SuperManGaData/` を既定にし、アップグレードで消えないようにしています。
+Windows では初回起動時、実行ファイルと同じ場所に `SuperManGaData/` を作成します。
+
+macOS / Linux ではシステム AppData 配下の `SuperManGaData/` を既定にします。
+
+**設定 → 一般** で **データディレクトリ** を変更できます。
 
 ## よくある質問
 

@@ -1,10 +1,10 @@
 /**
  * Shared in-flight asset downloads (runtime / models / OCR).
- * Survives settings-tab unmount and dedupes concurrent starts of the same job.
+ * Survives settings-tab unmount; same key is deduped; different keys may run in parallel.
  */
 
 import { listen, type UnlistenFn } from "@tauri-apps/api/event";
-import { ref } from "vue";
+import { reactive } from "vue";
 
 export type AssetProgressPayload = {
   kind: string;
@@ -14,9 +14,10 @@ export type AssetProgressPayload = {
   percent: number | null;
 };
 
-/** Active UI job key: `runtime` | `model:{id}` | `ocr:{id}`. */
-export const assetDownloadKey = ref<string | null>(null);
-export const assetDownloadPercent = ref<number | null>(null);
+/** Busy flags per job key (`runtime` | `model:{id}` | `ocr:{id}`). */
+const busy = reactive<Record<string, true>>({});
+/** Progress percent per job key (null = indeterminate). */
+const percents = reactive<Record<string, number | null>>({});
 
 const inflight = new Map<string, Promise<unknown>>();
 let progressUnlisten: UnlistenFn | null = null;
@@ -27,14 +28,11 @@ export function assetJobKey(kind: string, id: string): string {
 }
 
 export function isAssetDownloading(key: string): boolean {
-  // Read reactive key so Vue templates/computeds re-render on start/finish.
-  const active = assetDownloadKey.value;
-  return active === key || inflight.has(key);
+  return !!busy[key];
 }
 
 export function assetDownloadPercentFor(key: string): number | null {
-  if (assetDownloadKey.value !== key) return null;
-  return assetDownloadPercent.value;
+  return Object.prototype.hasOwnProperty.call(percents, key) ? percents[key] : null;
 }
 
 async function ensureProgressListen(): Promise<void> {
@@ -43,20 +41,13 @@ async function ensureProgressListen(): Promise<void> {
   progressUnlisten = await listen<AssetProgressPayload>("asset-progress", (event) => {
     const key = assetJobKey(event.payload.kind, event.payload.id);
     if (!inflight.has(key)) return;
-    if (assetDownloadKey.value !== key) {
-      // Prefer showing the job that just emitted if UI key is stale/empty.
-      if (!assetDownloadKey.value || !inflight.has(assetDownloadKey.value)) {
-        assetDownloadKey.value = key;
-      }
-    }
-    if (assetDownloadKey.value === key) {
-      assetDownloadPercent.value = event.payload.percent;
-    }
+    percents[key] = event.payload.percent;
   });
 }
 
 /**
- * Run a download job. Concurrent calls with the same key share one Promise.
+ * Run a download job. Concurrent calls with the same key share one Promise;
+ * different keys run in parallel.
  */
 export function runAssetDownload<T>(
   kind: string,
@@ -68,19 +59,16 @@ export function runAssetDownload<T>(
   if (existing) return existing as Promise<T>;
 
   void ensureProgressListen();
-  assetDownloadKey.value = key;
-  assetDownloadPercent.value = null;
+  busy[key] = true;
+  percents[key] = null;
 
   const promise = (async () => {
     try {
       return await run();
     } finally {
       inflight.delete(key);
-      if (assetDownloadKey.value === key) {
-        const next = inflight.keys().next();
-        assetDownloadKey.value = next.done ? null : next.value;
-        assetDownloadPercent.value = null;
-      }
+      delete busy[key];
+      delete percents[key];
     }
   })();
 

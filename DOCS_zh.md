@@ -1,6 +1,6 @@
 # 开发文档
 
-本文面向开发与维护。用户向安装说明见 [README.md](README.md)。
+本文面向开发与维护。用户向说明见 [README.md](README.md)。
 
 ---
 
@@ -19,7 +19,7 @@
 
 ## 1. 概述
 
-SuperManGa 是 **Vue 3 + Tauri 2** 的桌面应用：一次打开一个文件夹、压缩包或电子书，按条漫纵向滚动，或单页 / 双页翻页；可选神经网络超分、气泡文字检测、OCR 与在线翻译叠层。
+SuperManGa 是 **Vue 3 + Tauri 2** 的桌面应用：一次打开一个文件夹、压缩包或电子书，按条漫纵向滚动，或单页 / 双页翻页；可选神经网络超分、翻译（文字检测 → OCR → 在线翻译）。
 
 | 层 | 技术 |
 |---|---|
@@ -27,9 +27,9 @@ SuperManGa 是 **Vue 3 + Tauri 2** 的桌面应用：一次打开一个文件夹
 | 桌面壳 | Tauri 2、Rust |
 | 原生依赖 | pdfium（按平台拉取）、ONNX Runtime（按需下载）、UnRAR（RAR/CBR） |
 
-图片通过自定义协议按页返回（Windows / Android：`http://comic.localhost`；其他平台：`comic://localhost`），不会整包转成 base64。超分结果同理走 `neural` 协议。
+图片通过自定义协议按页返回（Windows / Android：`http://comic.localhost`；其他平台：`comic://localhost`）。超分结果同理走 `neural` 协议。
 
-**验证重点在 Windows**；CI 额外构建 macOS（arm64 + x64）与 Linux（x64 + arm64）安装包。文件关联、右键菜单、WebView2 检测、Windows Media OCR、进程互斥等为 Windows 专用能力。
+文件关联、右键菜单、WebView2 检测、Windows Media OCR、进程互斥等为 Windows 专用能力。
 
 ---
 
@@ -43,7 +43,7 @@ SuperManGa 是 **Vue 3 + Tauri 2** 的桌面应用：一次打开一个文件夹
 | **Rust** | stable 工具链；与 Tauri 2 兼容 |
 | **Windows** | Visual Studio **C++ 生成工具**；**WebView2** Evergreen（Win10/11 通常已带；便携版启动前会检测，缺失则原生提示并打开微软下载页） |
 | **Linux** | `webkit2gtk-4.1` 及构建依赖（见 CI：`libwebkit2gtk-4.1-dev`、`libayatana-appindicator3-dev`、`librsvg2-dev`、`patchelf` 等） |
-| **macOS** | Xcode CLT；使用系统 WKWebView（非 WebView2） |
+| **macOS** | Xcode CLT；使用系统 WKWebView |
 
 ### 2.2 本地开发
 
@@ -54,7 +54,7 @@ npm run dev
 ```
 
 - `npm run dev` 会先跑 `predev`（`fetch-pdfium.mjs --optional`），拉取失败不阻断。
-- 加密 PDF / 矢量 PDF 依赖 pdfium；发版时 `beforeBuildCommand` 与 CI 会按目标平台拉取并打进包。
+- 加密 PDF / PDF 栅格化依赖 pdfium；发版时 `beforeBuildCommand` 与 CI 会按目标平台拉取并打进包。
 - 开发服务器默认 `http://localhost:1420`（见 `tauri.conf.json` 的 `devUrl`）。
 
 **浏览器演示（不读本地文件）：**
@@ -85,13 +85,14 @@ Windows 产物：
 
 ```
 src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
+└── SuperManGa-*-windows-x64
+    ├── SuperManGa.exe
+    └── pdfium.dll
 ```
 
-解压后目录形如 `SuperManGa-*-windows-x64/`，内含 `SuperManGa.exe` 与 `pdfium.dll`（若已找到）。发布文件名保持 **ASCII、无空格**。
+**Windows：** 首次运行在 exe 同级创建 `SuperManGaData/`（不可写则回退系统应用数据目录）。
 
-**CI**：Windows job 跑 `npm run build:win`；macOS / Linux 分别跑 `npm run build:mac` / `build:linux`。
-
-**Windows：** 首次运行在 exe 同级创建 `SuperManGaData/`（可携；不可写则回退系统应用数据目录）。**macOS / Linux：** 默认写在系统应用数据目录下的 `SuperManGaData/`（避免升级覆盖 `.app` / 安装包时丢数据）。
+**macOS / Linux：** 默认写在系统应用数据目录下的 `SuperManGaData/`（不写在 `.app` 内，避免升级时丢数据）。
 
 ### 2.4 GitHub Actions 发版
 
@@ -120,24 +121,27 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 
 ### 2.5 macOS 安装与使用
 
-1. 打开对应架构的 `.dmg`，将 `SuperManGa.app` 拖到「应用程序」（或任意目录）。
-2. 首次从网上下载打开时，可能被 Gatekeeper 拦截（「无法验证开发者」之类）。
+当前发版未使用 Apple Developer ID 签名与公证，启动时可能会被 Gatekeeper 拦截（「无法验证开发者」）。
 
-**原因：** 当前发版未使用 Apple Developer ID 签名与公证：`tauri.conf.json` 里 `bundle.macOS.signingIdentity` 为 `"-"`（ad-hoc），`hardenedRuntime` 为 `false`，CI 也不做 notarize。下载的 `.dmg` / `.app` 会带 `com.apple.quarantine`。
+`tauri.conf.json` 里 `bundle.macOS.signingIdentity` 为 `"-"`（ad-hoc），`hardenedRuntime` 为 `false`，CI 也不做 notarize。下载的 `.dmg` / `.app` 会带 `com.apple.quarantine`。
 
 **用户侧临时处理：**
 
-1. 双击打开被拦后，打开 **系统设置 → 隐私与安全性**，滑到下方点 **仍要打开**（再确认一次）。
+1. 打开 **系统设置 → 隐私与安全性**，滑到下方点 **仍要打开**（再确认一次）。
 2. 或对 `.app` **右键 → 打开**（比直接双击更容易放行）。
 3. 或去掉隔离标记后再开：`xattr -dr com.apple.quarantine /Applications/SuperManGa.app`（路径按实际安装位置改）。
 
-**彻底解决（维护者）：** 加入 [Apple Developer Program](https://developer.apple.com/programs/)，用 **Developer ID Application** 证书签名，打开 `hardenedRuntime`，并对 `.app` / `.dmg` 做 **notarize + staple**；在 CI 配置相应证书与 `APPLE_ID` / 团队 ID / app-specific password（或 API key）密钥。未完成前，文档与 FAQ 需说明上述临时步骤。
+**彻底解决（维护者）：**
+
+加入 [Apple Developer Program](https://developer.apple.com/programs/)，用 **Developer ID Application** 证书签名，打开 `hardenedRuntime`，并对 `.app` / `.dmg` 做 **notarize + staple**；在 CI 配置相应证书与 `APPLE_ID` / 团队 ID / app-specific password（或 API key）密钥。
+
+未完成前，文档与 FAQ 需说明上述临时步骤。
 
 ### 2.6 Linux 安装与使用
 
-`.deb` 在 Ubuntu 22.04（glibc **2.35**）上构建，以便跑在 Debian 12 / Ubuntu 22.04+；CI 勿改用 24.04 runner，否则会要求 `GLIBC_2.39`。
+`.deb` 在 Ubuntu 22.04（glibc **2.35**）上构建，以便跑在 Debian 12 / Ubuntu 22.04+。
 
-仅适用于 Debian / Ubuntu 系。在 `.deb` 所在目录执行（`./` 不可省略）：
+在 `.deb` 所在目录执行（`./` 不可省略）：
 
 ```bash
 # x64
@@ -149,9 +153,43 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 或：`sudo dpkg -i SuperManGa-*-linux-*.deb`，缺依赖时再 `sudo apt-get install -f`。装好后应用菜单可启动，或运行 `supermanga`。
 
-### 2.7 Windows 完整离线包（网盘分发）
+### 2.7 ONNX 运行时与模型
 
-若希望用户**只下这一份 zip 即可解压即用**（含程序 + ORT / 模型，不必再下程序包或在线拉资源）：
+用 [`tools/pack-data/`](tools/pack-data/) 打包运行时与模型，会输出一堆 `{stem}-v{ver}.zip` 和一个清单文件 `manifest.json`，统一放在 GitHub Release tag **`data`**。
+
+下载到本机目录为：
+
+```
+数据目录/SuperManGaData/data/
+├── {stem}-v{ver}/
+└── manifest.json
+```
+
+清单条目为 `{ version, bytes, sha256 }`：
+- `version`：资源版本
+- `bytes`：供界面显示下载大小
+- `sha256`：在下载后校验坏包
+
+应用内置 seed 清单，设置 → 通用 →「启动时获取最新资源清单」（`fetchDataManifestOnStartup`，默认开）：
+- 开启：会在应用启动后，在后台短超时静默获取
+- 关闭：可手动拉取
+
+运行时选型（按平台下载，stem 形如 `runtime-{os}-{arch}-{flavor}`，例如 `runtime-macos-arm64-cpu`）：
+
+| 本机条件 | 行为 |
+|---|---|
+| 有匹配本机的 `runtime-*-cuda*-v…` | 选用 CUDA ORT，可用则走 GPU EP |
+| 无 CUDA / 无 GPU 包，但有本机 `runtime-*-cpu-v…` | 自动选用 CPU，显示已就绪 |
+| 只有 CUDA 包、没有本机 CPU 包 | 显示「初始化」，需下载 CPU 包 |
+
+- ORT CUDA 包仅 Windows/Linux x64
+- macOS 用同一套 CPU 包，推理时自动挂 **CoreML** EP（Apple GPU / Neural Engine）
+- macOS Intel（x64）使用官方最后一版预编译 **ORT 1.23.0**（`runtime-macos-x64-cpu`），其余平台为 1.30。
+- ONNX 模型包不分平台
+
+### 2.8 Windows 完整离线包
+
+若希望**解压即可使用超分 / 翻译**，可打完整离线包（含程序 + ONNX 运行时 + 所有模型）：
 
 ```bash
 # 先有程序包（或至少有 target/release/supermanga.exe）
@@ -178,29 +216,7 @@ SuperManGa-*-full-windows-x64/
 - 已有 `…/portable/SuperManGa-*-windows-x64.zip` → **不重新构建/打包程序**；没有 zip 但有 `supermanga.exe` 时只跑 `pack-portable.mjs`
 - 已有 `tools/pack-data/data/{pack}.zip`（及同目录 `manifest.json`）→ **不从 GitHub 下该包**；缺的才回退 Release tag `data`
 
-资源统一也可放在 GitHub Release tag **`data`**（`manifest.json` + `{stem}-v{ver}.zip`）。清单条目为 `{version,bytes,sha256}`；`bytes` 供界面显示下载大小，`sha256` 在下载后校验坏包。应用内置 seed 清单；设置 → 通用 →「启动时获取最新资源清单」（`fetchDataManifestOnStartup`，默认开）启动后后台短超时静默获取。关闭后可手动拉取远程 `manifest.json`。本机目录为 `SuperManGaData/data/{stem}-v{ver}/`。打 zip 可用 [`tools/pack-data/`](tools/pack-data/)。
-
-运行时选型（按平台下载，stem 形如 `runtime-{os}-{arch}-{flavor}`，例如 `runtime-macos-arm64-cpu`）：
-
-| 本机条件 | 行为 |
-|---|---|
-| 有匹配本机的 `runtime-*-cuda*-v…` | 选用 CUDA ORT，可用则走 GPU EP |
-| 无 CUDA / 无 GPU 包，但有本机 `runtime-*-cpu-v…` | 自动选用 CPU，显示已就绪 |
-| 只有 CUDA 包、没有本机 CPU 包 | 显示「初始化」，需下载 CPU 包 |
-
-完整离线包须带上本机 **CPU** flavor。ORT CUDA 包仅 Windows/Linux x64；macOS 用同一套 CPU 包，推理时自动挂 **CoreML** EP（Apple GPU / Neural Engine）。ONNX 模型包不分平台。macOS Intel（x64）使用官方最后一版预编译 **ORT 1.23.0**（`runtime-macos-x64-cpu`）；其余平台为 1.30。
-
-### 2.8 辅助脚本
-
-| 脚本 | 作用 |
-|---|---|
-| [`scripts/fetch-pdfium.mjs`](scripts/fetch-pdfium.mjs) | 按本机或 `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` 下载 pdfium 到 `src-tauri/resources/pdfium/` |
-| [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | 将 `target/release/supermanga.exe` 打成 Windows portable zip，并附带 pdfium |
-| [`scripts/bundle-win-full.mjs`](scripts/bundle-win-full.mjs) | 合并 portable + 数据包 → `SuperManGa-*-full-windows-x64.zip`（优先本地 pack-data / 已有 portable） |
-| [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | 检查 `src/i18n.ts` 各语言键一致，并扫描源码中未声明的 `$t` / `t(` 键 |
-| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | 把 `package.json` 的 version 同步到 Cargo / tauri.conf / README；`npm version` 会自动跑 |
-
-常用 npm scripts：`dev`、`fetch:pdfium`、`build:win`、`build:mac`、`build:linux`、`bundle:win-full`、`sync-version`、`preview`。
+完整离线包须带上本机 **CPU** flavor。
 
 ---
 
@@ -264,6 +280,18 @@ SuperManGa/
         ├── ocr/              # 检测器 + 各 OCR 引擎
         └── translation/      # 在线翻译提供商
 ```
+
+#### 辅助脚本
+
+| 脚本 | 作用 |
+|---|---|
+| [`scripts/fetch-pdfium.mjs`](scripts/fetch-pdfium.mjs) | 按本机或 `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` 下载 pdfium 到 `src-tauri/resources/pdfium/` |
+| [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | 将 `target/release/supermanga.exe` 打成 Windows portable zip，并附带 pdfium |
+| [`scripts/bundle-win-full.mjs`](scripts/bundle-win-full.mjs) | 合并 portable + 数据包 → `SuperManGa-*-full-windows-x64.zip`（优先本地 pack-data / 已有 portable） |
+| [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | 检查 `src/i18n.ts` 各语言键一致，并扫描源码中未声明的 `$t` / `t(` 键 |
+| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | 把 `package.json` 的 version 同步到 Cargo / tauri.conf / README；`npm version` 会自动跑 |
+
+常用 npm scripts：`dev`、`fetch:pdfium`、`build:win`、`build:mac`、`build:linux`、`bundle:win-full`、`sync-version`、`preview`。
 
 ---
 
@@ -357,7 +385,7 @@ flowchart TD
 
 ---
 
-### C) 神经超分（Neural SR）
+### C) 神经网络超分（Neural SR）
 
 按需下载 ONNX Runtime 与模型包 → `neural_upscale` 推理 → 结果写入 `upscaled/` → 前端通过 `neural` 协议读 WebP 缓存。
 
@@ -380,7 +408,9 @@ sequenceDiagram
   PROT-->>UI: image/webp
 ```
 
-相关模块：`neural_sr/{download,runtime,infer,cache,results,models,ort_env,cuda}`；前端 `lib/render/neural.ts`、`NeuralAssetsDialog`、`NeuralSettingsPanel`。协议 origin：Windows/Android 为 `http://neural.localhost`，其余为 `neural://localhost`。
+相关模块：`neural_sr/{download,runtime,infer,cache,results,models,ort_env,cuda}`；
+前端 `lib/render/neural.ts`、`NeuralAssetsDialog`、`NeuralSettingsPanel`。
+协议 origin：Windows/Android 为 `http://neural.localhost`，其余为 `neural://localhost`。
 
 ---
 
@@ -397,7 +427,7 @@ flowchart LR
 ```
 
 - **检测器**（可选辅 YOLO 合并、SaberYOLO OBB 精修）：权重按清单从 Release `data` 下载到 `SuperManGaData/data/`。
-- **OCR**：Windows Media OCR 仅 Windows；其余多为 ONNX，依赖已初始化的 ORT。
+- **OCR**：Windows Media OCR 仅 Windows，其余为跨平台通用 ONNX。
 - **翻译**：密钥优先 OS keyring，失败则写入 `SuperManGaData/secrets/` 应用绑定加密文件。
 - 前端可开启「全书预翻译」或仅当前页/邻页；全书预翻译/预超分的后台队列均从当前页向两侧辐射（先往后再往前）。结果叠在 `OcrOverlay`。
 
@@ -407,11 +437,11 @@ flowchart LR
 
 ### E) 设置与 SuperManGaData 布局
 
-**默认根目录（release）：**  
-- Windows：`<exe 目录>/SuperManGaData`（可写时；不可写则 OS app data）  
+**发布版默认根目录：**  
+- Windows：`<exe 目录>/SuperManGaData`（若不可写则回退 OS app data）  
 - macOS / Linux：`<OS app data>/SuperManGaData`  
 
-**调试：** 一律 `<OS app data>/SuperManGaData`。  
+**调试时** 一律 `<OS app data>/SuperManGaData`。  
 自定义路径记录在系统 app data 下的 `data-root.json`（定位器始终在固定 OS 目录）。
 
 ```
@@ -506,27 +536,44 @@ node scripts/check-i18n.mjs
 
 - 文件夹、`.zip`、`.cbz`、`.epub`：打开即可翻页；EPUB 按 spine 抽图（偏固定版式漫画），几乎无图的文字 EPUB 会提示找不到图片。
 - `.rar`、`.cbr`、实体 `.7z`、`.pdf`：解压 / 渲染到缓存并显示进度。
-- PDF：设置「PDF 使用栅格化」（默认关）。有本机 pdfium（或缺时尝试下载）时：开启走整页栅格化（B1）；关闭则只导出内嵌原始图片（B2；加密先解密）。**栅格化与加密均强依赖 pdfium**，下载失败则报错、不静默改走抽图。仅「关闭栅格化 + 未加密 + 无 pdfium」才走 Path A（lopdf 按页序，再字节扫描）。缓存键区分 `pdf-r` / `pdf-i`；切换开关会清另一模式缓存，当前正在看的 PDF 会取消旧任务并按新路径重开。B1 后台全书预渲，打开时用 MediaBox 先填尺寸，解压队列从当前页向两侧辐射（先往后再往前）。解压类进度在底部进度条用 warning 色段显示（优先级：超分/翻译 → 解压 → 量尺寸），不再用居中「正在解压」浮层。
 - `.mobi` / `.azw3` / `.azw`：无 DRM 按资源区抽图；有 DRM 明确拒绝。不支持 KFX。
+
+解压类进度在底部进度条用 warning 色段显示（优先级：超分/翻译 → 解压 → 量尺寸）。
 
 ### UnRAR
 
-读取 RAR / CBR 时使用 [unrar](https://www.rarlab.com/) 官方解压库（经 `unrar-ng`，仅解压）。UnRAR 许可条件与本项目代码分开，不能视为项目许可证的一部分。说明见 [RARLAB](https://www.rarlab.com/license.htm)。
+读取 RAR / CBR 时使用 [unrar](https://www.rarlab.com/) 官方解压库（经 `unrar-ng`，仅解压）。
+UnRAR 许可条件与本项目代码分开，不能视为项目许可证的一部分。说明见 [RARLAB](https://www.rarlab.com/license.htm)。
+
+### PDF 与 pdfium
+
+- 无 pdfium
+  - **未加密** 且 **关闭栅格化**：直接抽图（lopdf 按页序，再字节扫描） ← 「路径 A」
+  - **已加密** 或 **开启栅格化**：尝试下载 pdfium，成功后走 B1 或 B2，失败则报错（不静默改走抽图）
+- 有 pdfium
+  - **开启栅格化**：走整页栅格化（缓存键 `pdf-r`） ← 「路径 B1」
+  - **关闭栅格化**：导出内嵌原始图片（缓存键 `pdf-i`） ← 「路径 B2」
+
+**栅格化与加密均强依赖 pdfium**，下载失败则报错，不静默改走「路径 A」抽图（仅「无 pdfium + 未加密 + 关闭栅格化」才走 A）。
+
+缓存键区分 `pdf-r` / `pdf-i`，切换开关会清另一模式缓存，当前正在看的 PDF 会取消旧任务并按新路径重开。
+
+B1 后台全书预渲，打开时用 MediaBox 先填尺寸，解压队列从当前页向两侧辐射（先往后再往前）。
 
 ---
 
 ## 8. 附录：文字检测器导出
 
-检测器权重**不打进安装包**。用 [`tools/export-detectors`](tools/export-detectors) 导出 ONNX → [`tools/pack-data`](tools/pack-data) 打成 `detector-*-v*.zip` → 上传 Release tag **`data`**。
+用 [`tools/export-detectors`](tools/export-detectors) 导出 ONNX → [`tools/pack-data`](tools/pack-data) 打成 `detector-*-v*.zip` → 上传 Release tag **`data`**。
 
 需要 Python 3.10+；源权重本仓库不收录。
 
 <details>
 <summary>如何取得源权重</summary>
 
-- **DBNet**（`detect-20241225.ckpt`）：可从 manga-image-translator 下载 [detect-20241225.ckpt](https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/detect-20241225.ckpt)。若已安装 [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) / [BallonsTranslator](https://github.com/dmMaze/BallonsTranslator)，通常在 `models/default/` 或 Ballons 的 `data/models`。
+- **DBNet**（`detect-20241225.ckpt`）：可从 manga-image-translator 下载 [detect-20241225.ckpt](https://github.com/zyddnys/manga-image-translator/releases/download/beta-0.3/detect-20241225.ckpt)。或在 [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) 的 `models/default/` / [BallonsTranslator](https://github.com/dmMaze/BallonsTranslator) 的 `data/models` 获取。
 - **YSGYolo**（`ysgyolo_*.pt`）：Hugging Face [`YSGforMTL/YSGYoloDetector`](https://huggingface.co/YSGforMTL/YSGYoloDetector)。
-- **SaberYOLO**（`saber_yolo.pt`）：从 [Saber-Translator Releases](https://github.com/MashiroSaber03/Saber-Translator/releases) 的 `models.zip` 分卷或完整安装包的 `models/saber_yolo/` 取得。
+- **SaberYOLO**（`saber_yolo.pt`）：从 [Saber-Translator Releases](https://github.com/MashiroSaber03/Saber-Translator/releases) 的 `models.zip` 分卷或完整安装包的 `models/saber_yolo/` 获取。
 - **CTD**：`pack-data` 直接下载 MIT 公开 ONNX，无需本地导出。
 
 </details>

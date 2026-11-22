@@ -47,7 +47,7 @@ Pick an installer for your OS (`v0.1.8`). You can also browse all builds on [Rel
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.8/SuperManGa-0.1.8-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
-> ONNX Runtime / upscale models / text detectors / OCR models are **not** bundled. Download them in-app when you need neural upscaling or OCR translation.
+> ONNX Runtime / upscale models / text detectors / OCR models are **not** bundled. Download them in-app when you need upscaling or translation.
 
 <details>
 <summary>macOS install and usage</summary>
@@ -188,7 +188,11 @@ Overlay style: font, size, horizontal/vertical, alignment, stroke, auto color, a
 
 ### App data
 
-On Windows, the first launch creates `SuperManGaData/` next to the executable (portable; falls back to the system app-data directory if not writable). On macOS / Linux, the default is `SuperManGaData/` under the system app-data directory so upgrades do not wipe data.
+On Windows, the first launch creates `SuperManGaData/` next to the executable.
+
+On macOS / Linux, the default is `SuperManGaData/` under the system app-data directory.
+
+You can customize the **data directory** in **Settings → General**.
 
 ## FAQ
 

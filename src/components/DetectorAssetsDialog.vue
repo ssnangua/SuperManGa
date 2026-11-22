@@ -127,7 +127,6 @@ async function install(id: string) {
   if (!runtimeReady.value) return;
   if (row?.installed && !row.outdated) return;
   const alreadyBusy = isOcrBusy(id);
-  if (!alreadyBusy && rows.value.some((r) => r.id !== id && isOcrBusy(r.id))) return;
   const updating = !!row?.outdated;
   try {
     await installOcrAsset(id, downloadNetworkConfig());
