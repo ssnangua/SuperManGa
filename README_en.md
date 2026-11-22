@@ -60,7 +60,7 @@ Pick an installer for your OS (`v0.1.6`). You can also browse all builds on [Rel
 <details>
 <summary>Linux install and usage</summary>
 
-Debian/Ubuntu family only (Ubuntu 22.04+ / Debian 12+). Run in the directory that contains the `.deb` (the leading `./` is required):
+Run in the directory that contains the `.deb` (the leading `./` is required):
 
 ```bash
 # x64

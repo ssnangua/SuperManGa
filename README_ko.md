@@ -60,7 +60,7 @@ OS에 맞는 `v0.1.6` 패키지를 선택하세요. 전체 버전은 [Releases](
 <details>
 <summary>Linux 설치 및 사용</summary>
 
-Debian / Ubuntu 계열만 지원합니다(Ubuntu 22.04+ / Debian 12+). `.deb`가 있는 디렉터리에서 실행하세요(`./`는 생략하면 안 됩니다):
+`.deb`가 있는 디렉터리에서 실행하세요(`./`는 생략하면 안 됩니다):
 
 ```bash
 # x64

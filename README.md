@@ -60,7 +60,7 @@
 <details>
 <summary>Linux 安装与使用</summary>
 
-适用于 Debian / Ubuntu 系（Ubuntu 22.04+ / Debian 12+）。在 `.deb` 所在目录执行（`./` 不可省略）：
+在 `.deb` 所在目录执行（`./` 不可省略）：
 
 ```bash
 # x64

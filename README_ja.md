@@ -60,7 +60,7 @@ OS に合わせて `v0.1.6` を選んでください（全バージョンは [Re
 <details>
 <summary>Linux のインストールと使い方</summary>
 
-Debian / Ubuntu 系向け（Ubuntu 22.04+ / Debian 12+）。`.deb` があるディレクトリで実行（先頭の `./` は省略不可）：
+`.deb` があるディレクトリで実行（先頭の `./` は省略不可）：
 
 ```bash
 # x64
