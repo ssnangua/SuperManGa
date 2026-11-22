@@ -16,13 +16,8 @@ export function ocrEngineSelectLabel(id: OcrEngineId): string {
 }
 
 /** Same capability blurb as settings / OCR models list. */
-export function ocrEngineSelectNote(
-  opt: OcrEngineMeta,
-  missingPack: boolean,
-): string {
-  const hint = i18n.global.t(opt.hintKey as MessageKey);
-  if (missingPack) return `${hint} ${i18n.global.t("ocrEngineDescNeedPack")}`;
-  return hint;
+export function ocrEngineSelectNote(opt: OcrEngineMeta): string {
+  return i18n.global.t(opt.hintKey as MessageKey);
 }
 
 /** Shared OCR-engine options for settings dropdown and title-bar submenu. */
@@ -39,6 +34,8 @@ export function buildOcrEngineSelectOptions(
       return {
         id: opt.id,
         label: ocrEngineSelectLabel(opt.id),
+        labelSuffix: missingPack ? i18n.global.t("modelNotInstalled") : undefined,
+        packMissing: missingPack,
         tags: [
           ...preview.map((code) => ({
             id: code,
@@ -48,7 +45,7 @@ export function buildOcrEngineSelectOptions(
             ? [{ id: "more", label: "…" }]
             : []),
         ],
-        description: ocrEngineSelectNote(opt, missingPack),
+        description: ocrEngineSelectNote(opt),
         disabled: missingPack || needRuntime,
       };
     })

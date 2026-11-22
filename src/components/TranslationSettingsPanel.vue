@@ -108,14 +108,12 @@ const currentTextDetector = computed(() =>
 );
 
 const textDetectorOptions = computed<AppSelectOption[]>(() =>
-  buildTextDetectorSelectOptions(installedAssetIds.value),
+  buildTextDetectorSelectOptions(installedAssetIds.value, ortRuntimeReady.value),
 );
 
 const textDetectorHint = computed(() => {
   const opt = textDetectorMeta(currentTextDetector.value);
-  const missing = !!opt.assetId && !installedAssetIds.value.includes(opt.assetId);
-  const base = t(opt.hintKey as MessageKey);
-  return missing ? `${base} ${t("ocrEngineDescNeedPack")}` : base;
+  return t(opt.hintKey as MessageKey);
 });
 
 const auxYoloPackInstalled = computed(() =>
@@ -132,21 +130,27 @@ const refineOn = computed(
     settings.translation.enableSaberYoloRefine && saberYoloRefineAllowed(currentTextDetector.value),
 );
 const auxYoloDisabled = computed(
-  () => !auxYoloAllowed(currentTextDetector.value) || !auxYoloPackInstalled.value,
+  () =>
+    !auxYoloAllowed(currentTextDetector.value)
+    || !ortRuntimeReady.value
+    || !auxYoloPackInstalled.value,
 );
 const refineDisabled = computed(
-  () => !saberYoloRefineAllowed(currentTextDetector.value) || !refinePackInstalled.value,
+  () =>
+    !saberYoloRefineAllowed(currentTextDetector.value)
+    || !ortRuntimeReady.value
+    || !refinePackInstalled.value,
 );
 const textDetectorToggleOptions = computed<AppSelectToggleOption[]>(() => {
-  const auxHint = t("textDetectorAuxYoloHint");
-  const refineHint = t("textDetectorRefineHint");
+  const auxMissing = !auxYoloPackInstalled.value;
+  const refineMissing = !refinePackInstalled.value;
   return [
     {
       id: "aux-yolo",
       label: t("textDetectorAuxYolo"),
-      description: auxYoloPackInstalled.value
-        ? auxHint
-        : `${auxHint} ${t("ocrEngineDescNeedPack")}`,
+      labelSuffix: auxMissing ? t("modelNotInstalled") : undefined,
+      packMissing: auxMissing,
+      description: t("textDetectorAuxYoloHint"),
       disabled: auxYoloDisabled.value,
       on: auxYoloOn.value,
       badge: t("textDetectorAuxSuffix"),
@@ -154,9 +158,9 @@ const textDetectorToggleOptions = computed<AppSelectToggleOption[]>(() => {
     {
       id: "saber-yolo-refine",
       label: t("textDetectorRefine"),
-      description: refinePackInstalled.value
-        ? refineHint
-        : `${refineHint} ${t("ocrEngineDescNeedPack")}`,
+      labelSuffix: refineMissing ? t("modelNotInstalled") : undefined,
+      packMissing: refineMissing,
+      description: t("textDetectorRefineHint"),
       disabled: refineDisabled.value,
       on: refineOn.value,
       badge: t("textDetectorRefineSuffix"),
@@ -186,9 +190,7 @@ function onTextDetectorToggle(id: string) {
 
 const ocrHint = computed(() => {
   const id = settings.translation.ocrEngine as OcrEngineId;
-  const opt = ocrEngineMeta(id);
-  const missingPack = !!opt.assetId && !installedAssetIds.value.includes(opt.assetId);
-  return ocrEngineSelectNote(opt, missingPack);
+  return ocrEngineSelectNote(ocrEngineMeta(id));
 });
 
 const ocrEngineOptions = computed<AppSelectOption[]>(() =>

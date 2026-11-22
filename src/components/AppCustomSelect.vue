@@ -19,6 +19,8 @@ export type AppSelectTag = AppLangTag;
 export type AppSelectOption = {
   id: string;
   label: string;
+  /** Muted suffix after the label (e.g. （未安装）). */
+  labelSuffix?: string;
   description?: string;
   tags?: readonly AppSelectTag[];
   disabled?: boolean;
@@ -28,6 +30,8 @@ export type AppSelectOption = {
   icon?: string;
   /** Preview the label with this CSS font-family (e.g. system font picker). */
   labelFontFamily?: string;
+  /** Pack missing (for hover tips); independent of runtime readiness. */
+  packMissing?: boolean;
 };
 
 /** Independent checkbox rows rendered under the primary list (does not close panel). */

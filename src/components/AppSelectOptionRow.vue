@@ -53,7 +53,11 @@ const labelStyle = computed(() => {
         ref="labelRef"
         class="app-select-option-row-label"
         :style="labelStyle"
-        >{{ option.label }}</span
+        >{{ option.label }}<span
+          v-if="option.labelSuffix?.trim()"
+          class="app-select-option-row-label-suffix"
+          >{{ option.labelSuffix }}</span
+        ></span
       >
       <span v-if="option.description?.trim()" class="app-select-option-row-desc">{{
         option.description
@@ -116,6 +120,11 @@ const labelStyle = computed(() => {
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.5;
+}
+
+.app-select-option-row-label-suffix {
+  font-weight: 400;
+  color: var(--muted);
 }
 
 .app-select-option-row--stacked .app-select-option-row-label {

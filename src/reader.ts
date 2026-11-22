@@ -20,7 +20,7 @@ import {
   TRANSLATE_PRIORITY_BATCH,
   translatePriorityForIndex,
 } from "./lib/ocr/translateQueue";
-import { neuralRuntimeStatus } from "./lib/render/assets";
+import { installedNeuralIds, neuralRuntimeStatus } from "./lib/render/assets";
 import { defaultTranslationSettings, mergeTranslationSettings } from "./lib/translation/defaults";
 import { formatTranslationError, isTranslationErrorCode } from "./lib/translation/errors";
 import {
@@ -48,6 +48,7 @@ import { bindDisplayScale, screenScale } from "./lib/displayScale";
 import { initWindowState, persistWindowState } from "./lib/windowState";
 import {
   isNeuralProfile,
+  neuralAssetId,
   normalizeRenderProfile,
   type RenderProfile,
 } from "./lib/render/profile";
@@ -645,6 +646,26 @@ export function setRenderProfile(profile: RenderProfile) {
   settings.renderProfile = normalizeRenderProfile(profile);
 }
 
+/** If neural is selected but runtime/model is gone, fall back to bicubic. */
+export async function ensureNeuralRenderReady() {
+  if (!isNeuralProfile(settings.renderProfile)) return;
+  if (!inTauri()) {
+    setRenderProfile("bicubic");
+    return;
+  }
+  if (!ortRuntimeReady.value) {
+    setRenderProfile("bicubic");
+    return;
+  }
+  try {
+    const id = neuralAssetId(settings.renderProfile);
+    const ids = await installedNeuralIds();
+    if (!ids.includes(id)) setRenderProfile("bicubic");
+  } catch {
+    setRenderProfile("bicubic");
+  }
+}
+
 function scheduleNeuralBook() {
   const book = comic.value;
   void syncNeuralBook({
@@ -1026,6 +1047,7 @@ export async function refreshTranslationPrereqs() {
   if (!inTauri()) {
     ortRuntimeReady.value = true;
     installedOcrIds.value = [];
+    await ensureNeuralRenderReady();
     return;
   }
   try {
@@ -1046,6 +1068,7 @@ export async function refreshTranslationPrereqs() {
     ocrEnabled.value = false;
     cancelInFlightOcr();
   }
+  await ensureNeuralRenderReady();
 }
 
 /** Toggle translation mode (overlay + auto OCR for the current view). */

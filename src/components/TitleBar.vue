@@ -7,7 +7,6 @@ import BarMenu from "./BarMenu.vue";
 import RangeSlider from "./RangeSlider.vue";
 import {
   isNeuralProfile,
-  neuralAssetId,
   neuralProfileForAsset,
   type ClassicProfile,
   type RealtimeProfile,
@@ -30,6 +29,7 @@ import {
   type TextDetectorId,
 } from "../lib/ocr/detectors";
 import { buildTextDetectorSelectOptions } from "../lib/ocr/detectorSelectOptions";
+import { modelMenuDisabledTitle } from "../lib/ocr/modelMenuTip";
 import { buildTranslationProviderSelectOptions } from "../lib/translation/providerSelectOptions";
 import { langFlagCode } from "../lib/langFlags";
 import "../lib/langFlag.css";
@@ -138,23 +138,34 @@ const realtimeItems: { id: RealtimeProfile; label: MessageKey }[] = [
 
 const neuralItems = computed(() => {
   const installed = new Set(neuralIds.value);
-  return IMAGE_ASSET_CATALOG.filter((item) => item.kind === "neural").map((meta) => ({
-    id: neuralProfileForAsset(meta.id),
-    assetId: meta.id,
-    labelKey: meta.nameKey as MessageKey,
-    installed: installed.has(meta.id),
-  }));
+  const runtimeOk = ortRuntimeReady.value;
+  return IMAGE_ASSET_CATALOG.filter((item) => item.kind === "neural").map((meta) => {
+    const modelOk = installed.has(meta.id);
+    const selectable = runtimeOk && modelOk;
+    return {
+      id: neuralProfileForAsset(meta.id),
+      assetId: meta.id,
+      labelKey: meta.nameKey as MessageKey,
+      installed: modelOk,
+      selectable,
+      disabledTitle: modelMenuDisabledTitle({
+        runtimeReady: runtimeOk,
+        modelInstalled: modelOk,
+      }),
+    };
+  });
 });
 
 async function refreshNeuralMenu() {
+  await refreshTranslationPrereqs();
   neuralIds.value = await installedNeuralIds();
-  if (isNeuralProfile(settings.renderProfile)) {
-    const id = neuralAssetId(settings.renderProfile);
-    if (!neuralIds.value.includes(id)) setRenderProfile("bicubic");
-  }
 }
 
 function chooseRender(profile: RenderProfile) {
+  if (isNeuralProfile(profile)) {
+    const item = neuralItems.value.find((entry) => entry.id === profile);
+    if (!item?.selectable) return;
+  }
   closeMenus();
   setRenderProfile(profile);
 }
@@ -176,7 +187,7 @@ const currentTextDetector = computed(() =>
   normalizeTextDetectorId(settings.translation.textDetector),
 );
 const textDetectorMenuOptions = computed(() =>
-  buildTextDetectorSelectOptions(installedOcrIds.value),
+  buildTextDetectorSelectOptions(installedOcrIds.value, ortRuntimeReady.value),
 );
 const currentTextDetectorMenuLabel = computed(() => {
   const primary = t(textDetectorMeta(currentTextDetector.value).nameKey as MessageKey);
@@ -203,30 +214,36 @@ const refinePackInstalled = computed(() =>
   installedOcrIds.value.includes("detector-saber-yolo"),
 );
 const auxYoloMenuDisabled = computed(
-  () => !auxYoloAllowed(currentTextDetector.value) || !auxYoloPackInstalled.value,
+  () =>
+    !auxYoloAllowed(currentTextDetector.value)
+    || !ortRuntimeReady.value
+    || !auxYoloPackInstalled.value,
 );
 const refineMenuDisabled = computed(
-  () => !saberYoloRefineAllowed(currentTextDetector.value) || !refinePackInstalled.value,
+  () =>
+    !saberYoloRefineAllowed(currentTextDetector.value)
+    || !ortRuntimeReady.value
+    || !refinePackInstalled.value,
 );
 const auxYoloMenuOption = computed(() => {
-  const hint = t("textDetectorAuxYoloHint");
+  const missing = !auxYoloPackInstalled.value;
   return {
     id: "aux-yolo",
     label: t("textDetectorAuxYolo"),
-    description: auxYoloPackInstalled.value
-      ? hint
-      : `${hint} ${t("ocrEngineDescNeedPack")}`,
+    labelSuffix: missing ? t("modelNotInstalled") : undefined,
+    packMissing: missing,
+    description: t("textDetectorAuxYoloHint"),
     disabled: auxYoloMenuDisabled.value,
   };
 });
 const refineMenuOption = computed(() => {
-  const hint = t("textDetectorRefineHint");
+  const missing = !refinePackInstalled.value;
   return {
     id: "saber-yolo-refine",
     label: t("textDetectorRefine"),
-    description: refinePackInstalled.value
-      ? hint
-      : `${hint} ${t("ocrEngineDescNeedPack")}`,
+    labelSuffix: missing ? t("modelNotInstalled") : undefined,
+    packMissing: missing,
+    description: t("textDetectorRefineHint"),
     disabled: refineMenuDisabled.value,
   };
 });
@@ -647,10 +664,14 @@ onBeforeUnmount(() => {
             :key="item.id"
             type="button"
             class="choice"
-            :class="{ on: item.installed && settings.renderProfile === item.id }"
-            :disabled="!item.installed"
+            :class="{ on: item.selectable && settings.renderProfile === item.id }"
+            :disabled="!item.selectable"
+            :title="item.disabledTitle"
             @click="chooseRender(item.id)"
-          ><Icon name="enhance" /><span class="label">{{ t(item.labelKey) }}</span></button>
+          ><Icon name="enhance" /><span class="label">{{ t(item.labelKey) }}<span
+            v-if="!item.installed"
+            class="menu-model-missing"
+          >{{ t('modelNotInstalled') }}</span></span></button>
           <button type="button" @click="run(openImageAssets)"><Icon name="setting" /><span class="label">{{ t('imageAssetsConfig') }}</span></button>
         </BarMenu>
       </div>
@@ -769,6 +790,12 @@ onBeforeUnmount(() => {
                 class="choice choice-rich"
                 :class="{ on: currentTextDetector === item.id }"
                 :disabled="item.disabled"
+                :title="item.disabled
+                  ? modelMenuDisabledTitle({
+                      runtimeReady: ortRuntimeReady,
+                      modelInstalled: !item.packMissing,
+                    })
+                  : undefined"
                 @click="chooseTextDetector(item.id as TextDetectorId)"
               >
                 <span class="mark"><Icon v-if="currentTextDetector === item.id" name="checked" /></span>
@@ -780,6 +807,12 @@ onBeforeUnmount(() => {
                 class="choice choice-rich"
                 :class="{ on: auxYoloMenuOn }"
                 :disabled="auxYoloMenuDisabled"
+                :title="auxYoloAllowed(currentTextDetector) && auxYoloMenuDisabled
+                  ? modelMenuDisabledTitle({
+                      runtimeReady: ortRuntimeReady,
+                      modelInstalled: auxYoloPackInstalled,
+                    })
+                  : undefined"
                 @click="toggleAuxYolo"
               >
                 <span class="mark"><Icon v-if="auxYoloMenuOn" name="checked" /></span>
@@ -790,6 +823,12 @@ onBeforeUnmount(() => {
                 class="choice choice-rich"
                 :class="{ on: refineMenuOn }"
                 :disabled="refineMenuDisabled"
+                :title="saberYoloRefineAllowed(currentTextDetector) && refineMenuDisabled
+                  ? modelMenuDisabledTitle({
+                      runtimeReady: ortRuntimeReady,
+                      modelInstalled: refinePackInstalled,
+                    })
+                  : undefined"
                 @click="toggleSaberYoloRefine"
               >
                 <span class="mark"><Icon v-if="refineMenuOn" name="checked" /></span>
@@ -819,6 +858,12 @@ onBeforeUnmount(() => {
                 class="choice choice-rich"
                 :class="{ on: currentOcrEngine === item.id }"
                 :disabled="item.disabled"
+                :title="item.disabled
+                  ? modelMenuDisabledTitle({
+                      runtimeReady: ortRuntimeReady,
+                      modelInstalled: !item.packMissing,
+                    })
+                  : undefined"
                 @click="chooseOcrEngine(item.id as OcrEngineId)"
               >
                 <span class="mark"><Icon v-if="currentOcrEngine === item.id" name="checked" /></span>
@@ -1198,5 +1243,10 @@ onBeforeUnmount(() => {
 .bar-menu.color-adjust-menu .color-adjust-reset:hover:not(:disabled) {
   color: var(--chrome-active);
   background: color-mix(in srgb, var(--chrome-active) 18%, transparent);
+}
+
+.menu-model-missing {
+  font-weight: 400;
+  color: var(--muted);
 }
 </style>
