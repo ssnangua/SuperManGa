@@ -122,18 +122,18 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 | --- | --- |
 | Windows x64 | `CPU` / `CUDA 12` / `CUDA 13` |
 | macOS arm64 | `CPU`（推論時に CoreML を自動有効化） |
-| macOS x64 | `CPU`（ORT 1.23.0；推論時に CoreML を自動有効化） |
+| macOS x64 | `CPU`（推論時に CoreML を自動有効化） |
 | Linux arm64 | `CPU` |
 | Linux x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+
+> [!NOTE]
+> ランタイムに完全な `CUDA` / `cuDNN` は **含まれません**。PC 側でツールキットを用意してください。
 
 ### ニューラル超解像
 
 | 種類 | 説明 |
 | --- | --- |
 | モデル | `MangaJaNai 2x` / `Real-ESRGAN Anime 2x` |
-
-> [!NOTE]
-> ランタイムに完全な `CUDA` / `cuDNN` は **含まれません**。PC 側でツールキットを用意してください。
 
 ### 文字検出 → OCR → 翻訳
 

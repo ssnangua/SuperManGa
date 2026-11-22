@@ -122,18 +122,18 @@ Upscaling and translation need an ONNX Runtime pack:
 | --- | --- |
 | Windows x64 | `CPU` / `CUDA 12` / `CUDA 13` |
 | macOS arm64 | `CPU` (CoreML enabled automatically at inference) |
-| macOS x64 | `CPU` (ORT 1.23.0; CoreML enabled automatically at inference) |
+| macOS x64 | `CPU` (CoreML enabled automatically at inference) |
 | Linux arm64 | `CPU` |
 | Linux x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+
+> [!NOTE]
+> The runtime does **not** include a full `CUDA` / `cuDNN` toolkit—install that on the machine yourself.
 
 ### Neural upscaling
 
 | Type | Notes |
 | --- | --- |
 | Models | `MangaJaNai 2x` / `Real-ESRGAN Anime 2x` |
-
-> [!NOTE]
-> The runtime does **not** include a full `CUDA` / `cuDNN` toolkit—install that on the machine yourself.
 
 ### Text detect → OCR → translate
 

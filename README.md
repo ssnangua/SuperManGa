@@ -122,18 +122,18 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 | --- | --- |
 | Windows x64 | `CPU` / `CUDA 12` / `CUDA 13` |
 | macOS arm64 | `CPU`（推理时自动启用 CoreML） |
-| macOS x64 | `CPU`（ORT 1.23.0；推理时自动启用 CoreML） |
+| macOS x64 | `CPU`（推理时自动启用 CoreML） |
 | Linux arm64 | `CPU` |
 | Linux x64 | `CPU` / `CUDA 12` / `CUDA 13` |
+
+> [!NOTE]
+> 运行环境**不含**完整 `CUDA` / `cuDNN`，本机需自行装好对应工具包。
 
 ### 神经网络超分
 
 | 类型 | 说明 |
 | --- | --- |
 | 超分模型 | `MangaJaNai 2x` / `Real-ESRGAN Anime 2x` |
-
-> [!NOTE]
-> 运行环境**不含**完整 `CUDA` / `cuDNN`，本机需自行装好对应工具包。
 
 ### 文字检测 → OCR → 翻译
 
