@@ -148,9 +148,9 @@ pub fn run() {
                     }
                 }
                 #[cfg(any(target_os = "macos", target_os = "ios"))]
-                if let tauri::RunEvent::Opened { urls } = event {
+                if let tauri::RunEvent::Opened { urls } = &event {
                     let files: Vec<_> = urls
-                        .into_iter()
+                        .iter()
                         .filter_map(|url| url.to_file_path().ok())
                         .collect();
                     if let Some(path) = open::first_openable(&files) {
@@ -158,7 +158,7 @@ pub fn run() {
                     }
                 }
                 #[cfg(target_os = "macos")]
-                if matches!(event, tauri::RunEvent::Ready) {
+                if matches!(&event, tauri::RunEvent::Ready) {
                     macos_dock_menu::install();
                 }
             },
