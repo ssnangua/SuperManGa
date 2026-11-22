@@ -87,7 +87,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 | <img src="./src/assets/thumb.svg" width="18" height="18" alt=""> | 缩略图视图 | 缩略图网格显示所有图片 |
 | <img src="./src/assets/minimalist_view_enter.svg" width="18" height="18" alt=""> | 极简视图 | **专注阅读**，阅读区撑满窗口 |
 | <img src="./src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | 全屏 | **沉浸式阅读** |
-|  | 图像重采样 | 线性插补 / 双三次插补 / Lanczos / 平均像素法 + 锐化 |
+| <img src="./src/assets/image.svg" width="18" height="18" alt=""> | 图像重采样 | 线性插补 / 双三次插补 / Lanczos / 平均像素法 + 锐化 |
 |  | Anime4K | GPU 着色器增强，偏锐化 / 去糊 |
 | <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **神经网络超分** | `MangaJaNai` / `Real-ESRGAN` |
 | <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **OCR 翻译** | 文字检测 → OCR → 在线 / AI 翻译 |

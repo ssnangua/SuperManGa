@@ -87,7 +87,7 @@ Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if d
 | <img src="./src/assets/thumb.svg" width="18" height="18" alt=""> | Thumbnail view | Grid of all pages |
 | <img src="./src/assets/minimalist_view_enter.svg" width="18" height="18" alt=""> | Minimal view | **Focus on reading** — content fills the window |
 | <img src="./src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | Fullscreen | **Immersive reading** |
-|  | Image resampling | Linear / bicubic / Lanczos / area average + sharpen |
+| <img src="./src/assets/image.svg" width="18" height="18" alt=""> | Image resampling | Linear / bicubic / Lanczos / area average + sharpen |
 |  | Anime4K | GPU shader enhance (sharpen / deblur) |
 | <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **Neural upscale** | `MangaJaNai` / `Real-ESRGAN` |
 | <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **Translation** | Text detect → OCR → online / AI translate |

@@ -87,7 +87,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 | <img src="./src/assets/thumb.svg" width="18" height="18" alt=""> | 썸네일 | 전체 페이지 격자 보기 |
 | <img src="./src/assets/minimalist_view_enter.svg" width="18" height="18" alt=""> | 미니멀 보기 | **독서에 집중**. 읽기 영역 최대화 |
 | <img src="./src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | 전체 화면 | **몰입 독서** |
-|  | 이미지 리샘플링 | 선형 / 바이큐빅 / Lanczos / 영역 평균 + 샤픈 |
+| <img src="./src/assets/image.svg" width="18" height="18" alt=""> | 이미지 리샘플링 | 선형 / 바이큐빅 / Lanczos / 영역 평균 + 샤픈 |
 |  | Anime4K | GPU 셰이더 선명화 / 디블러 |
 | <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **신경망 업스케일** | `MangaJaNai` / `Real-ESRGAN` |
 | <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **번역** | 문자 검출 → OCR → 온라인 / AI 번역 |
