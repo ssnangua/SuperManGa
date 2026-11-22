@@ -92,6 +92,7 @@ Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if d
 | <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **Neural upscale** | `MangaJaNai` / `Real-ESRGAN` |
 | <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **Translation** | Text detect → OCR → online / AI translate |
 | <img src="./src/assets/palette.svg" width="18" height="18" alt=""> | Color adjust | Brightness / contrast / saturation |
+| <img src="./src/assets/rotate.svg" width="18" height="18" alt=""> | Rotate | Rotate images |
 | <img src="./src/assets/lens.svg" width="18" height="18" alt=""> | Magnifier | Local zoom for details |
 | <img src="./src/assets/bookmark.svg" width="18" height="18" alt=""> | Bookmarks | Bookmarks with notes |
 |  | Chapter detection | Split by filename rules; custom regex supported |

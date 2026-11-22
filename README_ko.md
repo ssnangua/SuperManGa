@@ -92,6 +92,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 | <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **신경망 업스케일** | `MangaJaNai` / `Real-ESRGAN` |
 | <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **번역** | 문자 검출 → OCR → 온라인 / AI 번역 |
 | <img src="./src/assets/palette.svg" width="18" height="18" alt=""> | 색 보정 | 밝기 / 대비 / 채도 |
+| <img src="./src/assets/rotate.svg" width="18" height="18" alt=""> | 회전 | 이미지 회전 |
 | <img src="./src/assets/lens.svg" width="18" height="18" alt=""> | 돋보기 | 부분 확대 |
 | <img src="./src/assets/bookmark.svg" width="18" height="18" alt=""> | 북마크 | 메모 있는 북마크 |
 |  | 챕터 인식 | 파일명 규칙으로 챕터 분리. 사용자 정규식 지원 |

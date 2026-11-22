@@ -92,6 +92,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 | <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **神经网络超分** | `MangaJaNai` / `Real-ESRGAN` |
 | <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **OCR 翻译** | 文字检测 → OCR → 在线 / AI 翻译 |
 | <img src="./src/assets/palette.svg" width="18" height="18" alt=""> | 色彩调节 | 亮度 / 对比度 / 饱和度 |
+| <img src="./src/assets/rotate.svg" width="18" height="18" alt=""> | 旋转 | 旋转图片 |
 | <img src="./src/assets/lens.svg" width="18" height="18" alt=""> | 放大镜 | 局部放大查看细节 |
 | <img src="./src/assets/bookmark.svg" width="18" height="18" alt=""> | 书签 | 可添加带备注的书签 |
 |  | 章节识别 | 按文件名规则切章，支持自定义正则 |

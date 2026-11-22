@@ -92,6 +92,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 | <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **ニューラル超解像** | `MangaJaNai` / `Real-ESRGAN` |
 | <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **翻訳** | 文字検出 → OCR → オンライン / AI 翻訳 |
 | <img src="./src/assets/palette.svg" width="18" height="18" alt=""> | 色調整 | 明るさ / コントラスト / 彩度 |
+| <img src="./src/assets/rotate.svg" width="18" height="18" alt=""> | 回転 | 画像を回転 |
 | <img src="./src/assets/lens.svg" width="18" height="18" alt=""> | ルーペ | 局所拡大 |
 | <img src="./src/assets/bookmark.svg" width="18" height="18" alt=""> | ブックマーク | メモ付きブックマーク |
 |  | 章検出 | ファイル名ルールで章分け。独自正規表現可 |
