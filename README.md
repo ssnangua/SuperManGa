@@ -191,7 +191,7 @@ Windows 下，首次运行会在可执行文件目录创建 `SuperManGaData/`，
 <details>
 <summary>打开 EPUB / MOBI 没有内容</summary>
 
-> 本应用只能阅读电子书里的**图片**，纯文字的电子书会没有内容；<br />
+> 本应用只能阅读电子书里的**图片**，纯文字的电子书会没有内容。<br />
 
 </details>
 
