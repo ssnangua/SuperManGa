@@ -111,7 +111,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 > [!NOTE]
 >
 > - RAR / CBR / 7z는 로컬 캐시에 압축 해제
-> - PDF는 캐시에 래스터화. 암호화 PDF는 비밀번호 입력
+> - PDF는 내보내기 또는 래스터화하여 로컬 캐시에 저장. 암호화 PDF는 비밀번호 입력
 > - KFX 및 DRM Kindle 전자책은 미지원
 
 ### ONNX 런타임

@@ -111,7 +111,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 > [!NOTE]
 >
 > - RAR / CBR / 7z はローカルキャッシュへ展開
-> - PDF はキャッシュへラスタライズ。暗号化 PDF はパスワード入力
+> - PDF はエクスポートまたはラスタライズしてローカルキャッシュへ。暗号化 PDF はパスワード入力
 > - KFX および DRM 付き Kindle は非対応
 
 ### ONNX ランタイム

@@ -110,8 +110,8 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 > [!NOTE]
 >
-> - RAR / CBR / 7z 等会解压到本地缓存
-> - PDF 会栅格化到本地缓存；加密的 PDF 会弹密码框
+> - RAR / CBR / 7z 会解压到本地缓存
+> - PDF 会导出或栅格化到本地缓存；加密的 PDF 会弹密码框
 > - 不支持 KFX / 有 DRM 的 Kindle 电子书
 
 ### ONNX 运行环境

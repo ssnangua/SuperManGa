@@ -111,7 +111,7 @@ Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if d
 > [!NOTE]
 >
 > - RAR / CBR / 7z are extracted to a local cache
-> - PDF is rasterized to cache; encrypted PDFs prompt for a password
+> - PDF is exported or rasterized to a local cache; encrypted PDFs prompt for a password
 > - KFX and DRM-protected Kindle books are not supported
 
 ### ONNX Runtime
