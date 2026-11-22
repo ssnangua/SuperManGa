@@ -44,7 +44,7 @@ const stage = ref<HTMLElement | null>(null);
 const measured = ref<Record<number, { width: number; height: number }>>({});
 const ready = ref<Record<number, boolean>>({});
 const viewport = ref({ width: 0, height: 0 });
-/** Spread index currently painted; lags on adjacent turns until the target pages are ready. */
+/** Spread index currently painted; lags until the target pages are ready (keeps old image on jumps). */
 const paintedIndex = ref(props.index);
 let unbindPointer: (() => void) | null = null;
 let observer: ResizeObserver | null = null;
@@ -84,13 +84,6 @@ function prefetchTarget(page: number, forward: boolean): { index: number; src: s
   }
   if (target == null) return undefined;
   return { index: target, src: imageSrc(target) };
-}
-
-function isAdjacentSpread(from: number, to: number) {
-  const a = spreadOf(from);
-  const b = spreadOf(to);
-  if (!a.length || !b.length) return false;
-  return a[a.length - 1]! + 1 === b[0] || b[b.length - 1]! + 1 === a[0];
 }
 
 function pagesReady(pages: number[]) {
@@ -296,14 +289,13 @@ function tryCommitTarget() {
 watch(
   () => [props.index, props.mode, props.isolateCover, props.count] as const,
   ([nextIndex], previous) => {
-    const prevIndex = previous?.[0];
+    // Same reading layout: hold the old spread until the target is decoded so jumps
+    // (e.g. 50→100) don't flash the dark placeholder like sequential turns already avoid.
     if (
       previous
       && previous[1] === props.mode
       && previous[2] === props.isolateCover
       && previous[3] === props.count
-      && prevIndex != null
-      && isAdjacentSpread(prevIndex, nextIndex)
       && !pagesReady(spreadOf(nextIndex))
     ) {
       return;
