@@ -42,6 +42,10 @@
     ],
     "resources": [
       "resources/pdfium/"
-    ]
+    ],
+    "macOS": {
+      "signingIdentity": "-",
+      "hardenedRuntime": false
+    }
   }
 }

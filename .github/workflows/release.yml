@@ -37,12 +37,15 @@ jobs:
             rust_target: x86_64-apple-darwin
             npm_build: build:mac
             extra_args: --target x86_64-apple-darwin
+          # Pin Linux to Ubuntu 22.04 (glibc 2.35). Building on 24.04 (glibc 2.39)
+          # yields binaries that fail on Debian 12 / Ubuntu 22.04 with
+          # `GLIBC_2.39 not found`. Do not bump without raising the min glibc.
           - os: ubuntu-22.04
             name: Linux-x64
             rust_target: ""
             npm_build: build:linux
             extra_args: ""
-          - os: ubuntu-24.04-arm
+          - os: ubuntu-22.04-arm
             name: Linux-arm64
             rust_target: ""
             npm_build: build:linux

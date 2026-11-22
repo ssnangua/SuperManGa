@@ -40,14 +40,41 @@ So I decided to build one myself.
 
 Pick an installer for your OS (`v0.1.2`). You can also browse all builds on [Releases](https://github.com/ssnangua/SuperManGa/releases):
 
-| OS | Download |
-| --- | --- |
-| Windows | [![Portable x64](https://img.shields.io/badge/Portable-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-windows-x64.zip) |
-| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-macos-x64.dmg) |
-| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-linux-x64.deb) |
+| OS | Download | Min. OS |
+| --- | --- | --- |
+| Windows | [![Portable x64](https://img.shields.io/badge/Portable-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-windows-x64.zip) | Windows 10+ |
+| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-macos-x64.dmg) | macOS 10.15+ (Apple Silicon: 11+) |
+| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
 > Runtime / upscale models / text detectors / OCR models are **not** bundled. Download them in-app when you need neural upscaling or OCR translation.
+
+<details>
+<summary>macOS install and usage</summary>
+
+1. Open the matching `.dmg` and drag `SuperManGa.app` into Applications (or any folder).
+2. If the first launch is blocked (“cannot be verified”): go to **System Settings → Privacy & Security** and click **Open Anyway**; or **Control-click → Open** the `.app`; or run `xattr -dr com.apple.quarantine /Applications/SuperManGa.app` (adjust the path).
+
+Current releases are not Apple-notarized, so Gatekeeper may block downloads — this is expected.
+
+</details>
+
+<details>
+<summary>Linux install and usage</summary>
+
+Debian/Ubuntu family only (Ubuntu 22.04+ / Debian 12+). Run in the directory that contains the `.deb` (the leading `./` is required):
+
+```bash
+# x64
+sudo apt install ./SuperManGa-*-linux-x64.deb
+
+# arm64
+sudo apt install ./SuperManGa-*-linux-arm64.deb
+```
+
+Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if dependencies are missing. After install, launch from the app menu or run `supermanga`.
+
+</details>
 
 ## Features
 

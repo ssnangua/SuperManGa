@@ -108,17 +108,48 @@ Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)
 
 2. On a `v*` tag push, CI verifies the tag matches all three versions, then builds and uploads:
 
-| Platform | Artifacts |
-|---|---|
-| Windows x64 | `SuperManGa-*-windows-x64.zip` (portable) |
-| macOS arm64 | `SuperManGa-*-macos-arm64.dmg` |
-| macOS x64 | `SuperManGa-*-macos-x64.dmg` |
-| Linux arm64 | `SuperManGa-*-linux-arm64.deb` |
-| Linux x64 | `SuperManGa-*-linux-x64.deb` |
+| Platform | Artifacts | Min. OS |
+|---|---|---|
+| Windows x64 | `SuperManGa-*-windows-x64.zip` (portable) | Windows 10+ |
+| macOS arm64 | `SuperManGa-*-macos-arm64.dmg` | macOS 11+ |
+| macOS x64 | `SuperManGa-*-macos-x64.dmg` | macOS 10.15+ |
+| Linux arm64 | `SuperManGa-*-linux-arm64.deb` | Ubuntu 22.04+ / Debian 12+ |
+| Linux x64 | `SuperManGa-*-linux-x64.deb` | Ubuntu 22.04+ / Debian 12+ |
 
 You can also run **Release** via `workflow_dispatch` to collect build artifacts without publishing a GitHub Release.
 
-### 2.5 Windows full offline package (cloud-drive distribution)
+### 2.5 macOS install and usage
+
+1. Open the matching `.dmg` and drag `SuperManGa.app` into Applications (or any folder).
+2. The first launch of a download may be blocked by Gatekeeper (“cannot be verified” / unidentified developer).
+
+**Why:** Release builds are not Developer ID–signed or notarized: `tauri.conf.json` sets `bundle.macOS.signingIdentity` to `"-"` (ad-hoc) and `hardenedRuntime` to `false`, and CI does not notarize. Downloaded `.dmg` / `.app` files get `com.apple.quarantine`.
+
+**User workaround:**
+
+1. After a blocked open, go to **System Settings → Privacy & Security**, scroll down, and click **Open Anyway** (confirm once more).
+2. Or **Control-click → Open** the `.app` (more likely to prompt than a normal double-click).
+3. Or clear quarantine, then open: `xattr -dr com.apple.quarantine /Applications/SuperManGa.app` (adjust the path).
+
+**Proper fix (maintainers):** join the [Apple Developer Program](https://developer.apple.com/programs/), sign with a **Developer ID Application** certificate, enable `hardenedRuntime`, and **notarize + staple** the `.app` / `.dmg`. Wire certificate + `APPLE_ID` / Team ID / app-specific password (or API key) into CI secrets. Until then, docs/FAQ should mention the workaround above.
+
+### 2.6 Linux install and usage
+
+`.deb` packages are built on Ubuntu 22.04 (glibc **2.35**) so they run on Debian 12 / Ubuntu 22.04+. Do not switch CI runners to 24.04 — that would require `GLIBC_2.39`.
+
+Debian/Ubuntu family only. Run in the directory that contains the `.deb` (the leading `./` is required):
+
+```bash
+# x64
+sudo apt install ./SuperManGa-*-linux-x64.deb
+
+# arm64
+sudo apt install ./SuperManGa-*-linux-arm64.deb
+```
+
+Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if dependencies are missing. After install, launch from the app menu or run `supermanga`.
+
+### 2.7 Windows full offline package (cloud-drive distribution)
 
 For a **single zip** users can unpack and run (app + ORT/models; no separate app download or online fetch):
 
@@ -159,7 +190,7 @@ Runtime selection:
 
 Offline packs must include the **CPU** flavor. GPU ORT zips do not ship full CUDA/cuDNN.
 
-### 2.6 Helper scripts
+### 2.8 Helper scripts
 
 | Script | Role |
 |---|---|

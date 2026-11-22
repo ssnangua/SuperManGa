@@ -40,14 +40,41 @@
 
 OS에 맞는 `v0.1.2` 패키지를 선택하세요. 전체 버전은 [Releases](https://github.com/ssnangua/SuperManGa/releases)에서 확인할 수 있습니다:
 
-| OS | 다운로드 |
-| --- | --- |
-| Windows | [![Portable x64](https://img.shields.io/badge/Portable-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-windows-x64.zip) |
-| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-macos-x64.dmg) |
-| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-linux-x64.deb) |
+| OS | 다운로드 | 최소 OS |
+| --- | --- | --- |
+| Windows | [![Portable x64](https://img.shields.io/badge/Portable-x64-blue?logo=data:image/svg%2bxml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI%2BPHBhdGggZmlsbD0iI2ZmZiIgZD0iTTAgMy40NDkgOS43NSAyLjF2OS40NTFIMG0xMC45NDktOS42MDJMMjQgMHYxMS40SDEwLjk0OU0wIDEyLjZoOS43NXY5LjQ1MUwwIDIwLjY5OU0xMC45NDkgMTIuNkgyNFYyNGwtMTIuOS0xLjgwMSIvPjwvc3ZnPg%3D%3D)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-windows-x64.zip) | Windows 10+ |
+| macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-macos-x64.dmg) | macOS 10.15+（Apple Silicon은 11+） |
+| Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v0.1.2/SuperManGa-0.1.2-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
 > [!NOTE]
 > 런타임 / 업스케일 모델 / 문자 검출 모델 / OCR 모델은 **설치 패키지에 포함되지 않습니다**. 신경망 업스케일·OCR 번역을 쓰려면 앱에서 직접 다운로드하세요.
+
+<details>
+<summary>macOS 설치 및 사용</summary>
+
+1. 해당 아키텍처 `.dmg`를 열고 `SuperManGa.app`을 응용 프로그램(또는 원하는 폴더)으로 드래그합니다.
+2. 처음 실행 시 확인되지 않은 개발자라고 나오면: **시스템 설정 → 개인정보 보호 및 보안**에서 **그래도 열기**; 또는 `.app`을 **우클릭 → 열기**; 또는 `xattr -dr com.apple.quarantine /Applications/SuperManGa.app` (경로는 실제 위치에 맞게 변경).
+
+현재 배포본은 Apple 공증 서명이 없어, 다운로드 후 Gatekeeper에 막히는 것은 예상된 동작입니다.
+
+</details>
+
+<details>
+<summary>Linux 설치 및 사용</summary>
+
+Debian / Ubuntu 계열만 지원합니다(Ubuntu 22.04+ / Debian 12+). `.deb`가 있는 디렉터리에서 실행하세요(`./`는 생략하면 안 됩니다):
+
+```bash
+# x64
+sudo apt install ./SuperManGa-*-linux-x64.deb
+
+# arm64
+sudo apt install ./SuperManGa-*-linux-arm64.deb
+```
+
+또는 `sudo dpkg -i SuperManGa-*-linux-*.deb`. 의존성이 모자라면 `sudo apt-get install -f`. 설치 후 앱 메뉴에서 실행하거나 `supermanga`를 실행하면 됩니다.
+
+</details>
 
 ## 기능
 

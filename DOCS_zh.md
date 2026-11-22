@@ -108,17 +108,48 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 
 2. 推送 `v*` tag 时，CI 校验 tag 与三处版本一致，再分别构建并上传产物：
 
-| 平台 | 产物 |
-|---|---|
-| Windows x64 | `SuperManGa-*-windows-x64.zip`（portable） |
-| macOS arm64 | `SuperManGa-*-macos-arm64.dmg` |
-| macOS x64 | `SuperManGa-*-macos-x64.dmg` |
-| Linux arm64 | `SuperManGa-*-linux-arm64.deb` |
-| Linux x64 | `SuperManGa-*-linux-x64.deb` |
+| 平台 | 产物 | 最低系统版本 |
+|---|---|---|
+| Windows x64 | `SuperManGa-*-windows-x64.zip`（便携版） | Windows 10+ |
+| macOS arm64 | `SuperManGa-*-macos-arm64.dmg` | macOS 11+ |
+| macOS x64 | `SuperManGa-*-macos-x64.dmg` | macOS 10.15+ |
+| Linux arm64 | `SuperManGa-*-linux-arm64.deb` | Ubuntu 22.04+ / Debian 12+ |
+| Linux x64 | `SuperManGa-*-linux-x64.deb` | Ubuntu 22.04+ / Debian 12+ |
 
 也可在 Actions 里 `workflow_dispatch` 手动跑 **Release**，只拿构建产物、不发 GitHub Release。
 
-### 2.5 Windows 完整离线包（网盘分发）
+### 2.5 macOS 安装与使用
+
+1. 打开对应架构的 `.dmg`，将 `SuperManGa.app` 拖到「应用程序」（或任意目录）。
+2. 首次从网上下载打开时，可能被 Gatekeeper 拦截（「无法验证开发者」之类）。
+
+**原因：** 当前发版未使用 Apple Developer ID 签名与公证：`tauri.conf.json` 里 `bundle.macOS.signingIdentity` 为 `"-"`（ad-hoc），`hardenedRuntime` 为 `false`，CI 也不做 notarize。下载的 `.dmg` / `.app` 会带 `com.apple.quarantine`。
+
+**用户侧临时处理：**
+
+1. 双击打开被拦后，打开 **系统设置 → 隐私与安全性**，滑到下方点 **仍要打开**（再确认一次）。
+2. 或对 `.app` **右键 → 打开**（比直接双击更容易放行）。
+3. 或去掉隔离标记后再开：`xattr -dr com.apple.quarantine /Applications/SuperManGa.app`（路径按实际安装位置改）。
+
+**彻底解决（维护者）：** 加入 [Apple Developer Program](https://developer.apple.com/programs/)，用 **Developer ID Application** 证书签名，打开 `hardenedRuntime`，并对 `.app` / `.dmg` 做 **notarize + staple**；在 CI 配置相应证书与 `APPLE_ID` / 团队 ID / app-specific password（或 API key）密钥。未完成前，文档与 FAQ 需说明上述临时步骤。
+
+### 2.6 Linux 安装与使用
+
+`.deb` 在 Ubuntu 22.04（glibc **2.35**）上构建，以便跑在 Debian 12 / Ubuntu 22.04+；CI 勿改用 24.04 runner，否则会要求 `GLIBC_2.39`。
+
+仅适用于 Debian / Ubuntu 系。在 `.deb` 所在目录执行（`./` 不可省略）：
+
+```bash
+# x64
+sudo apt install ./SuperManGa-*-linux-x64.deb
+
+# arm64
+sudo apt install ./SuperManGa-*-linux-arm64.deb
+```
+
+或：`sudo dpkg -i SuperManGa-*-linux-*.deb`，缺依赖时再 `sudo apt-get install -f`。装好后应用菜单可启动，或运行 `supermanga`。
+
+### 2.7 Windows 完整离线包（网盘分发）
 
 若希望用户**只下这一份 zip 即可解压即用**（含程序 + ORT / 模型，不必再下程序包或在线拉资源）：
 
@@ -159,7 +190,7 @@ SuperManGa-*-full-windows-x64/
 
 完整离线包须带上 **CPU** flavor。ORT GPU 包不含完整 CUDA/cuDNN。
 
-### 2.6 辅助脚本
+### 2.8 辅助脚本
 
 | 脚本 | 作用 |
 |---|---|
