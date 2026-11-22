@@ -196,6 +196,8 @@ export interface Settings {
   cacheDir: string;
   /** Long-edge pixel target for neural upscale (also the skip threshold). */
   neuralTargetSize: number;
+  /** Show shimmer overlay on a page while neural upscale is in flight. */
+  neuralShimmer: boolean;
   proxyEnabled: boolean;
   proxyType: "http" | "socks5" | "socks4";
   proxyHost: string;
@@ -460,6 +462,7 @@ const defaultSettings = (): Settings => ({
   translation: defaultTranslationSettings(),
   cacheDir: "",
   neuralTargetSize: NEURAL_TARGET_SIZE_DEFAULT,
+  neuralShimmer: true,
   proxyEnabled: false,
   proxyType: "http",
   proxyHost: "127.0.0.1",
@@ -531,6 +534,7 @@ function applySettings(saved: Partial<Settings>) {
         ? Math.min(8192, Math.max(512, target))
         : NEURAL_TARGET_SIZE_DEFAULT;
   }
+  settings.neuralShimmer = saved.neuralShimmer !== false;
   settings.proxyEnabled = !!saved.proxyEnabled;
   settings.proxyType =
     saved.proxyType === "socks5" || saved.proxyType === "socks4"
@@ -731,6 +735,15 @@ watch(() => settings.theme, (theme) => {
     settings.backgroundColor = canvasColor[next];
   }
 }, { immediate: true });
+
+// Settings-only: hide upscale shimmer nodes via a root class (no neural logic).
+watch(
+  () => settings.neuralShimmer,
+  (on) => {
+    document.documentElement.classList.toggle("neural-shimmer-off", on === false);
+  },
+  { immediate: true },
+);
 
 export function toggleTheme() {
   const next = settings.theme === "light" ? "dark" : "light";

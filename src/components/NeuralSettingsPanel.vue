@@ -147,6 +147,16 @@ onMounted(() => {
       </div>
       <p class="settings-hint neural-target-hint">{{ t("neuralBookPreUpscaleHint") }}</p>
 
+      <div class="form-row">
+        <span>{{ t("neuralShimmer") }}</span>
+        <SwitchToggle
+          v-model="settings.neuralShimmer"
+          class="neural-switch"
+          :aria-label="t('neuralShimmer')"
+        />
+      </div>
+      <p class="settings-hint neural-target-hint">{{ t("neuralShimmerHint") }}</p>
+
       <div class="form-row form-row-label-wide">
         <span>{{ t("neuralResultsSize") }}</span>
         <div class="action-with-size">

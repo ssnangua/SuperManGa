@@ -553,6 +553,9 @@ async function loadDiskHit(assetId: string, key: string): Promise<NeuralFrame | 
   const mem = getCached(key);
   if (mem) return mem;
   try {
+    // Probe via IPC first — a protocol fetch 404 is harmless but spams the console.
+    const [exists] = await neuralResultsExists([key]);
+    if (!exists) return null;
     // Prefer protocol fetch; fall back to IPC only if protocol fails.
     try {
       const bitmap = await webpFromDiskKey(key);

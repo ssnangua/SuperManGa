@@ -86,6 +86,11 @@ let deferredClassicPreview = false;
 let deferredAnime4kPreview = false;
 /** True when neural upscale was deferred until scroll settle. */
 let deferredNeural = false;
+/**
+ * Jump-hold mounts the target as a warm ~2×2 slot (PageView paintedIndex lag).
+ * syncNeuralJob bails while tiny; re-run once the slot becomes visible.
+ */
+let neuralSlotTiny = true;
 
 function scrollDefersHeavy(): boolean {
   return settings.readingMode === "scroll" && !scrollResampleReady.value;
@@ -569,10 +574,16 @@ function releaseSource() {
 }
 
 onMounted(() => {
+  neuralSlotTiny = (root.value?.clientWidth ?? 0) < 16;
   observer = new ResizeObserver(() => {
     syncMediaBox();
     // Hide before CSS stretches a stale canvas bitmap into the new box.
     if (overlayReady.value) overlayReady.value = false;
+    const tiny = (root.value?.clientWidth ?? 0) < 16;
+    if (isNeuralProfile(props.profile) && neuralSlotTiny && !tiny) {
+      void syncNeuralJob();
+    }
+    neuralSlotTiny = tiny;
     scheduleResizeRedraw();
   });
   if (root.value) observer.observe(root.value);
@@ -753,6 +764,10 @@ watch(upscaledSrc, () => {
   );
   background-size: 200% 100%;
   animation: img-flow 1.2s linear infinite;
+}
+
+html.neural-shimmer-off .page-media-neural-busy {
+  display: none;
 }
 
 @keyframes img-flow {
