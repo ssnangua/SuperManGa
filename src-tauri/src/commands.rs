@@ -303,6 +303,11 @@ pub fn is_primary_instance() -> bool {
 }
 
 #[tauri::command]
+pub fn open_new_window() -> Result<(), String> {
+    crate::instance::spawn_secondary_instance()
+}
+
+#[tauri::command]
 pub fn get_shell_integration() -> crate::association::ShellIntegration {
     crate::association::get_shell_integration()
 }

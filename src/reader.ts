@@ -2174,6 +2174,22 @@ export async function openFolderDialog() {
   });
 }
 
+export async function openNewWindow() {
+  once(() => {
+    void (async () => {
+      if (!inTauri()) {
+        notifyError(i18n.global.t("desktopOnly"));
+        return;
+      }
+      try {
+        await invoke("open_new_window");
+      } catch (error) {
+        notifyError(asError(error));
+      }
+    })();
+  });
+}
+
 export async function openComic(path: string) {
   if (!inTauri()) {
     notifyError(i18n.global.t("desktopOnly"));
@@ -3109,6 +3125,11 @@ function runShortcutAction(action: ShortcutActionId) {
     case "openFolder":
       once(() => {
         void openFolderDialog();
+      });
+      return;
+    case "openNewWindow":
+      once(() => {
+        void openNewWindow();
       });
       return;
     case "saveImage":

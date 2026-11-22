@@ -4,6 +4,7 @@ import { isMacDesktop } from "./platform";
 export type ShortcutActionId =
   | "openArchive"
   | "openFolder"
+  | "openNewWindow"
   | "saveImage"
   | "copyImage"
   | "closeComic"
@@ -46,6 +47,7 @@ export type ShortcutAction = {
 export const SHORTCUT_ACTIONS: readonly ShortcutAction[] = [
   { id: "openArchive", labelKey: "openArchive", icon: "open" },
   { id: "openFolder", labelKey: "openFolder", icon: "folderOpen" },
+  { id: "openNewWindow", labelKey: "openNewWindow", icon: "newWindow" },
   { id: "closeComic", labelKey: "closeComic", needsComic: true },
   { id: "closeWindow", labelKey: "closeWindow" },
   { id: "colorAdjust", labelKey: "colorAdjust", icon: "palette" },
@@ -88,6 +90,7 @@ function macifyPrimaryMod(accel: string): string {
 const DEFAULT_SHORTCUTS_WIN: ShortcutBindingMap = {
   openArchive: "Control+O",
   openFolder: "Control+Shift+O",
+  openNewWindow: "Control+N",
   saveImage: "Control+S",
   copyImage: "Control+C",
   closeComic: "Control+W",

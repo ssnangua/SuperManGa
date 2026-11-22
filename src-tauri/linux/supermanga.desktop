@@ -1,0 +1,24 @@
+[Desktop Entry]
+Categories={{categories}}
+{{#if comment}}
+Comment={{comment}}
+{{/if}}
+Exec={{exec}}{{exec_arg}}
+StartupWMClass={{exec}}
+Icon={{icon}}
+Name={{name}}
+Terminal=false
+Type=Application
+Actions=new-window;
+{{#if mime_type}}
+MimeType={{mime_type}}
+{{/if}}
+
+[Desktop Action new-window]
+Name=Open New Window
+Name[zh_CN]=打开新窗口
+Name[zh_TW]=打開新視窗
+Name[zh_HK]=打開新視窗
+Name[ja]=新しいウインドウを開く
+Name[ko]=새 창 열기
+Exec={{exec}} --new-window

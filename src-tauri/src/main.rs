@@ -1,5 +1,7 @@
-// Prevents additional console window on Windows in release, DO NOT REMOVE!!
-#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// Windows GUI subsystem: no console window. Must apply in debug too — Jump List /
+// “Open New Window” launches this exe directly, and a console-subsystem debug
+// build would flash a black terminal each time.
+#![windows_subsystem = "windows"]
 
 fn main() {
     supermanga_lib::run()

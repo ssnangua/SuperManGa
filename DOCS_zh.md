@@ -29,7 +29,7 @@ SuperManGa 是 **Vue 3 + Tauri 2** 的桌面应用：一次打开一个文件夹
 
 图片通过自定义协议按页返回（Windows / Android：`http://comic.localhost`；其他平台：`comic://localhost`）。超分结果同理走 `neural` 协议。
 
-文件关联、右键菜单、WebView2 检测、Windows Media OCR、进程互斥等为 Windows 专用能力。
+文件关联、右键菜单、WebView2 检测、Windows Media OCR 等为 Windows 专用能力。主实例互斥在各桌面平台均有。
 
 ---
 
@@ -267,7 +267,10 @@ SuperManGa/
         ├── state.rs
         ├── app_cache.rs      # SuperManGaData 根路径与子目录
         ├── secrets.rs        # 翻译密钥（keyring + 文件回退）
-        ├── instance.rs       # 主实例互斥（Windows）
+        ├── instance.rs       # 主实例互斥（Win 互斥 / Unix flock）
+        ├── macos_dock_menu.rs # macOS Dock 右键「打开新窗口」
+        ├── windows_jumplist.rs # Windows 任务栏 Jump List「打开新窗口」
+        ├── linux/supermanga.desktop # deb Desktop Action「打开新窗口」
         ├── update.rs         # GitHub Releases 更新检查
         ├── association.rs    # 文件关联 / 右键菜单（Windows）
         ├── webview2_check.rs # WebView2 检测（Windows only）
@@ -472,7 +475,7 @@ sequenceDiagram
   participant GH as GitHub Releases API
 
   Boot->>INST: claim_primary_instance()
-  Note over INST: Windows: Local\\SuperManGa.PrimaryReader 互斥<br/>非 Windows: 每个进程都视为主实例
+  Note over INST: Windows: Local\\SuperManGa.PrimaryReader 互斥<br/>Unix: flock(temp/supermanga-primary-reader.lock)
   UI->>UI: is_primary_instance?
   alt 非主实例
     UI-->>UI: 跳过启动时自动检查与自动恢复上次漫画
@@ -504,7 +507,9 @@ sequenceDiagram
 | **WebView2 启动检测** | ✓ | — | — | 便携版无安装器引导；缺失则退出 |
 | **文件关联 / 右键菜单** | ✓ | — | — | 设置内注册；`association.rs` |
 | **Windows Media OCR** | ✓ | — | — | `ocr/win_ocr.rs` |
-| **主实例互斥** | ✓ | 弱 | 弱 | 非 Win：每进程都 `is_primary=true` |
+| **主实例互斥** | ✓ | ✓ | ✓ | Win 互斥 / Unix flock；仅主实例自动恢复上次漫画 |
+| **启动器再开新实例** | ✓ | ✗* | ✓† | Win 开始菜单 / Linux 应用菜单常再启进程；\*macOS 启动台与 Dock 左键同走 `'rapp'` 聚焦；†任务栏仍多聚焦 |
+| **任务栏/Dock「打开新窗口」** | ✓ | ✓ | ✓ | Win Jump List / macOS Dock 菜单 / Linux `.desktop` Actions → 再启进程 |
 | **HWND 原生窗口图标** | ✓ | — | — | `window_state::apply_native_window_icons` |
 | **portable zip 脚本** | ✓ | — | — | `pack-portable.mjs`；mac/Linux 用 dmg / deb |
 | **keyring 密钥** | ✓ | ✓ | ✓ | `keyring` 启用各平台原生后端；失败则 **文件加密回退**（便携可复制） |

@@ -20,6 +20,12 @@ mod window_state;
 #[cfg(windows)]
 mod webview2_check;
 
+#[cfg(target_os = "macos")]
+mod macos_dock_menu;
+
+#[cfg(windows)]
+mod windows_jumplist;
+
 use tauri::Manager;
 
 use state::AppState;
@@ -60,6 +66,11 @@ pub fn run() {
             }
             // Restore size/position while still hidden, then show (see tauri.conf visible:false).
             window_state::restore_and_show(app.handle());
+            // Taskbar / Dock “Open New Window” quick actions.
+            #[cfg(target_os = "macos")]
+            macos_dock_menu::install();
+            #[cfg(windows)]
+            windows_jumplist::install();
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -85,6 +96,7 @@ pub fn run() {
             commands::system_info,
             commands::take_pending_open,
             commands::is_primary_instance,
+            commands::open_new_window,
             commands::get_shell_integration,
             commands::set_context_menu,
             commands::apply_file_associations,
@@ -144,6 +156,10 @@ pub fn run() {
                     if let Some(path) = open::first_openable(&files) {
                         open::queue_pending(app, path);
                     }
+                }
+                #[cfg(target_os = "macos")]
+                if matches!(event, tauri::RunEvent::Ready) {
+                    macos_dock_menu::install();
                 }
             },
         );

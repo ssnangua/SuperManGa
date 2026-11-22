@@ -29,7 +29,7 @@ SuperManGa is a **Vue 3 + Tauri 2** desktop app: open one folder, archive, or eb
 
 Page images are served through a custom protocol (Windows / Android: `http://comic.localhost`; elsewhere: `comic://localhost`). Upscale results use the `neural` protocol the same way.
 
-File associations, context menu, WebView2 checks, Windows Media OCR, and the primary-instance mutex are Windows-specific.
+File associations, context menu, WebView2 checks, and Windows Media OCR are Windows-specific. Primary-instance locking exists on all desktop platforms.
 
 ---
 
@@ -267,7 +267,10 @@ SuperManGa/
         ├── state.rs
         ├── app_cache.rs      # SuperManGaData root and subdirs
         ├── secrets.rs        # Translation keys (keyring + file fallback)
-        ├── instance.rs       # Primary-instance mutex (Windows)
+        ├── instance.rs       # Primary-instance lock (Win mutex / Unix flock)
+        ├── macos_dock_menu.rs # macOS Dock “Open New Window”
+        ├── windows_jumplist.rs # Windows taskbar Jump List “Open New Window”
+        ├── linux/supermanga.desktop # deb Desktop Action “Open New Window”
         ├── update.rs         # GitHub Releases update check
         ├── association.rs    # File associations / context menu (Windows)
         ├── webview2_check.rs # WebView2 probe (Windows only)
@@ -472,7 +475,7 @@ sequenceDiagram
   participant GH as GitHub Releases API
 
   Boot->>INST: claim_primary_instance()
-  Note over INST: Windows: Local\\SuperManGa.PrimaryReader mutex<br/>Non-Windows: every process claims primary
+  Note over INST: Windows: Local\\SuperManGa.PrimaryReader mutex<br/>Unix: flock(temp/supermanga-primary-reader.lock)
   UI->>UI: is_primary_instance?
   alt Not primary
     UI-->>UI: Skip startup update probe and auto-resume last comic
@@ -504,7 +507,9 @@ Manual “Check for updates” is not gated on primary; silent startup check and
 | **WebView2 startup check** | ✓ | — | — | Portable has no installer bootstrapper; exits if missing |
 | **File associations / context menu** | ✓ | — | — | Registered in Settings; `association.rs` |
 | **Windows Media OCR** | ✓ | — | — | `ocr/win_ocr.rs` |
-| **Primary-instance mutex** | ✓ | weak | weak | Non-Win: every process reports `is_primary=true` |
+| **Primary-instance mutex** | ✓ | ✓ | ✓ | Win mutex / Unix flock; only primary auto-resumes last comic |
+| **Launcher opens new instance** | ✓ | ✗* | ✓† | Win Start / Linux app menu often start another process; *macOS Launchpad & Dock left-click both `'rapp'`-focus; †taskbar usually focuses |
+| **Taskbar/Dock “Open New Window”** | ✓ | ✓ | ✓ | Win Jump List / macOS Dock menu / Linux `.desktop` Actions → new process |
 | **HWND native window icons** | ✓ | — | — | `window_state::apply_native_window_icons` |
 | **Portable zip script** | ✓ | — | — | `pack-portable.mjs`; mac/Linux use dmg / deb |
 | **Keyring secrets** | ✓ | ✓ | ✓ | `keyring` enables native backends; **file encryption fallback** if keyring fails (portable-friendly) |

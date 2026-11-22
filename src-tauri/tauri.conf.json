@@ -46,6 +46,11 @@
     "macOS": {
       "signingIdentity": "-",
       "hardenedRuntime": false
+    },
+    "linux": {
+      "deb": {
+        "desktopTemplate": "linux/supermanga.desktop"
+      }
     }
   }
 }

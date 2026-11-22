@@ -67,6 +67,7 @@ import foldChevron from "../assets/fold_chevron.svg?raw";
 import terminal from "../assets/terminal.svg?raw";
 import lens from "../assets/lens.svg?raw";
 import tools from "../assets/tools.svg?raw";
+import newWindow from "../assets/new_window.svg?raw";
 
 function clean(source: string) {
   return source
@@ -144,6 +145,7 @@ const assets: Record<string, string> = {
   terminal: clean(terminal),
   lens: clean(lens),
   tools: clean(tools),
+  newWindow: clean(newWindow),
 };
 
 defineProps<{ name: string }>();

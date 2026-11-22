@@ -51,6 +51,7 @@ import {
   openArchiveDialog,
   openComic,
   openFolderDialog,
+  openNewWindow,
   openImageAssets,
   openImageInfo,
   magnifierOn,
@@ -630,6 +631,7 @@ onBeforeUnmount(() => {
           <button type="button" @click="openSettings"><Icon name="setting" /><span class="label">{{ t('settings') }}</span><span class="key">{{ shortcutDisplay('settings') }}</span></button>
           <button type="button" @click="openShortcuts"><Icon name="keyboard" /><span class="label">{{ t('shortcuts') }}</span></button>
           <div class="sep"></div>
+          <button type="button" @click="run(openNewWindow)"><Icon name="newWindow" /><span class="label">{{ t('openNewWindow') }}</span><span class="key">{{ shortcutDisplay('openNewWindow') }}</span></button>
           <button type="button" @click="run(() => { void exitApp(); })"><span class="menu-ico" aria-hidden="true"></span><span class="label">{{ t('closeWindow') }}</span><span class="key">{{ shortcutDisplay('closeWindow') }}</span></button>
         </BarMenu>
       </div>
