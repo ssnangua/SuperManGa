@@ -507,12 +507,12 @@ Manual “Check for updates” is not gated on primary; silent startup check and
 | **WebView2 startup check** | ✓ | — | — | Portable has no installer bootstrapper; exits if missing |
 | **File associations / context menu** | ✓ | — | — | Registered in Settings; `association.rs` |
 | **Windows Media OCR** | ✓ | — | — | `ocr/win_ocr.rs` |
-| **Primary-instance mutex** | ✓ | ✓ | ✓ | Win mutex / Unix flock; only primary auto-resumes last comic |
+| Primary-instance mutex | ✓ | ✓ | ✓ | Win mutex / Unix flock; only primary auto-resumes last comic |
 | **Launcher opens new instance** | ✓ | ✗* | ✓† | Win Start / Linux app menu often start another process; *macOS Launchpad & Dock left-click both `'rapp'`-focus; †taskbar usually focuses |
-| **Taskbar/Dock “Open New Window”** | ✓ | ✓ | ✓ | Win Jump List / macOS Dock menu / Linux `.desktop` Actions → new process |
+| Taskbar/Dock “Open New Window” | ✓ | ✓ | ✓ | Win Jump List / macOS Dock menu / Linux `.desktop` Actions → new process |
 | **HWND native window icons** | ✓ | — | — | `window_state::apply_native_window_icons` |
 | **Portable zip script** | ✓ | — | — | `pack-portable.mjs`; mac/Linux use dmg / deb |
-| **Keyring secrets** | ✓ | ✓ | ✓ | `keyring` enables native backends; **file encryption fallback** if keyring fails (portable-friendly) |
+| Keyring secrets | ✓ | ✓ | ✓ | `keyring` enables native backends; **file encryption fallback** if keyring fails (portable-friendly) |
 
 ---
 

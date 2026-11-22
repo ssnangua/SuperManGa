@@ -507,12 +507,12 @@ sequenceDiagram
 | **WebView2 启动检测** | ✓ | — | — | 便携版无安装器引导；缺失则退出 |
 | **文件关联 / 右键菜单** | ✓ | — | — | 设置内注册；`association.rs` |
 | **Windows Media OCR** | ✓ | — | — | `ocr/win_ocr.rs` |
-| **主实例互斥** | ✓ | ✓ | ✓ | Win 互斥 / Unix flock；仅主实例自动恢复上次漫画 |
+| 主实例互斥 | ✓ | ✓ | ✓ | Win 互斥 / Unix flock；仅主实例自动恢复上次漫画 |
 | **启动器再开新实例** | ✓ | ✗* | ✓† | Win 开始菜单 / Linux 应用菜单常再启进程；\*macOS 启动台与 Dock 左键同走 `'rapp'` 聚焦；†任务栏仍多聚焦 |
-| **任务栏/Dock「打开新窗口」** | ✓ | ✓ | ✓ | Win Jump List / macOS Dock 菜单 / Linux `.desktop` Actions → 再启进程 |
+| 任务栏/Dock「打开新窗口」 | ✓ | ✓ | ✓ | Win Jump List / macOS Dock 菜单 / Linux `.desktop` Actions → 再启进程 |
 | **HWND 原生窗口图标** | ✓ | — | — | `window_state::apply_native_window_icons` |
 | **portable zip 脚本** | ✓ | — | — | `pack-portable.mjs`；mac/Linux 用 dmg / deb |
-| **keyring 密钥** | ✓ | ✓ | ✓ | `keyring` 启用各平台原生后端；失败则 **文件加密回退**（便携可复制） |
+| keyring 密钥 | ✓ | ✓ | ✓ | `keyring` 启用各平台原生后端；失败则 **文件加密回退**（便携可复制） |
 
 ---
 
