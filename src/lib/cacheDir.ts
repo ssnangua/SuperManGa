@@ -10,7 +10,7 @@ export async function getCacheDir(): Promise<string> {
   return invoke<string>("get_cache_dir");
 }
 
-/** Default data root for this launch (exe-adjacent or OS fallback). Not a custom pin. */
+/** Default data root for this launch (Windows: exe-adjacent; else OS app data). Not a custom pin. */
 export async function getDefaultDataDir(): Promise<string> {
   if (!inTauri()) return "";
   return invoke<string>("get_default_data_dir");

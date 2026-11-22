@@ -188,7 +188,7 @@ API キーは OS 資格情報ストアに暗号化保存（失敗時はファイ
 
 ### アプリデータ
 
-Windows では初回起動時、実行ファイルと同じ場所に `SuperManGaData/` を作成し、設定とキャッシュを置きます（書けない場合はシステム AppData へフォールバック）。
+Windows では初回起動時、実行ファイルと同じ場所に `SuperManGaData/` を作成します（ポータブル；書けない場合はシステム AppData へ）。macOS / Linux ではシステム AppData 配下の `SuperManGaData/` を既定にし、アップグレードで消えないようにしています。
 
 ## よくある質問
 

@@ -143,7 +143,7 @@ async function applyCacheDir(next: string) {
   const trimmed = next.trim();
   const from = settings.cacheDir || (await getCacheDir());
   const defaultDir = await getDefaultDataDir();
-  // Empty input restores the launch default (exe-adjacent / OS fallback).
+  // Empty input restores the launch default (Windows portable / OS app data).
   const target = trimmed || defaultDir;
   if (sameFsPath(target, from)) {
     cacheDirDraft.value = from;

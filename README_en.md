@@ -188,7 +188,7 @@ Overlay style: font, size, horizontal/vertical, alignment, stroke, auto color, a
 
 ### App data
 
-On Windows, the first launch creates `SuperManGaData/` next to the executable for settings and caches (falls back to the system app-data directory if that location is not writable).
+On Windows, the first launch creates `SuperManGaData/` next to the executable (portable; falls back to the system app-data directory if not writable). On macOS / Linux, the default is `SuperManGaData/` under the system app-data directory so upgrades do not wipe data.
 
 ## FAQ
 

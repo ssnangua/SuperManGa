@@ -1,7 +1,9 @@
 //! Unified application data root (settings + caches).
 //!
-//! Default (release): `<exe_dir>/SuperManGaData` when writable.
-//! Fallback / debug: `<os_app_data_dir>/SuperManGaData`.
+//! Default (release):
+//! - **Windows:** `<exe_dir>/SuperManGaData` when writable (portable); else OS app data.
+//! - **macOS / Linux:** `<os_app_data_dir>/SuperManGaData` (survives .app / package upgrades).
+//! Debug builds always use OS app data.
 //!
 //! Layout under the root:
 //! - `reader.json`    settings / window state (plugin-store)
@@ -82,6 +84,7 @@ fn custom_dir_raw(state: &DataRootState) -> Option<&str> {
         .filter(|s| !s.is_empty())
 }
 
+#[cfg(target_os = "windows")]
 fn dir_is_writable(dir: &Path) -> bool {
     if fs::create_dir_all(dir).is_err() {
         return false;
@@ -96,6 +99,7 @@ fn dir_is_writable(dir: &Path) -> bool {
     }
 }
 
+#[cfg(target_os = "windows")]
 fn exe_parent_dir() -> Option<PathBuf> {
     std::env::current_exe()
         .ok()
@@ -110,18 +114,23 @@ pub fn default_root(app: &AppHandle) -> Result<PathBuf, String> {
         return Ok(dir);
     }
 
-    if let Some(parent) = exe_parent_dir() {
-        let candidate = parent.join(DATA_DIR_NAME);
-        if dir_is_writable(&candidate) {
-            return Ok(candidate);
+    // Portable layout only on Windows. macOS .app / Linux packages replace the
+    // install tree on upgrade — keep data outside the bundle.
+    #[cfg(target_os = "windows")]
+    {
+        if let Some(parent) = exe_parent_dir() {
+            let candidate = parent.join(DATA_DIR_NAME);
+            if dir_is_writable(&candidate) {
+                return Ok(candidate);
+            }
+            crate::app_log::warn(
+                "data",
+                format!(
+                    "exe-adjacent data dir not writable, falling back to OS app data: {}",
+                    candidate.display()
+                ),
+            );
         }
-        crate::app_log::warn(
-            "data",
-            format!(
-                "exe-adjacent data dir not writable, falling back to OS app data: {}",
-                candidate.display()
-            ),
-        );
     }
 
     let dir = os_app_data_dir(app)?.join(DATA_DIR_NAME);

@@ -91,7 +91,7 @@ Unpack to a folder like `SuperManGa-*-windows-x64/` containing `SuperManGa.exe` 
 
 **CI:** the Windows job runs `npm run build:win`; macOS / Linux run `npm run build:mac` / `build:linux`.
 
-On first run the app creates `SuperManGaData/` next to the exe (settings, secrets, extract/model caches). You can carry the folder with the exe on removable media; if that location is not writable, it falls back to the OS app-data directory.
+**Windows:** On first run the app creates `SuperManGaData/` next to the exe (portable; falls back to the OS app-data directory if not writable). **macOS / Linux:** Default is `SuperManGaData/` under the OS app-data directory (so upgrading a `.app` / package does not wipe data).
 
 ### 2.4 GitHub Actions release
 
@@ -407,8 +407,11 @@ Commands: `ocr_translate_page`, `cancel_ocr_translate`, `translate_text_cmd`.
 
 ### E) Settings & SuperManGaData layout
 
-**Default root (release):** `<exe_dir>/SuperManGaData` when writable.  
-**Debug / non-writable fallback:** `<OS app data>/SuperManGaData`.  
+**Default root (release):**  
+- Windows: `<exe_dir>/SuperManGaData` when writable; else OS app data  
+- macOS / Linux: `<OS app data>/SuperManGaData`  
+
+**Debug:** always `<OS app data>/SuperManGaData`.  
 Custom path is recorded in `data-root.json` under the fixed OS app-data directory (locator always stays there).
 
 ```

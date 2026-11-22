@@ -91,7 +91,7 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 
 **CI**：Windows job 跑 `npm run build:win`；macOS / Linux 分别跑 `npm run build:mac` / `build:linux`。
 
-首次运行在 exe 同级创建 `SuperManGaData/`（设置、密钥、解压与模型缓存）。可与 exe 一起放在 U 盘 / 移动硬盘上带走；若该位置不可写，则回退到系统应用数据目录。
+**Windows：** 首次运行在 exe 同级创建 `SuperManGaData/`（可携；不可写则回退系统应用数据目录）。**macOS / Linux：** 默认写在系统应用数据目录下的 `SuperManGaData/`（避免升级覆盖 `.app` / 安装包时丢数据）。
 
 ### 2.4 GitHub Actions 发版
 
@@ -407,8 +407,11 @@ flowchart LR
 
 ### E) 设置与 SuperManGaData 布局
 
-**默认根目录（release）：** `<exe 目录>/SuperManGaData`（可写时）。  
-**调试 / 不可写回退：** `<OS app data>/SuperManGaData`。  
+**默认根目录（release）：**  
+- Windows：`<exe 目录>/SuperManGaData`（可写时；不可写则 OS app data）  
+- macOS / Linux：`<OS app data>/SuperManGaData`  
+
+**调试：** 一律 `<OS app data>/SuperManGaData`。  
 自定义路径记录在系统 app data 下的 `data-root.json`（定位器始终在固定 OS 目录）。
 
 ```
