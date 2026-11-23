@@ -605,28 +605,42 @@ python pack.py --only detector
 
 检测与气泡合并移植自 [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) 的 `src/core/detector`（CTD / DBNet / YSGYolo / SaberYOLO、行合并、阅读顺序、SaberYOLO 二次拆分）。实现在 [`src-tauri/src/ocr/detector`](../src-tauri/src/ocr/detector)。Saber 用像素和 shapely；这里的框是页面归一化四边形，分割里「5 像素」一类固定阈值是近似。
 
-Saber 的翻译任务按页走下面这些步骤。检测器只负责框，精确文字掩膜另跑一遍 Default（DBNet），给修复用。
+两边从主检测器到 SaberYOLO 精修是同一条可选路径。「启用辅助 YSGYolo 检测」默认关；主检测器已是 YSGYolo 时不再叠一次。Saber 的检测器只出框，精确文字掩膜另跑一遍 Default（DBNet），给后面的擦字用。
 
 ```mermaid
-flowchart TD
-  img[原图] --> det[主检测器]
-  det --> lines[文本行]
-  lines --> aux{辅助 YSGYolo}
-  aux -->|开| extra[补上主检测器没盖住的行]
-  aux -->|关| merge[合并成气泡]
-  extra --> merge
-  merge --> post[去掉被包住的框、合并重叠框、排阅读顺序]
-  post --> refine{SaberYOLO 精修}
-  refine -->|开，且参考框不少于 2| split[有行分不进参考框则整块不拆]
-  refine -->|关| ocr[OCR]
-  split --> ocr
-  ocr --> color[48px 再跑一遍，只留颜色]
-  color --> tr[翻译]
-  tr --> repair[纯色或 LaMA 擦字]
-  repair --> render[把译文画进干净页]
+flowchart LR
+  subgraph saber [Saber-Translator]
+    direction TB
+    sDet[主检测器] --> sLines[文本行]
+    sLines --> sAux{辅助 YSGYolo}
+    sAux -->|开| sExtra[补上没盖住的行]
+    sAux -->|关| sMerge[合并成气泡]
+    sExtra --> sMerge
+    sMerge --> sPost[去包含、合并重叠、阅读顺序]
+    sPost --> sRef{SaberYOLO 精修}
+    sRef -->|开| sSplit[有行分不进则整块不拆]
+    sRef -->|关| sOcr[OCR]
+    sSplit --> sOcr
+    sOcr --> sColor[48px 再跑一遍，只留颜色]
+    sColor --> sTr[翻译]
+    sTr --> sRepair[纯色或 LaMA 擦字]
+    sRepair --> sOut[画进干净页]
+  end
+  subgraph smg [SuperManGa]
+    direction TB
+    mDet[主检测器] --> mLines[文本行]
+    mLines --> mAux{辅助 YSGYolo}
+    mAux -->|开| mExtra[补上没盖住的行]
+    mAux -->|关| mMerge[合并成气泡]
+    mExtra --> mMerge
+    mMerge --> mPost[去包含、合并重叠、阅读顺序]
+    mPost --> mRef{SaberYOLO 精修}
+    mRef -->|开| mSplit[有行分不进则整块不拆]
+    mRef -->|关| mOcr[按引擎 OCR]
+    mSplit --> mOcr
+    mOcr --> mOut[译文叠在原图上]
+  end
 ```
-
-上图从主检测器到 SaberYOLO 精修，SuperManGa 走同一条可选路径，包括「启用辅助 YSGYolo 检测」（默认关；主检测器已是 YSGYolo 时不再叠一次）。气泡出来之后按所选引擎识别，译文画在原图浮层上，不擦原图，也不另存干净页。
 
 | 环节 | Saber-Translator | SuperManGa |
 |---|---|---|

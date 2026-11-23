@@ -605,28 +605,42 @@ python pack.py --only detector
 
 Detection and bubble merging are ported from [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) `src/core/detector` (CTD / DBNet / YSGYolo / SaberYOLO, line merge, reading order, SaberYOLO second-pass split). The Rust port lives in [`src-tauri/src/ocr/detector`](../src-tauri/src/ocr/detector). Saber works in pixels with shapely; boxes here are page-normalized quads, and fixed pixel cutoffs such as “5 px” in the split are approximations.
 
-A Saber translation job walks each page through the steps below. The chosen detector only produces boxes; a second Default (DBNet) pass supplies the precise text mask used for inpainting.
+From the primary detector through SaberYOLO refine, both sides follow the same optional path. **Enable auxiliary YSGYolo detection** is off by default, and it is skipped when the primary detector is already YSGYolo. Saber’s detector only produces boxes; a second Default (DBNet) pass supplies the precise text mask used later for inpainting.
 
 ```mermaid
-flowchart TD
-  img[Source image] --> det[Primary detector]
-  det --> lines[Text lines]
-  lines --> aux{Aux YSGYolo}
-  aux -->|on| extra[Add lines the primary missed]
-  aux -->|off| merge[Merge into bubbles]
-  extra --> merge
-  merge --> post[Drop contained boxes, merge overlaps, reading order]
-  post --> refine{SaberYOLO refine}
-  refine -->|on, and at least 2 reference boxes| split[If any line is unassigned, keep the whole block]
-  refine -->|off| ocr[OCR]
-  split --> ocr
-  ocr --> color[Run 48px again and keep only colors]
-  color --> tr[Translate]
-  tr --> repair[Solid fill or LaMA inpaint]
-  repair --> render[Draw the translation onto the clean page]
+flowchart LR
+  subgraph saber [Saber-Translator]
+    direction TB
+    sDet[Primary detector] --> sLines[Text lines]
+    sLines --> sAux{Aux YSGYolo}
+    sAux -->|on| sExtra[Add missed lines]
+    sAux -->|off| sMerge[Merge into bubbles]
+    sExtra --> sMerge
+    sMerge --> sPost[Drop contained, merge overlaps, reading order]
+    sPost --> sRef{SaberYOLO refine}
+    sRef -->|on| sSplit[Unassigned line keeps the block]
+    sRef -->|off| sOcr[OCR]
+    sSplit --> sOcr
+    sOcr --> sColor[Run 48px again, keep colors]
+    sColor --> sTr[Translate]
+    sTr --> sRepair[Solid fill or LaMA]
+    sRepair --> sOut[Draw onto the clean page]
+  end
+  subgraph smg [SuperManGa]
+    direction TB
+    mDet[Primary detector] --> mLines[Text lines]
+    mLines --> mAux{Aux YSGYolo}
+    mAux -->|on| mExtra[Add missed lines]
+    mAux -->|off| mMerge[Merge into bubbles]
+    mExtra --> mMerge
+    mMerge --> mPost[Drop contained, merge overlaps, reading order]
+    mPost --> mRef{SaberYOLO refine}
+    mRef -->|on| mSplit[Unassigned line keeps the block]
+    mRef -->|off| mOcr[OCR with the selected engine]
+    mSplit --> mOcr
+    mOcr --> mOut[Overlay on the original page]
+  end
 ```
-
-From the primary detector through SaberYOLO refine, SuperManGa follows the same optional path, including **Enable auxiliary YSGYolo detection** (off by default; skipped when the primary detector is already YSGYolo). After bubbles are formed, the selected engine recognizes them and the translation is drawn as an overlay on the original page. The source art is not erased, and no separate clean page is written.
 
 | Stage | Saber-Translator | SuperManGa |
 |---|---|---|
