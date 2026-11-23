@@ -608,48 +608,48 @@ python pack.py --only detector
 两边从主检测器到 SaberYOLO 精修是同一条可选路径。「启用辅助 YSGYolo 检测」默认关；主检测器已是 YSGYolo 时不再叠一次。Saber 的检测器只出框，精确文字掩膜另跑一遍 Default（DBNet），给后面的擦字用。
 
 ```mermaid
-flowchart TB
-  sTitle[Saber-Translator] ~~~ mTitle[SuperManGa]
-  sTitle --> sDet[主检测器]
-  mTitle --> mDet[主检测器]
-  sDet ~~~ mDet
-  sDet --> sLines[文本行]
-  mDet --> mLines[文本行]
-  sLines ~~~ mLines
-  sLines --> sAux{辅助 YSGYolo}
-  mLines --> mAux{辅助 YSGYolo}
-  sAux ~~~ mAux
-  sAux -->|开| sExtra[补上没盖住的行]
-  mAux -->|开| mExtra[补上没盖住的行]
-  sExtra ~~~ mExtra
-  sAux -->|关| sMerge[合并成气泡]
-  sExtra --> sMerge
-  mAux -->|关| mMerge[合并成气泡]
-  mExtra --> mMerge
-  sMerge ~~~ mMerge
-  sMerge --> sPost[去包含、合并重叠、阅读顺序]
-  mMerge --> mPost[去包含、合并重叠、阅读顺序]
-  sPost ~~~ mPost
-  sPost --> sRef{SaberYOLO 精修}
-  mPost --> mRef{SaberYOLO 精修}
-  sRef ~~~ mRef
-  sRef -->|开| sSplit[有行分不进则整块不拆]
-  mRef -->|开| mSplit[有行分不进则整块不拆]
-  sSplit ~~~ mSplit
-  sRef -->|关| sOcr[OCR]
-  sSplit --> sOcr
-  mRef -->|关| mOcr[按引擎 OCR]
-  mSplit --> mOcr
-  sOcr ~~~ mOcr
-  sOcr --> sColor[48px 再跑一遍，只留颜色]
-  mOcr --> mOut[译文叠在原图上]
-  sColor --> sTr[翻译]
-  sTr --> sRepair[纯色或 LaMA 擦字]
-  sRepair --> sOut[画进干净页]
+block-beta
+  columns 2
+  s0["Saber-Translator"] m0["SuperManGa"]
+  s1["主检测器"] m1["主检测器"]
+  s2["文本行"] m2["文本行"]
+  s3["辅助 YSGYolo（可选）"] m3["辅助 YSGYolo（可选）"]
+  s4["合并成气泡"] m4["合并成气泡"]
+  s5["去包含、合并重叠、阅读顺序"] m5["去包含、合并重叠、阅读顺序"]
+  s6["SaberYOLO 精修（可选）"] m6["SaberYOLO 精修（可选）"]
+  s7["OCR"] m7["按引擎 OCR"]
+  s8["48px 再跑一遍，只留颜色"] m8["无独立取色"]
+  s9["翻译"] m9["翻译"]
+  s10["纯色或 LaMA 擦字"] m10["不擦原图"]
+  s11["画进干净页"] m11["译文叠在原图上"]
+  s0 --> s1
+  s1 --> s2
+  s2 --> s3
+  s3 --> s4
+  s4 --> s5
+  s5 --> s6
+  s6 --> s7
+  s7 --> s8
+  s8 --> s9
+  s9 --> s10
+  s10 --> s11
+  m0 --> m1
+  m1 --> m2
+  m2 --> m3
+  m3 --> m4
+  m4 --> m5
+  m5 --> m6
+  m6 --> m7
+  m7 --> m8
+  m8 --> m9
+  m9 --> m10
+  m10 --> m11
   classDef saber fill:#fff3bf,stroke:#e6c200,color:#332701
   classDef smg fill:#d3f9d8,stroke:#2f9e44,color:#0b3d1e
-  class sTitle,sDet,sLines,sAux,sExtra,sMerge,sPost,sRef,sSplit,sOcr,sColor,sTr,sRepair,sOut saber
-  class mTitle,mDet,mLines,mAux,mExtra,mMerge,mPost,mRef,mSplit,mOcr,mOut smg
+  classDef gap fill:#f1f3f5,stroke:#adb5bd,color:#495057
+  class s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11 saber
+  class m0,m1,m2,m3,m4,m5,m6,m7,m9,m11 smg
+  class m8,m10 gap
 ```
 
 | 环节 | Saber-Translator | SuperManGa |

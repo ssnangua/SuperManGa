@@ -608,48 +608,48 @@ Detection and bubble merging are ported from [Saber-Translator](https://github.c
 From the primary detector through SaberYOLO refine, both sides follow the same optional path. **Enable auxiliary YSGYolo detection** is off by default, and it is skipped when the primary detector is already YSGYolo. Saber’s detector only produces boxes; a second Default (DBNet) pass supplies the precise text mask used later for inpainting.
 
 ```mermaid
-flowchart TB
-  sTitle[Saber-Translator] ~~~ mTitle[SuperManGa]
-  sTitle --> sDet[Primary detector]
-  mTitle --> mDet[Primary detector]
-  sDet ~~~ mDet
-  sDet --> sLines[Text lines]
-  mDet --> mLines[Text lines]
-  sLines ~~~ mLines
-  sLines --> sAux{Aux YSGYolo}
-  mLines --> mAux{Aux YSGYolo}
-  sAux ~~~ mAux
-  sAux -->|on| sExtra[Add missed lines]
-  mAux -->|on| mExtra[Add missed lines]
-  sExtra ~~~ mExtra
-  sAux -->|off| sMerge[Merge into bubbles]
-  sExtra --> sMerge
-  mAux -->|off| mMerge[Merge into bubbles]
-  mExtra --> mMerge
-  sMerge ~~~ mMerge
-  sMerge --> sPost[Drop contained, merge overlaps, reading order]
-  mMerge --> mPost[Drop contained, merge overlaps, reading order]
-  sPost ~~~ mPost
-  sPost --> sRef{SaberYOLO refine}
-  mPost --> mRef{SaberYOLO refine}
-  sRef ~~~ mRef
-  sRef -->|on| sSplit[Unassigned line keeps the block]
-  mRef -->|on| mSplit[Unassigned line keeps the block]
-  sSplit ~~~ mSplit
-  sRef -->|off| sOcr[OCR]
-  sSplit --> sOcr
-  mRef -->|off| mOcr[OCR with the selected engine]
-  mSplit --> mOcr
-  sOcr ~~~ mOcr
-  sOcr --> sColor[Run 48px again, keep colors]
-  mOcr --> mOut[Overlay on the original page]
-  sColor --> sTr[Translate]
-  sTr --> sRepair[Solid fill or LaMA]
-  sRepair --> sOut[Draw onto the clean page]
+block-beta
+  columns 2
+  s0["Saber-Translator"] m0["SuperManGa"]
+  s1["Primary detector"] m1["Primary detector"]
+  s2["Text lines"] m2["Text lines"]
+  s3["Aux YSGYolo (optional)"] m3["Aux YSGYolo (optional)"]
+  s4["Merge into bubbles"] m4["Merge into bubbles"]
+  s5["Drop contained, merge overlaps, reading order"] m5["Drop contained, merge overlaps, reading order"]
+  s6["SaberYOLO refine (optional)"] m6["SaberYOLO refine (optional)"]
+  s7["OCR"] m7["OCR with the selected engine"]
+  s8["Run 48px again, keep colors"] m8["No separate color pass"]
+  s9["Translate"] m9["Translate"]
+  s10["Solid fill or LaMA"] m10["Does not erase the page"]
+  s11["Draw onto the clean page"] m11["Overlay on the original page"]
+  s0 --> s1
+  s1 --> s2
+  s2 --> s3
+  s3 --> s4
+  s4 --> s5
+  s5 --> s6
+  s6 --> s7
+  s7 --> s8
+  s8 --> s9
+  s9 --> s10
+  s10 --> s11
+  m0 --> m1
+  m1 --> m2
+  m2 --> m3
+  m3 --> m4
+  m4 --> m5
+  m5 --> m6
+  m6 --> m7
+  m7 --> m8
+  m8 --> m9
+  m9 --> m10
+  m10 --> m11
   classDef saber fill:#fff3bf,stroke:#e6c200,color:#332701
   classDef smg fill:#d3f9d8,stroke:#2f9e44,color:#0b3d1e
-  class sTitle,sDet,sLines,sAux,sExtra,sMerge,sPost,sRef,sSplit,sOcr,sColor,sTr,sRepair,sOut saber
-  class mTitle,mDet,mLines,mAux,mExtra,mMerge,mPost,mRef,mSplit,mOcr,mOut smg
+  classDef gap fill:#f1f3f5,stroke:#adb5bd,color:#495057
+  class s0,s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11 saber
+  class m0,m1,m2,m3,m4,m5,m6,m7,m9,m11 smg
+  class m8,m10 gap
 ```
 
 | Stage | Saber-Translator | SuperManGa |
