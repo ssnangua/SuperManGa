@@ -38,9 +38,6 @@ OS에 맞는 `v1.0.4` 패키지를 선택하세요. 전체 버전은 [Releases](
 | macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-macos-x64.dmg) | macOS 10.15+（Apple Silicon은 11+） |
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
-> [!NOTE]
-> ONNX 런타임 / 업스케일 모델 / 문자 검출 모델 / OCR 모델은 **설치 패키지에 포함되지 않습니다**. 업스케일 / 번역을 쓰려면 앱에서 직접 다운로드하세요.
-
 <details>
 <summary>macOS 설치 및 사용</summary>
 

@@ -38,9 +38,6 @@
 | macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-macos-x64.dmg) | macOS 10.15+（Apple Silicon 需 11+） |
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
-> [!NOTE]
-> ONNX 运行环境 / 超分模型 / 文字检测器模型 / OCR 模型 **没有打进安装包**，要使用超分 / 翻译功能，需在应用内自行下载。
-
 <details>
 <summary>macOS 安装与使用</summary>
 

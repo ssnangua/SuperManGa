@@ -38,9 +38,6 @@ OS に合わせて `v1.0.4` を選んでください（全バージョンは [Re
 | macOS | [![DMG Apple Silicon](https://img.shields.io/badge/DMG-Apple%20Silicon-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-macos-arm64.dmg) [![DMG Intel x64](https://img.shields.io/badge/DMG-Intel%20x64-black?logo=apple&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-macos-x64.dmg) | macOS 10.15+（Apple Silicon は 11+） |
 | Linux | [![deb arm64](https://img.shields.io/badge/deb-arm64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-linux-arm64.deb) [![deb x64](https://img.shields.io/badge/deb-x64-A80030?logo=debian&logoColor=white)](https://github.com/ssnangua/SuperManGa/releases/download/v1.0.4/SuperManGa-1.0.4-linux-x64.deb) | Ubuntu 22.04+ / Debian 12+ |
 
-> [!NOTE]
-> ONNX ランタイム / 超解像モデル / 文字検出モデル / OCR モデルは **インストーラに含まれません**。超解像 / 翻訳を使う場合はアプリ内でダウンロードしてください。
-
 <details>
 <summary>macOS のインストールと使い方</summary>
 
