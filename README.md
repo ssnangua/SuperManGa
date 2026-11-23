@@ -96,7 +96,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 | <img src="./src/assets/lens.svg" width="18" height="18" alt=""> | 放大镜 | 局部放大查看细节 |
 | <img src="./src/assets/split_double_pages.svg" width="18" height="18" alt=""> | 切分为两页 | 把双页图均分为单独的两页 |
 | <img src="./src/assets/bookmark.svg" width="18" height="18" alt=""> | 书签 | 可添加带备注的书签 |
-|  | 章节识别 | 按文件名规则切章，支持自定义正则 |
+| <img src="./src/assets/regexp.svg" width="18" height="18" alt=""> | 章节识别 | 按文件名规则切章，支持自定义正则 |
 |  | 最近打开记录 | 自动记住最近打开的文件与阅读进度 |
 | <img src="./src/assets/language.svg" width="18" height="18" alt=""> | 多语言 | 简中 / 繁中 / 英 / 日 / 韩 |
 | <img src="./src/assets/theme_dark.svg" width="18" height="18" alt=""> | 主题 | 明亮 / 暗黑 |

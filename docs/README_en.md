@@ -96,7 +96,7 @@ Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if d
 | <img src="../src/assets/lens.svg" width="18" height="18" alt=""> | Magnifier | Local zoom for details |
 | <img src="../src/assets/split_double_pages.svg" width="18" height="18" alt=""> | Split into two pages | Split a double-page image into two separate pages |
 | <img src="../src/assets/bookmark.svg" width="18" height="18" alt=""> | Bookmarks | Bookmarks with notes |
-|  | Chapter detection | Split by filename rules; custom regex supported |
+| <img src="./src/assets/regexp.svg" width="18" height="18" alt=""> | Chapter detection | Split by filename rules; custom regex supported |
 |  | Recent history | Remembers recent files and reading progress |
 | <img src="../src/assets/language.svg" width="18" height="18" alt=""> | UI languages | Simplified / Traditional Chinese, English, Japanese, Korean |
 | <img src="../src/assets/theme_dark.svg" width="18" height="18" alt=""> | Themes | Light / dark |
