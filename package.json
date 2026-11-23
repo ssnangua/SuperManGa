@@ -1,7 +1,7 @@
 {
   "name": "supermanga",
   "private": true,
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "A simple, practical local manga reader with upscaling and translation.",
   "type": "module",
   "homepage": "https://github.com/ssnangua/SuperManGa",
