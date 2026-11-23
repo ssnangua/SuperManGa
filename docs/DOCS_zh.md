@@ -608,38 +608,48 @@ python pack.py --only detector
 两边从主检测器到 SaberYOLO 精修是同一条可选路径。「启用辅助 YSGYolo 检测」默认关；主检测器已是 YSGYolo 时不再叠一次。Saber 的检测器只出框，精确文字掩膜另跑一遍 Default（DBNet），给后面的擦字用。
 
 ```mermaid
-flowchart LR
-  subgraph saber [Saber-Translator]
-    direction TB
-    sDet[主检测器] --> sLines[文本行]
-    sLines --> sAux{辅助 YSGYolo}
-    sAux -->|开| sExtra[补上没盖住的行]
-    sAux -->|关| sMerge[合并成气泡]
-    sExtra --> sMerge
-    sMerge --> sPost[去包含、合并重叠、阅读顺序]
-    sPost --> sRef{SaberYOLO 精修}
-    sRef -->|开| sSplit[有行分不进则整块不拆]
-    sRef -->|关| sOcr[OCR]
-    sSplit --> sOcr
-    sOcr --> sColor[48px 再跑一遍，只留颜色]
-    sColor --> sTr[翻译]
-    sTr --> sRepair[纯色或 LaMA 擦字]
-    sRepair --> sOut[画进干净页]
-  end
-  subgraph smg [SuperManGa]
-    direction TB
-    mDet[主检测器] --> mLines[文本行]
-    mLines --> mAux{辅助 YSGYolo}
-    mAux -->|开| mExtra[补上没盖住的行]
-    mAux -->|关| mMerge[合并成气泡]
-    mExtra --> mMerge
-    mMerge --> mPost[去包含、合并重叠、阅读顺序]
-    mPost --> mRef{SaberYOLO 精修}
-    mRef -->|开| mSplit[有行分不进则整块不拆]
-    mRef -->|关| mOcr[按引擎 OCR]
-    mSplit --> mOcr
-    mOcr --> mOut[译文叠在原图上]
-  end
+flowchart TB
+  sTitle[Saber-Translator] ~~~ mTitle[SuperManGa]
+  sTitle --> sDet[主检测器]
+  mTitle --> mDet[主检测器]
+  sDet ~~~ mDet
+  sDet --> sLines[文本行]
+  mDet --> mLines[文本行]
+  sLines ~~~ mLines
+  sLines --> sAux{辅助 YSGYolo}
+  mLines --> mAux{辅助 YSGYolo}
+  sAux ~~~ mAux
+  sAux -->|开| sExtra[补上没盖住的行]
+  mAux -->|开| mExtra[补上没盖住的行]
+  sExtra ~~~ mExtra
+  sAux -->|关| sMerge[合并成气泡]
+  sExtra --> sMerge
+  mAux -->|关| mMerge[合并成气泡]
+  mExtra --> mMerge
+  sMerge ~~~ mMerge
+  sMerge --> sPost[去包含、合并重叠、阅读顺序]
+  mMerge --> mPost[去包含、合并重叠、阅读顺序]
+  sPost ~~~ mPost
+  sPost --> sRef{SaberYOLO 精修}
+  mPost --> mRef{SaberYOLO 精修}
+  sRef ~~~ mRef
+  sRef -->|开| sSplit[有行分不进则整块不拆]
+  mRef -->|开| mSplit[有行分不进则整块不拆]
+  sSplit ~~~ mSplit
+  sRef -->|关| sOcr[OCR]
+  sSplit --> sOcr
+  mRef -->|关| mOcr[按引擎 OCR]
+  mSplit --> mOcr
+  sOcr ~~~ mOcr
+  sOcr --> sColor[48px 再跑一遍，只留颜色]
+  mOcr --> mOut[译文叠在原图上]
+  sColor --> sTr[翻译]
+  sTr --> sRepair[纯色或 LaMA 擦字]
+  sRepair --> sOut[画进干净页]
+  classDef saber fill:#fff3bf,stroke:#e6c200,color:#332701
+  classDef smg fill:#d3f9d8,stroke:#2f9e44,color:#0b3d1e
+  class sTitle,sDet,sLines,sAux,sExtra,sMerge,sPost,sRef,sSplit,sOcr,sColor,sTr,sRepair,sOut saber
+  class mTitle,mDet,mLines,mAux,mExtra,mMerge,mPost,mRef,mSplit,mOcr,mOut smg
 ```
 
 | 环节 | Saber-Translator | SuperManGa |
