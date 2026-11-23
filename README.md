@@ -194,6 +194,24 @@ macOS / Linux 默认写在系统应用数据目录下的 `SuperManGaData/`。
 
 **设置 → 常规** 里可自定义 **数据目录**。
 
+### 通过命令行调用
+
+```bash
+# Windows
+SuperManGa.exe "D:\漫画\某某.pdf"
+
+# Linux
+supermanga /path/to/book.cbz
+
+# macOS：直接调用可执行文件
+/Applications/SuperManGa.app/Contents/MacOS/SuperManGa /path/to/book.cbz
+
+# macOS：通过 open 传参（可新开实例）
+open -n -a SuperManGa.app --args /path/to/book.cbz
+```
+
+macOS 下访达双击关联文件，或 `open -a SuperManGa.app /path/to/book.cbz`（不带 `--args`）同样可以打开。
+
 ## 常见问题
 
 <details>

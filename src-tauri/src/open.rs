@@ -96,14 +96,10 @@ pub fn queue_pending(app: &AppHandle, path: String) {
     let _ = app.emit(OPEN_EVENT, path);
 }
 
+/// First openable path from argv (all desktop platforms).
+/// macOS Finder / `open -a App file` still use `RunEvent::Opened`; this covers
+/// direct binary launches and `open -a App --args /path/to/book.cbz`.
 pub fn take_launch_args() -> Option<String> {
-    #[cfg(any(windows, target_os = "linux"))]
-    {
-        let paths = collect_paths(std::env::args().skip(1));
-        return first_openable(&paths);
-    }
-    #[cfg(not(any(windows, target_os = "linux")))]
-    {
-        None
-    }
+    let paths = collect_paths(std::env::args().skip(1));
+    first_openable(&paths)
 }

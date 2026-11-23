@@ -194,6 +194,24 @@ On macOS / Linux, the default is `SuperManGaData/` under the system app-data dir
 
 You can customize the **data directory** in **Settings → General**.
 
+### Launch from the command line
+
+```bash
+# Windows
+SuperManGa.exe "D:\manga\example.pdf"
+
+# Linux
+supermanga /path/to/book.cbz
+
+# macOS: run the binary
+/Applications/SuperManGa.app/Contents/MacOS/SuperManGa /path/to/book.cbz
+
+# macOS: via open (optional new instance)
+open -n -a SuperManGa.app --args /path/to/book.cbz
+```
+
+On macOS, double-clicking an associated file in Finder, or `open -a SuperManGa.app /path/to/book.cbz` (without `--args`), also opens the path.
+
 ## FAQ
 
 <details>

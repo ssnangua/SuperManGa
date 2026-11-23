@@ -194,6 +194,24 @@ macOS / Linux는 시스템 앱 데이터 폴더 아래 `SuperManGaData/`를 기�
 
 **설정 → 일반**에서 **데이터 디렉터리**를 변경할 수 있습니다.
 
+### 명령줄에서 열기
+
+```bash
+# Windows
+SuperManGa.exe "D:\manga\example.pdf"
+
+# Linux
+supermanga /path/to/book.cbz
+
+# macOS: 실행 파일 직접 호출
+/Applications/SuperManGa.app/Contents/MacOS/SuperManGa /path/to/book.cbz
+
+# macOS: open 으로 인자 전달 (새 인스턴스 가능)
+open -n -a SuperManGa.app --args /path/to/book.cbz
+```
+
+macOS에서는 Finder에서 연결 파일을 더블클릭하거나, `open -a SuperManGa.app /path/to/book.cbz`(`--args` 없음)로도 열 수 있습니다.
+
 ## 자주 묻는 질문
 
 <details>
