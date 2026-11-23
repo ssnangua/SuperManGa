@@ -1,4 +1,4 @@
-# Developer Documentation
+﻿# Developer Documentation
 
 This document is for developers and maintainers. User-facing notes live in [README_en.md](README_en.md).
 
@@ -39,7 +39,7 @@ File associations, context menu, WebView2 checks, and Windows Media OCR are Wind
 
 | Dependency | Notes |
 |---|---|
-| **Node.js** | Version in [`.node-version`](.node-version) (currently `22.22.2`) |
+| **Node.js** | Version in [`.node-version`](../.node-version) (currently `22.22.2`) |
 | **Rust** | Stable toolchain compatible with Tauri 2 |
 | **Windows** | Visual Studio **C++ build tools**; **WebView2** Evergreen (usually present on Win10/11; portable builds check at startup and show a native prompt + Microsoft download link if missing) |
 | **Linux** | `webkit2gtk-4.1` and build deps (see CI: `libwebkit2gtk-4.1-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`, `patchelf`, etc.) |
@@ -96,7 +96,7 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 
 ### 2.4 GitHub Actions release
 
-Workflow: [`.github/workflows/release.yml`](.github/workflows/release.yml)
+Workflow: [`.github/workflows/release.yml`](../.github/workflows/release.yml)
 
 1. Bump with npm (updates `package.json`, then the `version` hook syncs `Cargo.toml`, `tauri.conf.json`, and README download links, then commits and tags `v*`):
 
@@ -155,7 +155,7 @@ Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if d
 
 ### 2.7 ONNX runtime & models
 
-Use [`tools/pack-data/`](tools/pack-data/) to pack runtimes and models. Output is a set of `{stem}-v{ver}.zip` files plus a `manifest.json`, all published on GitHub Release tag **`data`**.
+Use [`tools/pack-data/`](../tools/pack-data/) to pack runtimes and models. Output is a set of `{stem}-v{ver}.zip` files plus a `manifest.json`, all published on GitHub Release tag **`data`**.
 
 On disk:
 
@@ -226,8 +226,12 @@ Offline packs must include the local **CPU** flavor.
 SuperManGa/
 ├── package.json              # name: supermanga
 ├── .node-version
-├── DOCS_zh.md / DOCS_en.md
-├── README.md
+├── index.html / log.html     # Vite multi-page entries (repo-root is Vite/Tauri convention)
+├── README.md                 # Chinese user guide (repo homepage)
+├── docs/
+│   ├── README_en.md / README_ja.md / README_ko.md
+│   ├── DOCS_zh.md / DOCS_en.md
+│   └── screenshot.jpg
 ├── public/
 │   └── icon.png
 ├── scripts/
@@ -288,11 +292,11 @@ SuperManGa/
 
 | Script | Role |
 |---|---|
-| [`scripts/fetch-pdfium.mjs`](scripts/fetch-pdfium.mjs) | Download pdfium for the host or `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` into `src-tauri/resources/pdfium/` |
-| [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | Pack `target/release/supermanga.exe` into a Windows portable zip (with pdfium when available) |
-| [`scripts/bundle-win-full.mjs`](scripts/bundle-win-full.mjs) | Merge portable + data packs → `SuperManGa-*-full-windows-x64.zip` (prefers local pack-data / existing portable) |
-| [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | Ensure locale key parity in `src/i18n.ts` and scan for undeclared `$t` / `t(` keys |
-| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | Copy `package.json` version to Cargo.toml, Cargo.lock, tauri.conf, and README; runs from `npm version` |
+| [`scripts/fetch-pdfium.mjs`](../scripts/fetch-pdfium.mjs) | Download pdfium for the host or `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` into `src-tauri/resources/pdfium/` |
+| [`scripts/pack-portable.mjs`](../scripts/pack-portable.mjs) | Pack `target/release/supermanga.exe` into a Windows portable zip (with pdfium when available) |
+| [`scripts/bundle-win-full.mjs`](../scripts/bundle-win-full.mjs) | Merge portable + data packs → `SuperManGa-*-full-windows-x64.zip` (prefers local pack-data / existing portable) |
+| [`scripts/check-i18n.mjs`](../scripts/check-i18n.mjs) | Ensure locale key parity in `src/i18n.ts` and scan for undeclared `$t` / `t(` keys |
+| [`scripts/sync-version.mjs`](../scripts/sync-version.mjs) | Copy `package.json` version to Cargo.toml, Cargo.lock, tauri.conf, and README; runs from `npm version` |
 
 Common npm scripts: `dev`, `fetch:pdfium`, `build:win`, `build:mac`, `build:linux`, `bundle:win-full`, `sync-version`, `preview`.
 
@@ -372,7 +376,7 @@ sequenceDiagram
 | `single` | One page at a time |
 | `double` | Two-page spread; optional isolated cover; LTR / RTL; fit width / height / page |
 
-Chapter detection (frontend [`src/lib/chapters.ts`](src/lib/chapters.ts)):
+Chapter detection (frontend [`src/lib/chapters.ts`](../src/lib/chapters.ts)):
 
 ```mermaid
 flowchart TD
@@ -518,7 +522,7 @@ Manual “Check for updates” is not gated on primary; silent startup check and
 
 ## 6. Internationalization (i18n)
 
-UI locales: `zh-CN`, `zh-TW`, `en`, `ja`, `ko` (in [`src/i18n.ts`](src/i18n.ts)). OS language tags map onto this set; unmatched tags fall back to `en`.
+UI locales: `zh-CN`, `zh-TW`, `en`, `ja`, `ko` (in [`src/i18n.ts`](../src/i18n.ts)). OS language tags map onto this set; unmatched tags fall back to `en`.
 
 After editing strings, run:
 
@@ -569,7 +573,7 @@ B1 pre-renders the whole book in the background, fills MediaBox sizes on open, a
 
 ## 8. Appendix: detector export
 
-Export ONNX with [`tools/export-detectors`](tools/export-detectors) → pack with [`tools/pack-data`](tools/pack-data) into `detector-*-v*.zip` → upload Release tag **`data`**.
+Export ONNX with [`tools/export-detectors`](../tools/export-detectors) → pack with [`tools/pack-data`](../tools/pack-data) into `detector-*-v*.zip` → upload Release tag **`data`**.
 
 Requires Python 3.10+; source weights are not in this repo.
 

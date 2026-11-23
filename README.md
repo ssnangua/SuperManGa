@@ -1,4 +1,4 @@
-<h1>
+﻿<h1>
   <p align="center">
     <img src="./src-tauri/icons/128x128.png" width="128" alt=""><br />SuperManGa
   </p>
@@ -20,12 +20,12 @@
 
 
 <p align="center">
-  <img src="./screenshot.jpg" width="600">
+  <img src="./docs/screenshot.jpg" width="600">
 </p>
 
 
 <h3 align="center">
-  中文 ｜ <a href="./README_en.md">English</a> ｜ <a href="./README_ja.md">日本語</a> ｜ <a href="./README_ko.md">한국어</a>
+  中文 ｜ <a href="./docs/README_en.md">English</a> ｜ <a href="./docs/README_ja.md">日本語</a> ｜ <a href="./docs/README_ko.md">한국어</a>
 </h3>
 
 ## 项目背景
@@ -230,7 +230,7 @@ macOS 下访达双击关联文件，或 `open -a SuperManGa.app /path/to/book.cb
 
 ## 其他
 
-- [开发文档](./DOCS_zh.md)
+- [开发文档](./docs/DOCS_zh.md)
 
 ## 相关
 

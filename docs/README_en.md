@@ -1,6 +1,6 @@
-<h1>
+﻿<h1>
   <p align="center">
-    <img src="./src-tauri/icons/128x128.png" width="128" alt=""><br />SuperManGa
+    <img src="../src-tauri/icons/128x128.png" width="128" alt=""><br />SuperManGa
   </p>
 </h1>
 
@@ -25,7 +25,7 @@ Single / Double Page / Webtoon Scroll · Image Resampling / Neural Upscaling / O
 
 
 <h3 align="center">
-  <a href="./README.md">中文</a> ｜ English ｜ <a href="./README_ja.md">日本語</a> ｜ <a href="./README_ko.md">한국어</a>
+  <a href="../README.md">中文</a> ｜ English ｜ <a href="./README_ja.md">日本語</a> ｜ <a href="./README_ko.md">한국어</a>
 </h3>
 
 ## Background
@@ -78,27 +78,27 @@ Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if d
 
 |  | Feature | Notes |
 | :---: | --- | --- |
-| <img src="./src/assets/folder_open.svg" width="18" height="18" alt=""> | Local manga reading | Open folders, archives, or e-books |
-| <img src="./src/assets/mode_double_pages.svg" width="18" height="18" alt=""> | Single / double page | Page-based reading for traditional manga |
-| <img src="./src/assets/mode_infinite_scrolling.svg" width="18" height="18" alt=""> | **Webtoon scroll** | Continuous vertical scroll for webtoons |
-| <img src="./src/assets/direction_right_to_left.svg" width="18" height="18" alt=""> | Reading direction | LTR / RTL (Japanese manga is often RTL) |
-| <img src="./src/assets/fit_contain.svg" width="18" height="18" alt=""> | Zoom modes | Fit window / original / fixed width / scale |
-| <img src="./src/assets/play.svg" width="18" height="18" alt=""> | Playback | Timed scroll / page turn |
-| <img src="./src/assets/thumb.svg" width="18" height="18" alt=""> | Thumbnail view | Grid of all pages |
-| <img src="./src/assets/minimalist_view_enter.svg" width="18" height="18" alt=""> | Minimal view | **Focus on reading** — content fills the window |
-| <img src="./src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | Fullscreen | **Immersive reading** |
-| <img src="./src/assets/image.svg" width="18" height="18" alt=""> | Image resampling | Linear / bicubic / Lanczos / area average + sharpen |
+| <img src="../src/assets/folder_open.svg" width="18" height="18" alt=""> | Local manga reading | Open folders, archives, or e-books |
+| <img src="../src/assets/mode_double_pages.svg" width="18" height="18" alt=""> | Single / double page | Page-based reading for traditional manga |
+| <img src="../src/assets/mode_infinite_scrolling.svg" width="18" height="18" alt=""> | **Webtoon scroll** | Continuous vertical scroll for webtoons |
+| <img src="../src/assets/direction_right_to_left.svg" width="18" height="18" alt=""> | Reading direction | LTR / RTL (Japanese manga is often RTL) |
+| <img src="../src/assets/fit_contain.svg" width="18" height="18" alt=""> | Zoom modes | Fit window / original / fixed width / scale |
+| <img src="../src/assets/play.svg" width="18" height="18" alt=""> | Playback | Timed scroll / page turn |
+| <img src="../src/assets/thumb.svg" width="18" height="18" alt=""> | Thumbnail view | Grid of all pages |
+| <img src="../src/assets/minimalist_view_enter.svg" width="18" height="18" alt=""> | Minimal view | **Focus on reading** — content fills the window |
+| <img src="../src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | Fullscreen | **Immersive reading** |
+| <img src="../src/assets/image.svg" width="18" height="18" alt=""> | Image resampling | Linear / bicubic / Lanczos / area average + sharpen |
 |  | Anime4K | GPU shader enhance (sharpen / deblur) |
-| <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **Neural upscale** | `MangaJaNai` / `Real-ESRGAN` |
-| <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **Translation** | Text detect → OCR → online / AI translate |
-| <img src="./src/assets/palette.svg" width="18" height="18" alt=""> | Color adjust | Brightness / contrast / saturation |
-| <img src="./src/assets/rotate.svg" width="18" height="18" alt=""> | Rotate | Rotate images |
-| <img src="./src/assets/lens.svg" width="18" height="18" alt=""> | Magnifier | Local zoom for details |
-| <img src="./src/assets/bookmark.svg" width="18" height="18" alt=""> | Bookmarks | Bookmarks with notes |
+| <img src="../src/assets/enhance.svg" width="18" height="18" alt=""> | **Neural upscale** | `MangaJaNai` / `Real-ESRGAN` |
+| <img src="../src/assets/translate.svg" width="18" height="18" alt=""> | **Translation** | Text detect → OCR → online / AI translate |
+| <img src="../src/assets/palette.svg" width="18" height="18" alt=""> | Color adjust | Brightness / contrast / saturation |
+| <img src="../src/assets/rotate.svg" width="18" height="18" alt=""> | Rotate | Rotate images |
+| <img src="../src/assets/lens.svg" width="18" height="18" alt=""> | Magnifier | Local zoom for details |
+| <img src="../src/assets/bookmark.svg" width="18" height="18" alt=""> | Bookmarks | Bookmarks with notes |
 |  | Chapter detection | Split by filename rules; custom regex supported |
 |  | Recent history | Remembers recent files and reading progress |
-| <img src="./src/assets/language.svg" width="18" height="18" alt=""> | UI languages | Simplified / Traditional Chinese, English, Japanese, Korean |
-| <img src="./src/assets/theme_dark.svg" width="18" height="18" alt=""> | Themes | Light / dark |
+| <img src="../src/assets/language.svg" width="18" height="18" alt=""> | UI languages | Simplified / Traditional Chinese, English, Japanese, Korean |
+| <img src="../src/assets/theme_dark.svg" width="18" height="18" alt=""> | Themes | Light / dark |
 
 ### Supported formats
 

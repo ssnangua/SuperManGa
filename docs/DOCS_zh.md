@@ -1,6 +1,6 @@
-# 开发文档
+﻿# 开发文档
 
-本文面向开发与维护。用户向说明见 [README.md](README.md)。
+本文面向开发与维护。用户向说明见 [README.md](../README.md)。
 
 ---
 
@@ -39,7 +39,7 @@ SuperManGa 是 **Vue 3 + Tauri 2** 的桌面应用：一次打开一个文件夹
 
 | 依赖 | 说明 |
 |---|---|
-| **Node.js** | 版本见仓库根目录 [`.node-version`](.node-version)（当前为 `22.22.2`） |
+| **Node.js** | 版本见仓库根目录 [`.node-version`](../.node-version)（当前为 `22.22.2`） |
 | **Rust** | stable 工具链；与 Tauri 2 兼容 |
 | **Windows** | Visual Studio **C++ 生成工具**；**WebView2** Evergreen（Win10/11 通常已带；便携版启动前会检测，缺失则原生提示并打开微软下载页） |
 | **Linux** | `webkit2gtk-4.1` 及构建依赖（见 CI：`libwebkit2gtk-4.1-dev`、`libayatana-appindicator3-dev`、`librsvg2-dev`、`patchelf` 等） |
@@ -96,7 +96,7 @@ src-tauri/target/release/bundle/portable/SuperManGa-*-windows-x64.zip
 
 ### 2.4 GitHub Actions 发版
 
-工作流：[`.github/workflows/release.yml`](.github/workflows/release.yml)
+工作流：[`.github/workflows/release.yml`](../.github/workflows/release.yml)
 
 1. 用 npm 升版本（会改 `package.json`，并经 `version` 钩子同步 `Cargo.toml`、`tauri.conf.json` 和 README 下载链接，再提交并打 `v*` tag）：
 
@@ -155,7 +155,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 ### 2.7 ONNX 运行时与模型
 
-用 [`tools/pack-data/`](tools/pack-data/) 打包运行时与模型，会输出一堆 `{stem}-v{ver}.zip` 和一个清单文件 `manifest.json`，统一放在 GitHub Release tag **`data`**。
+用 [`tools/pack-data/`](../tools/pack-data/) 打包运行时与模型，会输出一堆 `{stem}-v{ver}.zip` 和一个清单文件 `manifest.json`，统一放在 GitHub Release tag **`data`**。
 
 下载到本机目录为：
 
@@ -226,8 +226,12 @@ SuperManGa-*-full-windows-x64/
 SuperManGa/
 ├── package.json              # name: supermanga
 ├── .node-version
-├── DOCS_zh.md / DOCS_en.md
-├── README.md
+├── index.html / log.html     # Vite 多页入口（根目录为 Vite/Tauri 惯例）
+├── README.md                 # 中文用户说明（仓库首页）
+├── docs/
+│   ├── README_en.md / README_ja.md / README_ko.md
+│   ├── DOCS_zh.md / DOCS_en.md
+│   └── screenshot.jpg
 ├── public/
 │   └── icon.png
 ├── scripts/
@@ -288,11 +292,11 @@ SuperManGa/
 
 | 脚本 | 作用 |
 |---|---|
-| [`scripts/fetch-pdfium.mjs`](scripts/fetch-pdfium.mjs) | 按本机或 `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` 下载 pdfium 到 `src-tauri/resources/pdfium/` |
-| [`scripts/pack-portable.mjs`](scripts/pack-portable.mjs) | 将 `target/release/supermanga.exe` 打成 Windows portable zip，并附带 pdfium |
-| [`scripts/bundle-win-full.mjs`](scripts/bundle-win-full.mjs) | 合并 portable + 数据包 → `SuperManGa-*-full-windows-x64.zip`（优先本地 pack-data / 已有 portable） |
-| [`scripts/check-i18n.mjs`](scripts/check-i18n.mjs) | 检查 `src/i18n.ts` 各语言键一致，并扫描源码中未声明的 `$t` / `t(` 键 |
-| [`scripts/sync-version.mjs`](scripts/sync-version.mjs) | 把 `package.json` 的 version 同步到 Cargo.toml、Cargo.lock、tauri.conf、README；`npm version` 会自动跑 |
+| [`scripts/fetch-pdfium.mjs`](../scripts/fetch-pdfium.mjs) | 按本机或 `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` 下载 pdfium 到 `src-tauri/resources/pdfium/` |
+| [`scripts/pack-portable.mjs`](../scripts/pack-portable.mjs) | 将 `target/release/supermanga.exe` 打成 Windows portable zip，并附带 pdfium |
+| [`scripts/bundle-win-full.mjs`](../scripts/bundle-win-full.mjs) | 合并 portable + 数据包 → `SuperManGa-*-full-windows-x64.zip`（优先本地 pack-data / 已有 portable） |
+| [`scripts/check-i18n.mjs`](../scripts/check-i18n.mjs) | 检查 `src/i18n.ts` 各语言键一致，并扫描源码中未声明的 `$t` / `t(` 键 |
+| [`scripts/sync-version.mjs`](../scripts/sync-version.mjs) | 把 `package.json` 的 version 同步到 Cargo.toml、Cargo.lock、tauri.conf、README；`npm version` 会自动跑 |
 
 常用 npm scripts：`dev`、`fetch:pdfium`、`build:win`、`build:mac`、`build:linux`、`bundle:win-full`、`sync-version`、`preview`。
 
@@ -372,7 +376,7 @@ sequenceDiagram
 | `single` | 单页翻页 |
 | `double` | 双页；可隔离封面；LTR / RTL；适应宽 / 高 / 整页 |
 
-章节划分（前端 [`src/lib/chapters.ts`](src/lib/chapters.ts)）：
+章节划分（前端 [`src/lib/chapters.ts`](../src/lib/chapters.ts)）：
 
 ```mermaid
 flowchart TD
@@ -518,7 +522,7 @@ sequenceDiagram
 
 ## 6. 国际化（i18n）
 
-界面语言：`zh-CN`、`zh-TW`、`en`、`ja`、`ko`（定义于 [`src/i18n.ts`](src/i18n.ts)）。系统语言标签会映射到上述集合，无法匹配时回退 `en`。
+界面语言：`zh-CN`、`zh-TW`、`en`、`ja`、`ko`（定义于 [`src/i18n.ts`](../src/i18n.ts)）。系统语言标签会映射到上述集合，无法匹配时回退 `en`。
 
 修改文案后请运行：
 
@@ -569,7 +573,7 @@ B1 后台全书预渲，打开时用 MediaBox 先填尺寸，解压队列从当�
 
 ## 8. 附录：文字检测器导出
 
-用 [`tools/export-detectors`](tools/export-detectors) 导出 ONNX → [`tools/pack-data`](tools/pack-data) 打成 `detector-*-v*.zip` → 上传 Release tag **`data`**。
+用 [`tools/export-detectors`](../tools/export-detectors) 导出 ONNX → [`tools/pack-data`](../tools/pack-data) 打成 `detector-*-v*.zip` → 上传 Release tag **`data`**。
 
 需要 Python 3.10+；源权重本仓库不收录。
 

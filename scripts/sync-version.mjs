@@ -66,7 +66,12 @@ if (lockNext === lock && !lockVersionRe.test(lock)) {
 }
 writeIfChanged(lockPath, lockNext);
 
-const readmes = ["README.md", "README_en.md", "README_ja.md", "README_ko.md"];
+const readmes = [
+  "README.md",
+  "docs/README_en.md",
+  "docs/README_ja.md",
+  "docs/README_ko.md",
+];
 if (previous && previous !== version) {
   const fromTag = `v${previous}`;
   const toTag = `v${version}`;

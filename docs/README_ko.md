@@ -1,6 +1,6 @@
-<h1>
+﻿<h1>
   <p align="center">
-    <img src="./src-tauri/icons/128x128.png" width="128" alt=""><br />SuperManGa
+    <img src="../src-tauri/icons/128x128.png" width="128" alt=""><br />SuperManGa
   </p>
 </h1>
 
@@ -25,7 +25,7 @@
 
 
 <h3 align="center">
-  <a href="./README.md">中文</a> ｜ <a href="./README_en.md">English</a> ｜ <a href="./README_ja.md">日本語</a> ｜ 한국어
+  <a href="../README.md">中文</a> ｜ <a href="./README_en.md">English</a> ｜ <a href="./README_ja.md">日本語</a> ｜ 한국어
 </h3>
 
 ## 배경
@@ -78,27 +78,27 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 |  | 기능 | 설명 |
 | :---: | --- | --- |
-| <img src="./src/assets/folder_open.svg" width="18" height="18" alt=""> | 로컬 만화 | 폴더·압축·전자책 열기 |
-| <img src="./src/assets/mode_double_pages.svg" width="18" height="18" alt=""> | 단페이지 / 양페이지 | 페이지 넘김. 전통 만화에 적합 |
-| <img src="./src/assets/mode_infinite_scrolling.svg" width="18" height="18" alt=""> | **세로 스크롤** | 연속 세로 스크롤. 웹툰에 적합 |
-| <img src="./src/assets/direction_right_to_left.svg" width="18" height="18" alt=""> | 넘김 방향 | 좌→우 / 우→좌 (일본 만화는 보통 우→좌) |
-| <img src="./src/assets/fit_contain.svg" width="18" height="18" alt=""> | 확대 모드 | 창 맞춤 / 원본 / 고정 폭 / 배율 |
-| <img src="./src/assets/play.svg" width="18" height="18" alt=""> | 재생 | 타이머 스크롤 / 자동 넘김 |
-| <img src="./src/assets/thumb.svg" width="18" height="18" alt=""> | 썸네일 | 전체 페이지 격자 보기 |
-| <img src="./src/assets/minimalist_view_enter.svg" width="18" height="18" alt=""> | 미니멀 보기 | **독서에 집중**. 읽기 영역 최대화 |
-| <img src="./src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | 전체 화면 | **몰입 독서** |
-| <img src="./src/assets/image.svg" width="18" height="18" alt=""> | 이미지 리샘플링 | 선형 / 바이큐빅 / Lanczos / 영역 평균 + 샤픈 |
+| <img src="../src/assets/folder_open.svg" width="18" height="18" alt=""> | 로컬 만화 | 폴더·압축·전자책 열기 |
+| <img src="../src/assets/mode_double_pages.svg" width="18" height="18" alt=""> | 단페이지 / 양페이지 | 페이지 넘김. 전통 만화에 적합 |
+| <img src="../src/assets/mode_infinite_scrolling.svg" width="18" height="18" alt=""> | **세로 스크롤** | 연속 세로 스크롤. 웹툰에 적합 |
+| <img src="../src/assets/direction_right_to_left.svg" width="18" height="18" alt=""> | 넘김 방향 | 좌→우 / 우→좌 (일본 만화는 보통 우→좌) |
+| <img src="../src/assets/fit_contain.svg" width="18" height="18" alt=""> | 확대 모드 | 창 맞춤 / 원본 / 고정 폭 / 배율 |
+| <img src="../src/assets/play.svg" width="18" height="18" alt=""> | 재생 | 타이머 스크롤 / 자동 넘김 |
+| <img src="../src/assets/thumb.svg" width="18" height="18" alt=""> | 썸네일 | 전체 페이지 격자 보기 |
+| <img src="../src/assets/minimalist_view_enter.svg" width="18" height="18" alt=""> | 미니멀 보기 | **독서에 집중**. 읽기 영역 최대화 |
+| <img src="../src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | 전체 화면 | **몰입 독서** |
+| <img src="../src/assets/image.svg" width="18" height="18" alt=""> | 이미지 리샘플링 | 선형 / 바이큐빅 / Lanczos / 영역 평균 + 샤픈 |
 |  | Anime4K | GPU 셰이더 선명화 / 디블러 |
-| <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **신경망 업스케일** | `MangaJaNai` / `Real-ESRGAN` |
-| <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **번역** | 문자 검출 → OCR → 온라인 / AI 번역 |
-| <img src="./src/assets/palette.svg" width="18" height="18" alt=""> | 색 보정 | 밝기 / 대비 / 채도 |
-| <img src="./src/assets/rotate.svg" width="18" height="18" alt=""> | 회전 | 이미지 회전 |
-| <img src="./src/assets/lens.svg" width="18" height="18" alt=""> | 돋보기 | 부분 확대 |
-| <img src="./src/assets/bookmark.svg" width="18" height="18" alt=""> | 북마크 | 메모 있는 북마크 |
+| <img src="../src/assets/enhance.svg" width="18" height="18" alt=""> | **신경망 업스케일** | `MangaJaNai` / `Real-ESRGAN` |
+| <img src="../src/assets/translate.svg" width="18" height="18" alt=""> | **번역** | 문자 검출 → OCR → 온라인 / AI 번역 |
+| <img src="../src/assets/palette.svg" width="18" height="18" alt=""> | 색 보정 | 밝기 / 대비 / 채도 |
+| <img src="../src/assets/rotate.svg" width="18" height="18" alt=""> | 회전 | 이미지 회전 |
+| <img src="../src/assets/lens.svg" width="18" height="18" alt=""> | 돋보기 | 부분 확대 |
+| <img src="../src/assets/bookmark.svg" width="18" height="18" alt=""> | 북마크 | 메모 있는 북마크 |
 |  | 챕터 인식 | 파일명 규칙으로 챕터 분리. 사용자 정규식 지원 |
 |  | 최근 기록 | 최근 파일과 읽기 위치 기억 |
-| <img src="./src/assets/language.svg" width="18" height="18" alt=""> | UI 언어 | 간체 / 번체 / 영 / 일 / 한 |
-| <img src="./src/assets/theme_dark.svg" width="18" height="18" alt=""> | 테마 | 밝음 / 어두움 |
+| <img src="../src/assets/language.svg" width="18" height="18" alt=""> | UI 언어 | 간체 / 번체 / 영 / 일 / 한 |
+| <img src="../src/assets/theme_dark.svg" width="18" height="18" alt=""> | 테마 | 밝음 / 어두움 |
 
 ### 지원 형식
 

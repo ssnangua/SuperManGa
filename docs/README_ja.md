@@ -1,6 +1,6 @@
-<h1>
+﻿<h1>
   <p align="center">
-    <img src="./src-tauri/icons/128x128.png" width="128" alt=""><br />SuperManGa
+    <img src="../src-tauri/icons/128x128.png" width="128" alt=""><br />SuperManGa
   </p>
 </h1>
 
@@ -25,7 +25,7 @@
 
 
 <h3 align="center">
-  <a href="./README.md">中文</a> ｜ <a href="./README_en.md">English</a> ｜ 日本語 ｜ <a href="./README_ko.md">한국어</a>
+  <a href="../README.md">中文</a> ｜ <a href="./README_en.md">English</a> ｜ 日本語 ｜ <a href="./README_ko.md">한국어</a>
 </h3>
 
 ## 背景
@@ -78,27 +78,27 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 |  | 機能 | 説明 |
 | :---: | --- | --- |
-| <img src="./src/assets/folder_open.svg" width="18" height="18" alt=""> | ローカル漫画 | フォルダ・圧縮ファイル・電子書籍を開く |
-| <img src="./src/assets/mode_double_pages.svg" width="18" height="18" alt=""> | 単ページ / 見開き | ページ送り。従来の漫画向け |
-| <img src="./src/assets/mode_infinite_scrolling.svg" width="18" height="18" alt=""> | **縦スクロール** | 連続縦スクロール。Webtoon 向け |
-| <img src="./src/assets/direction_right_to_left.svg" width="18" height="18" alt=""> | 開き方向 | 左開き / 右開き（日本の漫画は右開きが多い） |
-| <img src="./src/assets/fit_contain.svg" width="18" height="18" alt=""> | ズーム | ウィンドウに合わせる / 原寸 / 固定幅 / 倍率 |
-| <img src="./src/assets/play.svg" width="18" height="18" alt=""> | 再生 | 定時スクロール / ページ送り |
-| <img src="./src/assets/thumb.svg" width="18" height="18" alt=""> | サムネイル | 全ページをグリッド表示 |
-| <img src="./src/assets/minimalist_view_enter.svg" width="18" height="18" alt=""> | ミニマル表示 | **読書に集中**。表示領域を最大化 |
-| <img src="./src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | フルスクリーン | **没入読書** |
-| <img src="./src/assets/image.svg" width="18" height="18" alt=""> | 画像リサンプリング | 線形 / バイキュービック / Lanczos / 平均画素 + シャープ |
+| <img src="../src/assets/folder_open.svg" width="18" height="18" alt=""> | ローカル漫画 | フォルダ・圧縮ファイル・電子書籍を開く |
+| <img src="../src/assets/mode_double_pages.svg" width="18" height="18" alt=""> | 単ページ / 見開き | ページ送り。従来の漫画向け |
+| <img src="../src/assets/mode_infinite_scrolling.svg" width="18" height="18" alt=""> | **縦スクロール** | 連続縦スクロール。Webtoon 向け |
+| <img src="../src/assets/direction_right_to_left.svg" width="18" height="18" alt=""> | 開き方向 | 左開き / 右開き（日本の漫画は右開きが多い） |
+| <img src="../src/assets/fit_contain.svg" width="18" height="18" alt=""> | ズーム | ウィンドウに合わせる / 原寸 / 固定幅 / 倍率 |
+| <img src="../src/assets/play.svg" width="18" height="18" alt=""> | 再生 | 定時スクロール / ページ送り |
+| <img src="../src/assets/thumb.svg" width="18" height="18" alt=""> | サムネイル | 全ページをグリッド表示 |
+| <img src="../src/assets/minimalist_view_enter.svg" width="18" height="18" alt=""> | ミニマル表示 | **読書に集中**。表示領域を最大化 |
+| <img src="../src/assets/fullscreen_enter.svg" width="18" height="18" alt=""> | フルスクリーン | **没入読書** |
+| <img src="../src/assets/image.svg" width="18" height="18" alt=""> | 画像リサンプリング | 線形 / バイキュービック / Lanczos / 平均画素 + シャープ |
 |  | Anime4K | GPU シェーダによるシャープ / デブラー |
-| <img src="./src/assets/enhance.svg" width="18" height="18" alt=""> | **ニューラル超解像** | `MangaJaNai` / `Real-ESRGAN` |
-| <img src="./src/assets/translate.svg" width="18" height="18" alt=""> | **翻訳** | 文字検出 → OCR → オンライン / AI 翻訳 |
-| <img src="./src/assets/palette.svg" width="18" height="18" alt=""> | 色調整 | 明るさ / コントラスト / 彩度 |
-| <img src="./src/assets/rotate.svg" width="18" height="18" alt=""> | 回転 | 画像を回転 |
-| <img src="./src/assets/lens.svg" width="18" height="18" alt=""> | ルーペ | 局所拡大 |
-| <img src="./src/assets/bookmark.svg" width="18" height="18" alt=""> | ブックマーク | メモ付きブックマーク |
+| <img src="../src/assets/enhance.svg" width="18" height="18" alt=""> | **ニューラル超解像** | `MangaJaNai` / `Real-ESRGAN` |
+| <img src="../src/assets/translate.svg" width="18" height="18" alt=""> | **翻訳** | 文字検出 → OCR → オンライン / AI 翻訳 |
+| <img src="../src/assets/palette.svg" width="18" height="18" alt=""> | 色調整 | 明るさ / コントラスト / 彩度 |
+| <img src="../src/assets/rotate.svg" width="18" height="18" alt=""> | 回転 | 画像を回転 |
+| <img src="../src/assets/lens.svg" width="18" height="18" alt=""> | ルーペ | 局所拡大 |
+| <img src="../src/assets/bookmark.svg" width="18" height="18" alt=""> | ブックマーク | メモ付きブックマーク |
 |  | 章検出 | ファイル名ルールで章分け。独自正規表現可 |
 |  | 最近の履歴 | 最近開いたファイルと読書位置を記憶 |
-| <img src="./src/assets/language.svg" width="18" height="18" alt=""> | 多言語 UI | 簡体字 / 繁体字 / 英 / 日 / 韓 |
-| <img src="./src/assets/theme_dark.svg" width="18" height="18" alt=""> | テーマ | ライト / ダーク |
+| <img src="../src/assets/language.svg" width="18" height="18" alt=""> | 多言語 UI | 簡体字 / 繁体字 / 英 / 日 / 韓 |
+| <img src="../src/assets/theme_dark.svg" width="18" height="18" alt=""> | テーマ | ライト / ダーク |
 
 ### 対応形式
 
