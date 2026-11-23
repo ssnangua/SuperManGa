@@ -28,14 +28,6 @@
   <a href="../README.md">中文</a> ｜ <a href="./README_en.md">English</a> ｜ <a href="./README_ja.md">日本語</a> ｜ 한국어
 </h3>
 
-## 배경
-
-예전에는 PC에서 주로 MangaMeeya로 만화를 봤지만, Unicode 경로 미지원·움직이는 이미지 미지원·웹툰형 세로 스크롤 미지원이 불편했습니다.
-
-다른 리더도 써 봤지만 마음에 드는 것을 찾지 못했고, 기본적인 이미지 리샘플링조차 없는 경우가 많았습니다.
-
-그래서 직접 만들기로 했습니다.
-
 ## 다운로드
 
 OS에 맞는 `v1.0.4` 패키지를 선택하세요. 전체 버전은 [Releases](https://github.com/ssnangua/SuperManGa/releases)에서 확인할 수 있습니다:

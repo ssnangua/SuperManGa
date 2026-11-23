@@ -28,14 +28,6 @@ Single / Double Page / Webtoon Scroll · Image Resampling / Neural Upscaling / O
   <a href="../README.md">中文</a> ｜ English ｜ <a href="./README_ja.md">日本語</a> ｜ <a href="./README_ko.md">한국어</a>
 </h3>
 
-## Background
-
-I used to read manga on PC mainly with MangaMeeya, but a few issues kept bothering me: no Unicode path support, no animated images, and no webtoon-style scrolling.
-
-I tried other readers too, but never found one I liked—most of them do not even offer basic image resampling.
-
-So I decided to build one myself.
-
 ## Download
 
 Pick an installer for your OS (`v1.0.4`). You can also browse all builds on [Releases](https://github.com/ssnangua/SuperManGa/releases):

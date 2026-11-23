@@ -28,14 +28,6 @@
   中文 ｜ <a href="./docs/README_en.md">English</a> ｜ <a href="./docs/README_ja.md">日本語</a> ｜ <a href="./docs/README_ko.md">한국어</a>
 </h3>
 
-## 项目背景
-
-之前我主要使用 MangaMeeya 在电脑上看漫画，但它有几个缺陷：不支持 Unicode 文件路径、不支持播放动图、不支持阅读条漫，这让我十分困扰。
-
-我也尝试过其他漫画阅读器，但始终没能找到满意的，大多数连基本的图像重采样功能都没有。
-
-最终我决定自己写一个。
-
 ## 下载
 
 按操作系统选择安装包 `v1.0.4`（也可前往 [Releases](https://github.com/ssnangua/SuperManGa/releases) 查看全部版本与更新说明）：

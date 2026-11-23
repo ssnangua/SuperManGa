@@ -28,14 +28,6 @@
   <a href="../README.md">中文</a> ｜ <a href="./README_en.md">English</a> ｜ 日本語 ｜ <a href="./README_ko.md">한국어</a>
 </h3>
 
-## 背景
-
-以前は主に MangaMeeya で PC 漫画を読んでいましたが、Unicode パス非対応・アニメ画像非対応・縦スクロール（Webtoon）非対応が悩みでした。
-
-他のリーダーも試しましたが、満足できるものは見つからず、基本的な画像リサンプリングすらないものがほとんどでした。
-
-そこで自分で作ることにしました。
-
 ## ダウンロード
 
 OS に合わせて `v1.0.4` を選んでください（全バージョンは [Releases](https://github.com/ssnangua/SuperManGa/releases)）：
