@@ -626,11 +626,12 @@ flowchart TD
   repair --> render[Draw the translation onto the clean page]
 ```
 
-SuperManGa recognizes each bubble with the selected engine and draws the translation as an overlay on the original page. It does not erase the source art or write a separate clean page.
+From the primary detector through SaberYOLO refine, SuperManGa follows the same optional path, including **Enable auxiliary YSGYolo detection** (off by default; skipped when the primary detector is already YSGYolo). After bubbles are formed, the selected engine recognizes them and the translation is drawn as an overlay on the original page. The source art is not erased, and no separate clean page is written.
 
 | Stage | Saber-Translator | SuperManGa |
 |---|---|---|
 | Primary detector | Default (DBNet), CTD, YSGYolo, SaberYOLO | Same set, ids `dbnet` / `ctd` / `yolo` / `saber_yolo`; can be turned off |
+| Auxiliary YSGYolo | Optional, off by default. Confidence 0.4. Adds boxes the primary missed; if one auxiliary box contains several smaller boxes and is large enough, it replaces them | Setting **Enable auxiliary YSGYolo detection**, same rules and default |
 | Line merge | Pixel distances; optional edge-ratio cut for links much longer than the nearest one (default threshold 0, so the cut is off) | Same merge and minimum-spanning-tree split; no edge-ratio switch |
 | SaberYOLO refine | A reference box joins the split only if its center lies inside the bubble or the overlap reaches the threshold; one unassigned line aborts that block | Same control flow. After NMS, one extra step: drop a box that contains the centers of at least two smaller boxes |
 | MangaOCR | One recognition of the bubble AABB, resized to 224, via the official `manga-ocr` package | Same one-crop-per-bubble path; ONNX encoder plus greedy decoder |
