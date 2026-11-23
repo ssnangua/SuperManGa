@@ -578,12 +578,6 @@ async function applyAssociations() {
               </div>
               <p class="settings-hint">{{ t("spreadAlignHint") }}</p>
             </div>
-            <div class="settings-row">
-              <div class="settings-row-main">
-                <span class="settings-label">{{ t("isolateCover") }}</span>
-                <SwitchToggle v-model="settings.isolateCover" />
-              </div>
-            </div>
           </div>
 
           <div class="settings-body">

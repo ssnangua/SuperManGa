@@ -88,13 +88,87 @@ pub fn title_of(path: &Path) -> String {
         .unwrap_or_else(|| "comic".to_string())
 }
 
-/// Decode a ZIP entry name. UTF-8 is kept as-is; other bytes are treated as GBK,
-/// which is what Chinese Windows tools usually wrote when the UTF-8 flag was missing.
+/// True when a UTF-8 string looks like a normal archive path (ASCII / CJK / kana),
+/// not accidental Latin-1 leftovers from GBK bytes that happen to be valid UTF-8
+/// (e.g. GBK「目录」→ UTF-8 `Ŀ¼`).
+fn looks_like_archive_utf8(text: &str) -> bool {
+    text.chars().all(|ch| {
+        ch.is_ascii()
+            || ('\u{4e00}'..='\u{9fff}').contains(&ch) // CJK Unified
+            || ('\u{3400}'..='\u{4dbf}').contains(&ch) // CJK Extension A
+            || ('\u{f900}'..='\u{faff}').contains(&ch) // CJK Compatibility
+            || ('\u{3000}'..='\u{303f}').contains(&ch) // CJK punctuation
+            || ('\u{3040}'..='\u{30ff}').contains(&ch) // Hiragana / Katakana
+            || ('\u{ff00}'..='\u{ffef}').contains(&ch) // Halfwidth / fullwidth
+            || ch == '・'
+            || ch == 'ー'
+            || ch == '～'
+            || ch == '—'
+            || ch == '–'
+    })
+}
+
+fn score_decoded_name(text: &str) -> i32 {
+    let mut score = 0i32;
+    for ch in text.chars() {
+        if ('\u{4e00}'..='\u{9fff}').contains(&ch)
+            || ('\u{3400}'..='\u{4dbf}').contains(&ch)
+            || ('\u{f900}'..='\u{faff}').contains(&ch)
+        {
+            score += 4;
+        } else if ('\u{3040}'..='\u{30ff}').contains(&ch) {
+            score += 3;
+        } else if ch == '\u{fffd}' {
+            score -= 8;
+        } else if ('\u{2500}'..='\u{257f}').contains(&ch) {
+            // CP437 box-drawing leftovers
+            score -= 4;
+        } else if ('\u{00a0}'..='\u{024f}').contains(&ch) {
+            // Latin-1 / Latin Extended — typical GBK-as-UTF-8 accidents (Ŀ¼…)
+            score -= 5;
+        }
+    }
+    score
+}
+
+fn decode_legacy_zip_name(raw: &[u8]) -> String {
+    let gbk = encoding_rs::GB18030.decode(raw).0.into_owned();
+    let big5 = encoding_rs::BIG5.decode(raw).0.into_owned();
+    if score_decoded_name(&big5) > score_decoded_name(&gbk) {
+        big5
+    } else {
+        gbk
+    }
+}
+
+fn utf8_looks_like_gbk_accident(text: &str) -> bool {
+    // GBK double-bytes often decode as Latin-1 / Latin Extended when read as UTF-8
+    // (e.g. 目录 → Ŀ¼). Box-drawing CP437 mojibake is a different failure mode.
+    text.chars()
+        .any(|ch| ('\u{00a0}'..='\u{024f}').contains(&ch))
+}
+
+/// Decode a ZIP entry name from raw central-directory bytes.
+///
+/// Chinese Windows zips often omit the UTF-8 flag and store GBK/Big5 bytes.
+/// The `zip` crate remaps those through CP437 into mojibake — always use `name_raw()`.
+///
+/// Valid UTF-8 is kept when it looks like a real path. If it is valid UTF-8 but
+/// only via Latin-1 accidents (GBK「目录」→ `Ŀ¼`), prefer GBK/Big5 by score.
 pub fn decode_zip_name(raw: &[u8]) -> String {
     if let Ok(text) = std::str::from_utf8(raw) {
+        if looks_like_archive_utf8(text) {
+            return text.to_string();
+        }
+        if utf8_looks_like_gbk_accident(text) {
+            let legacy = decode_legacy_zip_name(raw);
+            if score_decoded_name(&legacy) > score_decoded_name(text) {
+                return legacy;
+            }
+        }
         return text.to_string();
     }
-    encoding_rs::GBK.decode(raw).0.into_owned()
+    decode_legacy_zip_name(raw)
 }
 
 pub fn natural_cmp(a: &str, b: &str) -> Ordering {
@@ -175,6 +249,30 @@ mod tests {
         assert!(std::str::from_utf8(&bytes).is_err());
         assert_eq!(decode_zip_name(&bytes), "测试.jpg");
         assert_eq!(decode_zip_name(b"plain.jpg"), "plain.jpg");
+        let (cover, _, _) = encoding_rs::GBK.encode("FCD-DFC-01-0000-A-混搭封面.jpg");
+        assert_eq!(decode_zip_name(&cover), "FCD-DFC-01-0000-A-混搭封面.jpg");
+    }
+
+    #[test]
+    fn gbk_bytes_that_are_also_valid_utf8_prefer_gbk() {
+        // GBK「目录」== c4 bf c2 bc, which UTF-8 reads as Latin `Ŀ¼`.
+        let (bytes, _, _) = encoding_rs::GBK.encode("目录.jpg");
+        assert!(std::str::from_utf8(&bytes).is_ok());
+        assert_eq!(decode_zip_name(&bytes), "目录.jpg");
+    }
+
+    #[test]
+    fn real_utf8_chinese_names_stay_utf8() {
+        assert_eq!(decode_zip_name("测试.jpg".as_bytes()), "测试.jpg");
+        assert_eq!(decode_zip_name("目录.jpg".as_bytes()), "目录.jpg");
+    }
+
+    #[test]
+    fn cp437_remapped_bytes_are_not_recoverable_via_utf8() {
+        // Simulates feeding zip's already-CP437-decoded mojibake back as UTF-8 bytes —
+        // decode_zip_name must not "fix" that; callers must use name_raw instead.
+        let mojibake = "FCD-DFC-01-0000-A-┐∞┤ε╥Γ├μ.jpg";
+        assert_eq!(decode_zip_name(mojibake.as_bytes()), mojibake);
     }
 
     #[test]

@@ -180,7 +180,7 @@ onBeforeUnmount(() => {
               @keydown.enter.prevent="startEdit(action.id)"
               @keydown.space.prevent="startEdit(action.id)"
             >
-              <td class="shortcut-icon">
+              <td class="shortcut-icon" :class="{ 'rotate-ccw': action.id === 'rotateCcw' }">
                 <Icon v-if="action.icon" :name="action.icon" />
               </td>
               <td class="shortcut-desc">{{ t(action.labelKey) }}</td>
@@ -337,6 +337,10 @@ onBeforeUnmount(() => {
   width: 28px;
   color: var(--muted);
   vertical-align: middle;
+}
+
+.shortcut-icon.rotate-ccw .asset-icon {
+  transform: scaleX(-1);
 }
 
 .shortcut-desc {

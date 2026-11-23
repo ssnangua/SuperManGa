@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <strong>단순하고 집중된 로컬 만화 리더</strong>
+  <strong>단순하고 실용적인 로컬 만화 리더</strong>
 </p>
 
 <p align="center">

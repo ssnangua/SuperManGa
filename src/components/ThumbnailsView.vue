@@ -2,7 +2,9 @@
 import { nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import {
   comic,
+  halfOf,
   imageSrc,
+  logicalToPhysical,
   pageCount,
   pageIndex,
   setIndex,
@@ -185,8 +187,8 @@ function choose(index: number) {
   thumbnailsOpen.value = false;
 }
 
-function pageName(index: number) {
-  return comic.value?.pages[index]?.name ?? "";
+function pageName(logical: number) {
+  return comic.value?.pages[logicalToPhysical(logical)]?.name ?? "";
 }
 
 function markVisible(entries: IntersectionObserverEntry[]) {
@@ -314,14 +316,19 @@ watch(pageIndex, () => {
         @click="choose(index - 1)"
       >
         <span v-if="settings.thumbShowIndex" class="thumb-num">{{ index }}</span>
-        <span class="thumb-frame" :style="{ background: settings.backgroundColor }">
-          <img
-            v-if="loaded[index - 1]"
-            :src="imageSrc(index - 1)"
-            :alt="String(index)"
-            draggable="false"
-            decoding="async"
-          />
+        <span
+          class="thumb-frame"
+          :data-half="halfOf(index - 1)"
+          :style="{ background: settings.backgroundColor }"
+        >
+          <span v-if="loaded[index - 1]" class="thumb-crop">
+            <img
+              :src="imageSrc(index - 1)"
+              :alt="String(index)"
+              draggable="false"
+              decoding="async"
+            />
+          </span>
         </span>
         <span v-if="settings.thumbShowName" class="thumb-name" :title="pageName(index - 1)">{{ pageName(index - 1) }}</span>
       </button>
@@ -396,7 +403,40 @@ html.theme-light .thumb {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.28);
 }
 
-.thumb-frame img {
+.thumb-crop {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
+}
+
+.thumb-frame[data-half="left"] .thumb-crop,
+.thumb-frame[data-half="right"] .thumb-crop {
+  width: 50%;
+  height: 100%;
+}
+
+.thumb-frame[data-half="left"] .thumb-crop img {
+  width: 200%;
+  max-width: none;
+  height: auto;
+  object-fit: cover;
+  object-position: left center;
+}
+
+.thumb-frame[data-half="right"] .thumb-crop img {
+  width: 200%;
+  max-width: none;
+  height: auto;
+  object-fit: cover;
+  object-position: right center;
+  margin-left: -100%;
+}
+
+.thumb-frame[data-half="full"] .thumb-crop img,
+.thumb-frame:not([data-half]) .thumb-crop img {
   display: block;
   max-width: 100%;
   max-height: 100%;

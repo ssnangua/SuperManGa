@@ -92,6 +92,7 @@ pub fn run() {
             commands::save_bookmarks,
             commands::delete_bookmarks,
             commands::save_page,
+            commands::write_bytes,
             commands::page_file_info,
             commands::system_info,
             commands::take_pending_open,

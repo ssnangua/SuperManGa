@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <strong>シンプルで純粋なローカル漫画リーダー</strong>
+  <strong>シンプルで実用的なローカル漫画リーダー</strong>
 </p>
 
 <p align="center">

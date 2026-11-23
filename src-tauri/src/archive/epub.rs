@@ -84,13 +84,13 @@ struct ManifestItem {
 fn index_entries(archive: &mut ZipArchive<BufReader<File>>) -> Result<HashMap<String, usize>, String> {
     let mut map = HashMap::new();
     for index in 0..archive.len() {
-        let Some(raw) = archive.name_for_index(index) else {
+        let Ok(entry) = archive.by_index_raw(index) else {
             continue;
         };
-        if raw.ends_with('/') || raw.ends_with('\\') {
+        let name = normalize_rel(&decode_zip_name(entry.name_raw()));
+        if name.ends_with('/') || name.ends_with('\\') {
             continue;
         }
-        let name = normalize_rel(&decode_zip_name(raw.as_bytes()));
         map.insert(name, index);
         // EPUB paths are often looked up case-sensitively; also keep a lower-case key for recovery.
         // Prefer first occurrence.

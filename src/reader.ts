@@ -40,6 +40,16 @@ import {
   type ChapterFilenameRule,
 } from "./lib/chapterRules";
 import { pageUrl, setDemoUrls } from "./lib/pages";
+import {
+  clipRegionToHalf,
+  logicalFromPhysical,
+  logicalPageCount,
+  pageHalf,
+  physicalPageIndex,
+  remapLogicalIndex,
+  remapLogicalIndexForDirection,
+  type PageHalf,
+} from "./lib/pageSplit";
 import { spreadIndexes, spreadStart, type ReadingMode } from "./lib/spread";
 import { ensureFocusTapGuard } from "./lib/focusTap";
 import { nudgeStageScroll, planStageStep, remainingStageScroll, stageOverflows } from "./lib/stagePointer";
@@ -55,6 +65,9 @@ import {
 import {
   NEURAL_TARGET_SIZE_DEFAULT,
   neuralBatchPaused,
+  neuralDoneFlags,
+  neuralRunningIndex,
+  neuralSeekGradient,
   setNeuralFocus,
 } from "./lib/render/neural";
 import { syncNeuralBook } from "./lib/render/neuralBook";
@@ -158,7 +171,6 @@ export interface Settings {
   sidebarOpen: boolean;
   historyCount: number;
   readingMode: ReadingMode;
-  isolateCover: boolean;
   spreadGap: number;
   stagePadX: number;
   stagePadY: number;
@@ -433,7 +445,6 @@ const defaultSettings = (): Settings => ({
   sidebarOpen: false,
   historyCount: 10,
   readingMode: "single",
-  isolateCover: false,
   spreadGap: 0,
   stagePadX: 0,
   stagePadY: 0,
@@ -566,7 +577,6 @@ function applySettings(saved: Partial<Settings>) {
   settings.stagePadX = clampInt(saved.stagePadX, 0, 400, 0);
   settings.stagePadY = clampInt(saved.stagePadY, 0, 400, 0);
   settings.spreadAlign = normalizeSpreadAlign(saved.spreadAlign);
-  settings.isolateCover = !!saved.isolateCover;
   settings.minimalistShowSeek = saved.minimalistShowSeek !== false;
   settings.minimalistShowPage = !!saved.minimalistShowPage;
   settings.fullscreenShowSeek = saved.fullscreenShowSeek !== false;
@@ -679,12 +689,12 @@ function scheduleNeuralBook() {
     path: book?.path ?? "",
     readSubfolder: settings.readSubfolder,
     pages: book?.pages ?? [],
-    focusIndex: pageIndex.value,
+    focusIndex: logicalToPhysical(pageIndex.value),
     readingMode: settings.readingMode,
-    isolateCover: settings.isolateCover,
+    isolateCover: isolateCover.value,
     renderProfile: settings.renderProfile,
     targetSize: settings.neuralTargetSize,
-    imageSrc,
+    imageSrc: physicalImageSrc,
   });
 }
 
@@ -692,9 +702,9 @@ function scheduleNeuralBook() {
 function scheduleNeuralFocus() {
   const book = comic.value;
   if (!book || !isNeuralProfile(settings.renderProfile) || !inTauri()) return;
-  setNeuralFocus(pageIndex.value, book.pages.length, {
+  setNeuralFocus(logicalToPhysical(pageIndex.value), book.pages.length, {
     readingMode: settings.readingMode,
-    isolateCover: settings.isolateCover,
+    isolateCover: isolateCover.value,
   });
 }
 
@@ -760,10 +770,16 @@ let resumeSession = true;
 export const comic = ref<Comic | null>(null);
 export const pageIndex = ref(0);
 export type PageRotation = 0 | 90 | 180 | 270;
-/** Cumulative spin degrees (may exceed 360) so clockwise steps can animate forward. */
+/** Cumulative spin degrees (may briefly hit ±360) so full-turn steps can animate forward. */
 export const pageSpins = reactive<Record<number, number>>({});
+/** Physical pages snapping 360→0 without CSS transition. */
+export const pageSpinSnap = reactive<Record<number, boolean>>({});
 export const rotateGuide = ref(false);
 export const scrollOffset = ref(0);
+
+/** Matches `.page-rotate { transition: transform 0.22s ease }`. */
+const SPIN_TRANSITION_MS = 220;
+const pendingSpinWrap = new Map<number, number>();
 
 function normalizeRotation(degrees: number): PageRotation {
   const deg = ((degrees % 360) + 360) % 360;
@@ -771,38 +787,92 @@ function normalizeRotation(degrees: number): PageRotation {
   return 0;
 }
 
-export function getPageSpin(index: number) {
-  return pageSpins[index] ?? 0;
+function isFullTurnSpin(degrees: number): boolean {
+  return degrees !== 0 && degrees % 360 === 0;
 }
 
-export function getPageRotation(index: number): PageRotation {
-  return normalizeRotation(getPageSpin(index));
+function clearSpinWrap(physical: number) {
+  const timer = pendingSpinWrap.get(physical);
+  if (timer != null) {
+    window.clearTimeout(timer);
+    pendingSpinWrap.delete(physical);
+  }
+  if (physical in pageSpinSnap) delete pageSpinSnap[physical];
 }
 
-export function setPageRotation(index: number, rotation: PageRotation) {
-  const current = getPageSpin(index);
-  const logical = normalizeRotation(current);
-  let delta = rotation - logical;
+function scheduleSpinWrapReset(physical: number) {
+  clearSpinWrap(physical);
+  const reduced =
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const delay = reduced ? 0 : SPIN_TRANSITION_MS;
+  const timer = window.setTimeout(() => {
+    pendingSpinWrap.delete(physical);
+    const spin = pageSpins[physical] ?? 0;
+    if (!isFullTurnSpin(spin)) return;
+    pageSpinSnap[physical] = true;
+    delete pageSpins[physical];
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        if (pageSpinSnap[physical]) delete pageSpinSnap[physical];
+      });
+    });
+  }, delay);
+  pendingSpinWrap.set(physical, timer);
+}
+
+function applyRotateStep(logical: number, delta: 90 | -90) {
+  const physical = logicalToPhysical(logical);
+  clearSpinWrap(physical);
+  let current = getPageSpin(logical);
+  // Full turn still pending reset — treat as 0 so the next step doesn't overshoot.
+  if (isFullTurnSpin(current)) current = 0;
+  const next = current + delta;
+  pageSpins[physical] = next;
+  if (isFullTurnSpin(next)) scheduleSpinWrapReset(physical);
+}
+
+export function getPageSpin(logical: number) {
+  return pageSpins[logicalToPhysical(logical)] ?? 0;
+}
+
+export function isPageSpinSnap(logical: number): boolean {
+  return !!pageSpinSnap[logicalToPhysical(logical)];
+}
+
+export function getPageRotation(logical: number): PageRotation {
+  return normalizeRotation(getPageSpin(logical));
+}
+
+export function setPageRotation(logical: number, rotation: PageRotation) {
+  const physical = logicalToPhysical(logical);
+  clearSpinWrap(physical);
+  const current = getPageSpin(logical);
+  const normalized = normalizeRotation(current);
+  let delta = rotation - normalized;
   if (delta > 180) delta -= 360;
   if (delta < -180) delta += 360;
   const next = current + delta;
   if (next === 0) {
-    if (index in pageSpins) delete pageSpins[index];
+    if (physical in pageSpins) delete pageSpins[physical];
     return;
   }
-  pageSpins[index] = next;
+  pageSpins[physical] = next;
+  if (isFullTurnSpin(next)) scheduleSpinWrapReset(physical);
 }
 
-export function rotatePageClockwise(index = pageIndex.value) {
-  pageSpins[index] = getPageSpin(index) + 90;
+export function rotatePageClockwise(logical = pageIndex.value) {
+  applyRotateStep(logical, 90);
 }
 
-export function rotatePageCounterClockwise(index = pageIndex.value) {
-  pageSpins[index] = getPageSpin(index) - 90;
+export function rotatePageCounterClockwise(logical = pageIndex.value) {
+  applyRotateStep(logical, -90);
 }
 
 export function clearPageRotations() {
+  for (const physical of [...pendingSpinWrap.keys()]) clearSpinWrap(physical);
   for (const key of Object.keys(pageSpins)) delete pageSpins[Number(key)];
+  for (const key of Object.keys(pageSpinSnap)) delete pageSpinSnap[Number(key)];
 }
 
 export function rotatedSize(width: number, height: number, rotation: PageRotation) {
@@ -876,8 +946,33 @@ export function clearOcrRegions() {
   for (const key of Object.keys(ocrRegionsByPage)) delete ocrRegionsByPage[Number(key)];
 }
 
-function pageHasOcrResult(index: number) {
-  return Object.prototype.hasOwnProperty.call(ocrRegionsByPage, index);
+function pageHasOcrResult(logical: number) {
+  return Object.prototype.hasOwnProperty.call(ocrRegionsByPage, logicalToPhysical(logical));
+}
+
+/** OCR regions for a logical page (clipped into half-local 0–1 when split). */
+export function ocrRegionsForLogical(logical: number): OcrRegion[] {
+  const physical = logicalToPhysical(logical);
+  const half = halfOf(logical);
+  const regions = ocrRegionsByPage[physical] ?? [];
+  if (half === "full") return regions;
+  const out: OcrRegion[] = [];
+  for (const region of regions) {
+    const box = clipRegionToHalf(region, half);
+    if (!box) continue;
+    out.push({ ...region, ...box });
+  }
+  return out;
+}
+
+export function setSplitDoublePages(on: boolean) {
+  const next = !!on;
+  const from = splitDoublePages.value;
+  if (from === next) return;
+  const dir = modeFit().direction;
+  const remapped = remapLogicalIndex(pageIndex.value, from, next, dir);
+  splitDoublePages.value = next;
+  setIndex(remapped, settings.readingMode === "scroll");
 }
 
 /** Scroll-mode pages intersecting the viewport (partial counts). Cleared when leaving scroll. */
@@ -929,6 +1024,19 @@ function cancelInFlightOcr() {
   }
 }
 
+/** Dedupe logical indexes that share one physical page (OCR runs once per source image). */
+function uniqueLogicalByPhysical(logicals: number[]): number[] {
+  const seen = new Set<number>();
+  const out: number[] = [];
+  for (const logical of logicals) {
+    const physical = logicalToPhysical(logical);
+    if (seen.has(physical)) continue;
+    seen.add(physical);
+    out.push(logical);
+  }
+  return out;
+}
+
 /** Build the next OCR/translate work list (priority-ranked; batch only when book pre-translate is on). */
 function collectTranslateQueue(): number[] {
   const count = pageCount.value;
@@ -941,25 +1049,30 @@ function collectTranslateQueue(): number[] {
     pageIndex.value,
     count,
     settings.readingMode,
-    settings.isolateCover,
+    isolateCover.value,
   );
   // Off: current view + neighbor spreads (same idea as neural when book pre-upscale is off).
   // On: whole book, ranked by priority.
   const candidates = settings.translation.bookPreTranslate
     ? Array.from({ length: count }, (_, index) => index)
     : [...new Set([...view, ...near])];
-  const pending = candidates.filter((index) => !pageHasOcrResult(index));
+  const pending = uniqueLogicalByPhysical(
+    candidates.filter((index) => !pageHasOcrResult(index)),
+  );
   const ranked = rankTranslatePages(
     pending,
     pageIndex.value,
     count,
     settings.readingMode,
-    settings.isolateCover,
+    isolateCover.value,
   );
   // Scroll viewport pages may span more than focus±1; keep them ahead of batch.
   if (settings.readingMode === "scroll") {
-    const inView = new Set(view);
-    return [...ranked.filter((i) => inView.has(i)), ...ranked.filter((i) => !inView.has(i))];
+    const inView = new Set(view.map((i) => logicalToPhysical(i)));
+    return [
+      ...ranked.filter((i) => inView.has(logicalToPhysical(i))),
+      ...ranked.filter((i) => !inView.has(logicalToPhysical(i))),
+    ];
   }
   return ranked;
 }
@@ -970,9 +1083,10 @@ function translateKeepSet(): number[] {
   if (settings.translation.bookPreTranslate) {
     const pending: number[] = [];
     for (let index = 0; index < count; index += 1) {
-      if (!pageHasOcrResult(index) || ocrRunningIndex.value === index) pending.push(index);
+      const physical = logicalToPhysical(index);
+      if (!pageHasOcrResult(index) || ocrRunningIndex.value === physical) pending.push(index);
     }
-    return pending;
+    return uniqueLogicalByPhysical(pending);
   }
   const view =
     translationTargetPages.value.length > 0
@@ -982,9 +1096,9 @@ function translateKeepSet(): number[] {
     pageIndex.value,
     count,
     settings.readingMode,
-    settings.isolateCover,
+    isolateCover.value,
   );
-  return [...new Set([...view, ...near])];
+  return uniqueLogicalByPhysical([...new Set([...view, ...near])]);
 }
 
 /**
@@ -996,12 +1110,19 @@ function resyncTranslateKeepingInflight() {
   if (ocrBusy.value || ocrEnsureRunning) {
     const inflight = ocrRunningIndex.value;
     const keep = translateKeepSet();
-    if (inflight != null && keep.includes(inflight)) {
+    if (
+      inflight != null &&
+      keep.some((logical) => logicalToPhysical(logical) === inflight)
+    ) {
       ocrEnsureQueued = true;
       return;
     }
     // Book pre-translate: never cancel a still-needed page on viewport churn.
-    if (settings.translation.bookPreTranslate && inflight != null && !pageHasOcrResult(inflight)) {
+    if (
+      settings.translation.bookPreTranslate &&
+      inflight != null &&
+      !Object.prototype.hasOwnProperty.call(ocrRegionsByPage, inflight)
+    ) {
       ocrEnsureQueued = true;
       return;
     }
@@ -1118,7 +1239,7 @@ export async function retranslateCurrentPage(index = pageIndex.value) {
   if (ocrBusy.value || ocrEnsureRunning) {
     cancelInFlightOcr();
   }
-  delete ocrRegionsByPage[index];
+  delete ocrRegionsByPage[logicalToPhysical(index)];
   await runOcrTranslate(index, { quietEmpty: false, forceRefresh: true });
 }
 
@@ -1174,14 +1295,15 @@ type RunOcrOptions = {
   forceRefresh?: boolean;
 };
 
-/** Core OCR + translate for one page (caller owns ocrBusy / ensure lifecycle). */
+/** Core OCR + translate for one logical page (stores results under the physical index). */
 async function runOcrTranslateInner(
-  index: number,
+  logical: number,
   options: RunOcrOptions,
   gen: number,
 ): Promise<void> {
   const current = comic.value;
   if (!current) return;
+  const physical = logicalToPhysical(logical);
   const sourceLang = settings.translation.sourceLang || "auto";
   const ocrEngine = normalizeOcrEngineId(settings.translation.ocrEngine);
   // Skip no-op writes to avoid re-entering the OCR clear watch.
@@ -1193,17 +1315,17 @@ async function runOcrTranslateInner(
       notifyWarning(i18n.global.t("ocrModelsRequired"));
       ocrAssetsOpen.value = true;
       // Mark attempted so auto-translate does not spam.
-      ocrRegionsByPage[index] = [];
+      ocrRegionsByPage[physical] = [];
       return;
     }
   }
   if (gen !== ocrEnsureGen || !ocrEnabled.value) return;
   ocrEnabled.value = true;
-  ocrRunningIndex.value = index;
+  ocrRunningIndex.value = physical;
   try {
     if (!inTauri()) {
       if (gen !== ocrEnsureGen || !ocrEnabled.value) return;
-      ocrRegionsByPage[index] = [
+      ocrRegionsByPage[physical] = [
         {
           id: "demo-1",
           x: 0.12,
@@ -1219,7 +1341,7 @@ async function runOcrTranslateInner(
     const result = await invoke<OcrPageResult>("ocr_translate_page", {
       args: {
         sessionId: current.sessionId,
-        index,
+        index: physical,
         sourceLang,
         ocrEngine,
         settings: settings.translation,
@@ -1233,11 +1355,11 @@ async function runOcrTranslateInner(
       detectorParts.push("saber-yolo-refine");
     }
     const priority = translatePriorityForIndex(
-      index,
+      logical,
       pageIndex.value,
       pageCount.value,
       settings.readingMode,
-      settings.isolateCover,
+      isolateCover.value,
     );
     console.info(
       "[ocr]",
@@ -1254,7 +1376,7 @@ async function runOcrTranslateInner(
         regions: result.regions,
       }),
     );
-    ocrRegionsByPage[index] = result.regions;
+    ocrRegionsByPage[physical] = result.regions;
     if (result.translationError) {
       notifyWarning(formatTranslationError(result.translationError));
     } else if (!result.regions.length && !options.quietEmpty) {
@@ -1269,7 +1391,7 @@ async function runOcrTranslateInner(
       return;
     }
     // Record empty result so auto-translate / watchers do not retry forever.
-    ocrRegionsByPage[index] = [];
+    ocrRegionsByPage[physical] = [];
     if (message.includes("OCR_MODELS_REQUIRED")) {
       notifyWarning(i18n.global.t("ocrModelsRequired"));
       ocrAssetsOpen.value = true;
@@ -1279,7 +1401,7 @@ async function runOcrTranslateInner(
       notifyError(message);
     }
   } finally {
-    if (ocrRunningIndex.value === index) ocrRunningIndex.value = null;
+    if (ocrRunningIndex.value === physical) ocrRunningIndex.value = null;
   }
 }
 
@@ -1475,6 +1597,10 @@ export const thumbnailsOpen = ref(false);
 export const altDown = ref(false);
 /** Circular page magnifier (follows pointer; includes OCR overlay). */
 export const magnifierOn = ref(false);
+/** Session-only: treat each source image as two half-pages (not persisted). */
+export const splitDoublePages = ref(false);
+/** Session-only: show cover alone in double-page mode (not persisted). */
+export const isolateCover = ref(false);
 
 export function toggleMagnifier() {
   if (!comic.value) {
@@ -1487,15 +1613,73 @@ export function toggleMagnifier() {
 export function setMagnifier(on: boolean) {
   magnifierOn.value = Boolean(on && comic.value);
 }
+
+export function setIsolateCover(on: boolean) {
+  const next = !!on;
+  if (isolateCover.value === next) return;
+  isolateCover.value = next;
+  setIndex(pageIndex.value, settings.readingMode === "scroll");
+}
 export const dropping = ref(false);
 export const clock = ref("");
 export const about = ref<AboutInfo | null>(null);
 
-export const pageCount = computed(() => comic.value?.pages.length ?? 0);
+export const physicalPageCount = computed(() => comic.value?.pages.length ?? 0);
+export const pageCount = computed(() =>
+  logicalPageCount(physicalPageCount.value, splitDoublePages.value),
+);
+
+/** Layout sizes for logical pages (half width when split). */
+export const logicalPageSizes = computed(() => {
+  const pages = comic.value?.pages ?? [];
+  const split = splitDoublePages.value;
+  const direction = modeFit().direction;
+  if (!split) {
+    return pages.map((page) => ({
+      width: page.width,
+      height: page.height,
+      name: page.name,
+      relPath: page.relPath,
+    }));
+  }
+  const out: { width: number; height: number; name: string; relPath?: string }[] = [];
+  for (let logical = 0; logical < pages.length * 2; logical += 1) {
+    const page = pages[physicalPageIndex(logical, true)]!;
+    const half = pageHalf(logical, true, direction);
+    const leftW = page.width > 0 ? Math.floor(page.width / 2) : 0;
+    const rightW = page.width > 0 ? page.width - leftW : 0;
+    const width = half === "left" ? leftW : rightW;
+    out.push({
+      width,
+      height: page.height,
+      name: page.name,
+      relPath: page.relPath,
+    });
+  }
+  return out;
+});
+
+export function readingDirection() {
+  return modeFit().direction;
+}
+
+export function logicalToPhysical(logical: number) {
+  return physicalPageIndex(logical, splitDoublePages.value);
+}
+
+export function halfOf(logical: number): PageHalf {
+  return pageHalf(logical, splitDoublePages.value, modeFit().direction);
+}
+
+export function physicalImageSrc(physical: number): string {
+  if (!comic.value) return "";
+  return pageUrl(comic.value.protocolOrigin, comic.value.sessionId, physical);
+}
+
 export const shownPages = computed(() =>
   pageCount.value <= 0
     ? []
-    : spreadIndexes(pageIndex.value, pageCount.value, settings.readingMode, settings.isolateCover),
+    : spreadIndexes(pageIndex.value, pageCount.value, settings.readingMode, isolateCover.value),
 );
 /** Pages that should be OCR'd for the current view (dual spread / scroll viewport / single). */
 export const translationTargetPages = computed(() => {
@@ -1509,9 +1693,16 @@ export const translationTargetPages = computed(() => {
     pageIndex.value,
     pageCount.value,
     settings.readingMode,
-    settings.isolateCover,
+    isolateCover.value,
   );
 });
+
+function translateSeekColor(logical: number): string {
+  const physical = logicalToPhysical(logical);
+  if (ocrRunningIndex.value === physical) return "var(--translate-running)";
+  if (pageHasOcrResult(logical)) return "var(--translate-done)";
+  return "";
+}
 
 /** Seek-bar segments for translation progress (purple done / pink running). */
 export const translationSeekGradient = computed(() => {
@@ -1520,30 +1711,18 @@ export const translationSeekGradient = computed(() => {
   if (n <= 0) return "none";
   // Touch reactive map so overlay updates as pages finish.
   void Object.keys(ocrRegionsByPage).length;
-  const running = ocrRunningIndex.value;
+  void ocrRunningIndex.value;
   type Seg = { start: number; end: number; color: string };
   const segs: Seg[] = [];
   let i = 0;
   while (i < n) {
-    const color =
-      i === running
-        ? "var(--translate-running)"
-        : pageHasOcrResult(i)
-          ? "var(--translate-done)"
-          : "";
+    const color = translateSeekColor(i);
     if (!color) {
       i += 1;
       continue;
     }
     let end = i + 1;
-    while (
-      end < n &&
-      (end === running
-        ? "var(--translate-running)"
-        : pageHasOcrResult(end)
-          ? "var(--translate-done)"
-          : "") === color
-    ) {
+    while (end < n && translateSeekColor(end) === color) {
       end += 1;
     }
     segs.push({ start: i, end, color });
@@ -1569,6 +1748,13 @@ export const translationSeekGradient = computed(() => {
   return `linear-gradient(to right, ${parts.join(", ")})`;
 });
 
+function extractSeekColor(logical: number): string {
+  const physical = logicalToPhysical(logical);
+  if (extractRunningIndex.value === physical) return "var(--extract-running)";
+  if (extractReadyFlags.value[physical]) return "var(--extract-done)";
+  return "";
+}
+
 /** Seek-bar segments for extract / PDF rasterize (warning done / lighter running). */
 export const extractSeekGradient = computed(() => {
   if (!extracting.value && extractDone.value >= extractTotal.value && extractTotal.value > 0) {
@@ -1577,31 +1763,19 @@ export const extractSeekGradient = computed(() => {
   if (!extracting.value && extractTotal.value <= 0) return "none";
   const n = pageCount.value;
   if (n <= 0) return "none";
-  const ready = extractReadyFlags.value;
-  const running = extractRunningIndex.value;
+  void extractReadyFlags.value;
+  void extractRunningIndex.value;
   type Seg = { start: number; end: number; color: string };
   const segs: Seg[] = [];
   let i = 0;
   while (i < n) {
-    const color =
-      i === running
-        ? "var(--extract-running)"
-        : ready[i]
-          ? "var(--extract-done)"
-          : "";
+    const color = extractSeekColor(i);
     if (!color) {
       i += 1;
       continue;
     }
     let end = i + 1;
-    while (
-      end < n &&
-      (end === running
-        ? "var(--extract-running)"
-        : ready[end]
-          ? "var(--extract-done)"
-          : "") === color
-    ) {
+    while (end < n && extractSeekColor(end) === color) {
       end += 1;
     }
     segs.push({ start: i, end, color });
@@ -1660,10 +1834,16 @@ async function pushExtractPriority() {
   };
   // Visible spread first, then radiate outward (forward before backward):
   // e.g. focus 50 → 50, 51, 49, 52, 48, …
-  for (const index of focus) push(index);
-  if (!pages.length) push(pageIndex.value);
-  const lo = pages.reduce((a, b) => Math.min(a, b), pages[0] ?? pageIndex.value);
-  const hi = pages.reduce((a, b) => Math.max(a, b), pages[0] ?? pageIndex.value);
+  for (const index of focus) push(logicalToPhysical(index));
+  if (!pages.length) push(logicalToPhysical(pageIndex.value));
+  const lo = pages.reduce(
+    (a, b) => Math.min(a, b),
+    pages[0] ?? logicalToPhysical(pageIndex.value),
+  );
+  const hi = pages.reduce(
+    (a, b) => Math.max(a, b),
+    pages[0] ?? logicalToPhysical(pageIndex.value),
+  );
   for (let distance = 1; seen.size < count; distance++) {
     const before = pages.length;
     push(hi + distance);
@@ -1820,7 +2000,7 @@ export function setIndex(index: number, raw = false, scroll: ScrollBehavior = "s
   }
   let next = Math.max(0, Math.min(count - 1, Math.trunc(index)));
   if (!raw && settings.readingMode !== "scroll") {
-    next = spreadStart(next, count, settings.readingMode, settings.isolateCover);
+    next = spreadStart(next, count, settings.readingMode, isolateCover.value);
   }
   pageIndex.value = next;
 }
@@ -1848,7 +2028,7 @@ export function turn(forward: boolean) {
     pageIndex.value,
     pageCount.value,
     settings.readingMode,
-    settings.isolateCover,
+    isolateCover.value,
   );
   const delta = (forward ? 1 : -1) * Math.max(1, spread.length);
   setIndex(pageIndex.value + delta);
@@ -2239,11 +2419,22 @@ export async function openComic(path: string) {
         measureTotal.value = info.pages.length;
         let index = 0;
         let offset = 0;
-        if (info.initialIndex != null) index = info.initialIndex;
-        else {
+        if (info.initialIndex != null) {
+          index = logicalFromPhysical(
+            info.initialIndex,
+            "full",
+            splitDoublePages.value,
+            modeFit().direction,
+          );
+        } else {
           const previous = history.value.find((item) => item.path === info.path);
           if (previous) {
-            index = previous.index;
+            index = logicalFromPhysical(
+              previous.index,
+              "full",
+              splitDoublePages.value,
+              modeFit().direction,
+            );
             offset = clampOffset(previous.offset);
           }
         }
@@ -2337,29 +2528,88 @@ export async function openLogs() {
   }
 }
 
-export async function saveImage(index: number) {
+async function cropPageHalfBlob(logical: number): Promise<Blob> {
+  const physical = logicalToPhysical(logical);
+  const half = halfOf(logical);
+  const blob = await fetchPageBlob(physical);
+  if (half === "full") return blob;
+  const bitmap = await createImageBitmap(blob);
+  try {
+    const leftW = Math.floor(bitmap.width / 2);
+    const sx = half === "left" ? 0 : leftW;
+    const sw = half === "left" ? leftW : bitmap.width - leftW;
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.max(1, sw);
+    canvas.height = bitmap.height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("canvas unsupported");
+    ctx.drawImage(bitmap, sx, 0, sw, bitmap.height, 0, 0, sw, bitmap.height);
+    return await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (value) => (value ? resolve(value) : reject(new Error("encode failed"))),
+        "image/png",
+      );
+    });
+  } finally {
+    bitmap.close();
+  }
+}
+
+function halfExportName(pageName: string, half: PageHalf): string {
+  if (half === "full") return pageName;
+  const dot = pageName.lastIndexOf(".");
+  const stem = dot >= 0 ? pageName.slice(0, dot) : pageName;
+  const tag = half === "left" ? "L" : "R";
+  return `${stem}_${tag}.png`;
+}
+
+export async function saveImage(logical: number) {
   if (!comic.value) return;
-  const page = comic.value.pages[index];
+  const physical = logicalToPhysical(logical);
+  const page = comic.value.pages[physical];
   if (!page) return;
-  if (!inTauri()) {
-    const link = document.createElement("a");
-    link.href = imageSrc(index);
-    link.download = page.name;
-    link.click();
+  const half = halfOf(logical);
+  if (half === "full") {
+    if (!inTauri()) {
+      const link = document.createElement("a");
+      link.href = physicalImageSrc(physical);
+      link.download = page.name;
+      link.click();
+      notifySuccess(i18n.global.t("saved"), 1600);
+      return;
+    }
+    const ext = page.name.split(".").pop() || "jpg";
+    const dest = await save({
+      defaultPath: page.name,
+      filters: [{ name: "Image", extensions: [ext] }],
+    });
+    if (typeof dest !== "string") return;
+    await invoke("save_page", {
+      sessionId: comic.value.sessionId,
+      index: physical,
+      dest,
+    });
     notifySuccess(i18n.global.t("saved"), 1600);
     return;
   }
-  const ext = page.name.split(".").pop() || "jpg";
+  const cropped = await cropPageHalfBlob(logical);
+  const fileName = halfExportName(page.name, half);
+  if (!inTauri()) {
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(cropped);
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    notifySuccess(i18n.global.t("saved"), 1600);
+    return;
+  }
   const dest = await save({
-    defaultPath: page.name,
-    filters: [{ name: "Image", extensions: [ext] }],
+    defaultPath: fileName,
+    filters: [{ name: "Image", extensions: ["png"] }],
   });
   if (typeof dest !== "string") return;
-  await invoke("save_page", {
-    sessionId: comic.value.sessionId,
-    index,
-    dest,
-  });
+  const bytes = Array.from(new Uint8Array(await cropped.arrayBuffer()));
+  await invoke("write_bytes", { dest, bytes });
   notifySuccess(i18n.global.t("saved"), 1600);
 }
 
@@ -2381,34 +2631,50 @@ export interface PageFileInfo {
   modifiedText?: string | null;
 }
 
-export function pageFileInfoSnapshot(index = pageIndex.value): PageFileInfo | null {
+export function pageFileInfoSnapshot(logical = pageIndex.value): PageFileInfo | null {
   const book = comic.value;
-  const page = book?.pages[index];
+  const physical = logicalToPhysical(logical);
+  const page = book?.pages[physical];
   if (!book || !page) return null;
+  const half = halfOf(logical);
+  const leftW = page.width > 0 ? Math.floor(page.width / 2) : 0;
+  const rightW = page.width > 0 ? page.width - leftW : 0;
+  const width =
+    half === "full" ? page.width || null : half === "left" ? leftW || null : rightW || null;
   return {
-    name: page.name,
+    name: half === "full" ? page.name : halfExportName(page.name, half),
     path: joinPagePath(book.path, page.relPath || page.name),
-    width: page.width || null,
+    width,
     height: page.height || null,
   };
 }
 
-export async function loadPageFileInfo(index = pageIndex.value): Promise<PageFileInfo | null> {
+export async function loadPageFileInfo(logical = pageIndex.value): Promise<PageFileInfo | null> {
   const book = comic.value;
-  const fallback = pageFileInfoSnapshot(index);
+  const physical = logicalToPhysical(logical);
+  const fallback = pageFileInfoSnapshot(logical);
   if (!book || !fallback) return null;
   if (!inTauri()) return fallback;
   try {
     const remote = await invoke<PageFileInfo>("page_file_info", {
       sessionId: book.sessionId,
-      index,
+      index: physical,
     });
+    const half = halfOf(logical);
+    const fullW = remote.width || fallback.width || 0;
+    const leftW = fullW > 0 ? Math.floor(fullW / 2) : 0;
+    const rightW = fullW > 0 ? fullW - leftW : 0;
+    const width =
+      half === "full" ? fullW || null : half === "left" ? leftW || null : rightW || null;
     return {
       ...fallback,
       ...remote,
-      name: remote.name || fallback.name,
+      name:
+        half === "full"
+          ? remote.name || fallback.name
+          : halfExportName(remote.name || fallback.name, half),
       path: remote.path || fallback.path,
-      width: remote.width || fallback.width,
+      width,
       height: remote.height || fallback.height,
     };
   } catch (error) {
@@ -2426,8 +2692,8 @@ function joinPagePath(root: string, rel: string) {
   return `${root}${sep}${inner}`;
 }
 
-async function fetchPageBlob(index: number): Promise<Blob> {
-  const src = imageSrc(index);
+async function fetchPageBlob(physical: number): Promise<Blob> {
+  const src = physicalImageSrc(physical);
   const response = await fetch(src);
   if (!response.ok) throw new Error(`fetch ${response.status}`);
   return response.blob();
@@ -2463,10 +2729,15 @@ async function blobToPng(blob: Blob): Promise<Blob> {
   }
 }
 
-export async function copyImage(index = pageIndex.value) {
+export async function copyImage(logical = pageIndex.value) {
   if (!comic.value) return;
   try {
-    await writeClipboardImage(await fetchPageBlob(index));
+    const half = halfOf(logical);
+    const blob =
+      half === "full"
+        ? await fetchPageBlob(logicalToPhysical(logical))
+        : await cropPageHalfBlob(logical);
+    await writeClipboardImage(blob);
     notifySuccess(i18n.global.t("copied"), 1600);
   } catch (error) {
     console.error(error);
@@ -2609,7 +2880,7 @@ export async function boot() {
     void syncTitle();
   });
   watch(
-    () => [settings.readingMode, settings.isolateCover] as const,
+    () => [settings.readingMode, isolateCover.value] as const,
     ([mode]) => {
       if (mode !== "scroll") {
         scrollOffset.value = 0;
@@ -2617,6 +2888,20 @@ export async function boot() {
       }
       setIndex(pageIndex.value);
       void ensureMeasure();
+    },
+  );
+  // Remap logical index when open-direction flips while split is on (keep physical + half).
+  watch(
+    () => modeFit().direction,
+    (toDir, fromDir) => {
+      if (!fromDir || fromDir === toDir || !splitDoublePages.value) return;
+      const next = remapLogicalIndexForDirection(
+        pageIndex.value,
+        true,
+        fromDir,
+        toDir,
+      );
+      if (next !== pageIndex.value) setIndex(next, settings.readingMode === "scroll");
     },
   );
   watch(extracting, (busy) => {
@@ -2632,7 +2917,7 @@ export async function boot() {
         settings.neuralTargetSize,
         settings.readSubfolder,
         settings.readingMode,
-        settings.isolateCover,
+        isolateCover.value,
         neuralBatchPaused.value,
         measuring.value,
       ] as const,
@@ -2980,7 +3265,8 @@ async function upsertHistory() {
   const offset = settings.readingMode === "scroll" ? clampOffset(scrollOffset.value) : 0;
   const item: HistoryItem = {
     path: comic.value.path,
-    index: pageIndex.value,
+    // Persist physical index so toggling split does not corrupt resume points.
+    index: logicalToPhysical(pageIndex.value),
     offset,
     title: comic.value.title,
   };
@@ -3072,10 +3358,61 @@ export async function relaunchApp() {
   await invoke("relaunch_app");
 }
 
-export function imageSrc(index: number): string {
-  if (!comic.value) return "";
-  return pageUrl(comic.value.protocolOrigin, comic.value.sessionId, index);
+export function imageSrc(logical: number): string {
+  return physicalImageSrc(logicalToPhysical(logical));
 }
+
+function neuralSeekColor(logical: number): string {
+  const physical = logicalToPhysical(logical);
+  if (neuralRunningIndex.value === physical) return "var(--neural-running)";
+  if (neuralDoneFlags.value[physical]) return "var(--neural-done)";
+  return "";
+}
+
+/**
+ * Seek-bar neural gradient in logical slots.
+ * When split is on, both halves of a physical page share the same done/running mark
+ * so a finished page still spans ~one source-page width on the bar.
+ */
+export const neuralSeekGradientUi = computed(() => {
+  if (!splitDoublePages.value) return neuralSeekGradient.value;
+  const n = pageCount.value;
+  if (n <= 0) return "none";
+  void neuralDoneFlags.value;
+  void neuralRunningIndex.value;
+  type Seg = { start: number; end: number; color: string };
+  const segs: Seg[] = [];
+  let i = 0;
+  while (i < n) {
+    const color = neuralSeekColor(i);
+    if (!color) {
+      i += 1;
+      continue;
+    }
+    let end = i + 1;
+    while (end < n && neuralSeekColor(end) === color) end += 1;
+    segs.push({ start: i, end, color });
+    i = end;
+  }
+  if (!segs.length) return "none";
+  const pct = (index: number) => {
+    if (n <= 1) return index <= 0 ? 0 : 100;
+    return Math.min(100, (index / (n - 1)) * 100);
+  };
+  const parts: string[] = [];
+  let cursor = 0;
+  for (const seg of segs) {
+    if (seg.start > cursor) {
+      parts.push(`transparent ${pct(cursor)}%`, `transparent ${pct(seg.start)}%`);
+    }
+    parts.push(`${seg.color} ${pct(seg.start)}%`, `${seg.color} ${pct(seg.end)}%`);
+    cursor = seg.end;
+  }
+  if (cursor < n) {
+    parts.push(`transparent ${pct(cursor)}%`, "transparent 100%");
+  }
+  return `linear-gradient(to right, ${parts.join(", ")})`;
+});
 
 async function loadDemo(): Promise<boolean> {
   if (!import.meta.env.DEV) return false;

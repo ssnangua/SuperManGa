@@ -177,6 +177,11 @@ pub async fn save_page(app: AppHandle, session_id: u64, index: usize, dest: Stri
 }
 
 #[tauri::command]
+pub fn write_bytes(dest: String, bytes: Vec<u8>) -> Result<(), String> {
+    fs::write(dest, bytes).map_err(|err| err.to_string())
+}
+
+#[tauri::command]
 pub async fn page_file_info(app: AppHandle, session_id: u64, index: usize) -> Result<PageFileInfo, String> {
     tauri::async_runtime::spawn_blocking(move || {
         let state = app.state::<AppState>();

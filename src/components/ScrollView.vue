@@ -11,10 +11,13 @@ import {
   resumePlayClock,
   getPageRotation,
   getPageSpin,
+  isPageSpinSnap,
+  halfOf,
   imageSrc,
+  logicalToPhysical,
   altDown,
   ocrEnabled,
-  ocrRegionsByPage,
+  ocrRegionsForLogical,
   pageIndex,
   pageSpins,
   rotatedSize,
@@ -538,23 +541,30 @@ watch(ocrEnabled, (on) => {
       >
         <div
           class="page-rotate"
-          :class="{ swapped: rotationSwapped(getPageRotation(index)) }"
+          :class="{
+            swapped: rotationSwapped(getPageRotation(index)),
+            'spin-snap': isPageSpinSnap(index),
+          }"
           :style="{ '--spin': `${getPageSpin(index)}deg` }"
         >
           <PageMedia
             :src="imageSrc(index)"
             :index="index"
+            :physical-index="logicalToPhysical(index)"
+            :half="halfOf(index)"
             :profile="settings.renderProfile"
             :alt="String(index + 1)"
             object-fit="contain-top"
             :prefetch-next-src="index + 1 < count ? imageSrc(index + 1) : undefined"
             :prefetch-prev-src="index > 0 ? imageSrc(index - 1) : undefined"
+            :prefetch-next-index="index + 1 < count ? logicalToPhysical(index + 1) : undefined"
+            :prefetch-prev-index="index > 0 ? logicalToPhysical(index - 1) : undefined"
             @load="onMediaLoad"
             @error="onMediaError"
           >
             <OcrOverlay
               v-if="ocrEnabled"
-              :regions="ocrRegionsByPage[index] || []"
+              :regions="ocrRegionsForLogical(index)"
               :show-bounds="altDown"
             />
           </PageMedia>

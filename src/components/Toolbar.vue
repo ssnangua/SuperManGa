@@ -29,7 +29,7 @@ import {
   settings,
   modeFit,
   type FitMode,
-  getPageRotation,
+  getPageSpin,
   openArchiveDialog,
   resumePlayClock,
   rotateGuide,
@@ -56,11 +56,11 @@ import {
   turn,
   ocrEnabled,
   translationSeekGradient,
+  neuralSeekGradientUi,
   extractSeekGradient,
   showExtractBar,
 } from "../reader";
 import { maskModalOpen } from "../lib/maskModal";
-import { neuralSeekGradient } from "../lib/render/neural";
 import { isNeuralProfile } from "../lib/render/profile";
 const { t } = useI18n();
 
@@ -97,7 +97,7 @@ const fitIcon = {
 type PopupName = "mode" | "fit" | "direction";
 const openPopup = ref<PopupName | null>(null);
 
-const currentRotation = computed(() => getPageRotation(pageIndex.value));
+const currentSpin = computed(() => getPageSpin(pageIndex.value));
 const chromeSliding = ref(false);
 const CHROME_SLIDE_MS = 140;
 let chromeSlideTimer = 0;
@@ -554,7 +554,7 @@ const showSeek = computed(() => {
         '--progress': progress,
         '--measure': showMeasureBar ? measureProgress : '0%',
         '--extract-seek': extractSeekGradient === 'none' ? emptySeek : extractSeekGradient,
-        '--neural-seek': neuralSeekGradient === 'none' ? emptySeek : neuralSeekGradient,
+        '--neural-seek': neuralSeekGradientUi === 'none' ? emptySeek : neuralSeekGradientUi,
         '--translate-seek':
           translationSeekGradient === 'none' ? emptySeek : translationSeekGradient,
       }"
@@ -738,6 +738,7 @@ const showSeek = computed(() => {
           <button
             type="button"
             class="icon"
+            :class="{ on: playing }"
             :disabled="pageCount <= 0"
             :data-tip="tipWithShortcut(playing ? t('stop') : t('play'), 'play')"
             :aria-label="tipWithShortcut(playing ? t('stop') : t('play'), 'play')"
@@ -746,7 +747,7 @@ const showSeek = computed(() => {
           <button
             type="button"
             class="icon rotate-ccw"
-            :class="{ on: currentRotation !== 0 }"
+            :class="{ on: currentSpin < 0 }"
             :disabled="pageCount <= 0"
             :data-tip="tipWithShortcut(t('rotateCcw'), 'rotateCcw')"
             :aria-label="tipWithShortcut(t('rotateCcw'), 'rotateCcw')"
@@ -757,7 +758,7 @@ const showSeek = computed(() => {
           <button
             type="button"
             class="icon"
-            :class="{ on: currentRotation !== 0 }"
+            :class="{ on: currentSpin > 0 }"
             :disabled="pageCount <= 0"
             :data-tip="tipWithShortcut(t('rotateCw'), 'rotate')"
             :aria-label="tipWithShortcut(t('rotateCw'), 'rotate')"

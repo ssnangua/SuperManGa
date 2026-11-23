@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { nextTick, onBeforeUnmount, ref, watch } from "vue";
 import { maskModalOpen } from "../lib/maskModal";
-import { comic, magnifierOn, pageIndex, scrollOffset, settings } from "../reader";
+import type { PageHalf } from "../lib/pageSplit";
+import { comic, magnifierOn, pageIndex, scrollOffset, settings, splitDoublePages } from "../reader";
 
 /** Chrome / menus that can sit above the stage (windowed dropdowns or overlay panels). */
 const CHROME_HIT =
@@ -33,8 +34,29 @@ type PageHit = {
   bmpRect: { left: number; top: number; width: number; height: number };
   natW: number;
   natH: number;
+  /** Source x-range when the page is a CSS-cropped half of a full bitmap. */
+  srcX: number;
+  srcW: number;
   ocrPlane: HTMLElement | null;
 };
+
+function pageHalfAttr(media: HTMLElement): PageHalf {
+  const half = media.dataset.half;
+  return half === "left" || half === "right" ? half : "full";
+}
+
+/** Map a visible half-page box onto the full-width source bitmap. */
+function sourceXRange(half: PageHalf, natW: number): { x: number; w: number } {
+  if (half === "left") {
+    const w = Math.floor(natW / 2);
+    return { x: 0, w };
+  }
+  if (half === "right") {
+    const x = Math.floor(natW / 2);
+    return { x, w: natW - x };
+  }
+  return { x: 0, w: natW };
+}
 
 function clipBounds(): DOMRect | null {
   const el = clipEl.value;
@@ -129,11 +151,16 @@ function collectPages(cx: number, cy: number): PageHit[] {
     if (!source) continue;
     const { w: natW, h: natH } = sourceNaturalSize(source);
     if (natW < 1 || natH < 1) continue;
+    const half = pageHalfAttr(node);
+    const { x: srcX, w: srcW } = sourceXRange(half, natW);
+    if (srcW < 1) continue;
     const bitmapEl =
       source instanceof HTMLElement
         ? source
         : node.querySelector("img.page-bitmap.base");
-    const bmpRect = bitmapScreenRect(mediaRect, natW, natH, bitmapEl);
+    // Contain letterboxing must use the *visible* source size (half width when split),
+    // not the full bitmap — scroll strips size the box to the half-page aspect.
+    const bmpRect = bitmapScreenRect(mediaRect, srcW, natH, bitmapEl);
     if (!intersectsSample(bmpRect, cx, cy, pad) && !intersectsSample(mediaRect, cx, cy, pad)) {
       continue;
     }
@@ -141,7 +168,7 @@ function collectPages(cx: number, cy: number): PageHit[] {
       node.querySelector(".page-media-ocr-plane") instanceof HTMLElement
         ? (node.querySelector(".page-media-ocr-plane") as HTMLElement)
         : null;
-    hits.push({ media: node, mediaRect, source, bmpRect, natW, natH, ocrPlane });
+    hits.push({ media: node, mediaRect, source, bmpRect, natW, natH, srcX, srcW, ocrPlane });
   }
   return hits;
 }
@@ -169,16 +196,21 @@ function drawHiRes(pages: PageHit[], focusX: number, focusY: number) {
   const sampleBottom = focusY + SAMPLE_RADIUS;
 
   for (const page of pages) {
-    const { source, bmpRect, natW, natH } = page;
-    const ix0 = Math.max(sampleLeft, bmpRect.left);
-    const iy0 = Math.max(sampleTop, bmpRect.top);
-    const ix1 = Math.min(sampleRight, bmpRect.left + bmpRect.width);
-    const iy1 = Math.min(sampleBottom, bmpRect.top + bmpRect.height);
+    const { source, bmpRect, natH, srcX, srcW } = page;
+    // Clip to the visible media box so CSS-hidden other halves are not sampled.
+    const visLeft = Math.max(bmpRect.left, page.mediaRect.left);
+    const visTop = Math.max(bmpRect.top, page.mediaRect.top);
+    const visRight = Math.min(bmpRect.left + bmpRect.width, page.mediaRect.right);
+    const visBottom = Math.min(bmpRect.top + bmpRect.height, page.mediaRect.bottom);
+    const ix0 = Math.max(sampleLeft, visLeft);
+    const iy0 = Math.max(sampleTop, visTop);
+    const ix1 = Math.min(sampleRight, visRight);
+    const iy1 = Math.min(sampleBottom, visBottom);
     if (ix1 <= ix0 || iy1 <= iy0) continue;
 
-    const sx = ((ix0 - bmpRect.left) / bmpRect.width) * natW;
+    const sx = srcX + ((ix0 - bmpRect.left) / bmpRect.width) * srcW;
     const sy = ((iy0 - bmpRect.top) / bmpRect.height) * natH;
-    const sw = ((ix1 - ix0) / bmpRect.width) * natW;
+    const sw = ((ix1 - ix0) / bmpRect.width) * srcW;
     const sh = ((iy1 - iy0) / bmpRect.height) * natH;
     if (sw < 0.5 || sh < 0.5) continue;
 
@@ -308,7 +340,14 @@ watch(comic, (book) => {
 });
 
 watch(
-  () => [comic.value?.sessionId, comic.value?.pages.length, pageIndex.value, scrollOffset.value] as const,
+  () =>
+    [
+      comic.value?.sessionId,
+      comic.value?.pages.length,
+      pageIndex.value,
+      scrollOffset.value,
+      splitDoublePages.value,
+    ] as const,
   () => refreshLoupe(),
 );
 

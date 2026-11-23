@@ -69,6 +69,10 @@ import {
   saveImage,
   setLocale,
   setRenderProfile,
+  setIsolateCover,
+  setSplitDoublePages,
+  isolateCover,
+  splitDoublePages,
   settings,
   settingsOpen,
   toggleDevtools,
@@ -487,6 +491,14 @@ function onPointerDown(event: PointerEvent) {
 function run(action: () => void) {
   closeMenus();
   action();
+}
+
+function toggleSplitDoublePages() {
+  setSplitDoublePages(!splitDoublePages.value);
+}
+
+function toggleIsolateCover() {
+  setIsolateCover(!isolateCover.value);
 }
 
 async function openHistory(item: HistoryItem) {
@@ -1009,8 +1021,28 @@ onBeforeUnmount(() => {
             <span class="key">{{ shortcutDisplay('magnifier') }}</span>
           </button>
           <div class="sep"></div>
-          <button type="button" :disabled="!comic" @click="run(openImageInfo)"><Icon name="info" /><span class="label">{{ t('imageInfo') }}</span></button>
+          <button
+            type="button"
+            :class="{ on: isolateCover }"
+            :disabled="!comic || settings.readingMode !== 'double'"
+            :title="settings.readingMode !== 'double' ? t('isolateCoverDoubleOnly') : undefined"
+            @click="run(toggleIsolateCover)"
+          >
+            <Icon name="modeDouble" />
+            <span class="label">{{ t('isolateCover') }}</span>
+          </button>
+          <button
+            type="button"
+            :class="{ on: splitDoublePages }"
+            :disabled="!comic"
+            :title="t('splitDoublePagesHint')"
+            @click="run(toggleSplitDoublePages)"
+          >
+            <Icon name="splitDouble" />
+            <span class="label">{{ t('splitDoublePages') }}</span>
+          </button>
           <div class="sep"></div>
+          <button type="button" :disabled="!comic" @click="run(openImageInfo)"><Icon name="info" /><span class="label">{{ t('imageInfo') }}</span></button>
           <button type="button" :disabled="!comic" @click="run(() => { void copyImage(); })"><Icon name="copy" /><span class="label">{{ t('copyImage') }}</span><span class="key">{{ shortcutDisplay('copyImage') }}</span></button>
           <button type="button" :disabled="!comic" @click="run(() => { void saveImage(pageIndex); })"><Icon name="save" /><span class="label">{{ t('saveImageAs') }}</span><span class="key">{{ shortcutDisplay('saveImage') }}</span></button>
         </BarMenu>

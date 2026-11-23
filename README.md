@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <strong>一个简单且纯粹的本地漫画阅读器</strong>
+  <strong>一个简单实用的本地漫画阅读器</strong>
 </p>
 <p align="center">
 单页 / 双页 / 条漫滚动 · 图像重采样 / 神经网络超分 / OCR 翻译

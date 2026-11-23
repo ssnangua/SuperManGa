@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <strong>A simple, focused local manga reader</strong>
+  <strong>A simple, practical local manga reader</strong>
 </p>
 <p align="center">
 Single / Double Page / Webtoon Scroll · Image Resampling / Neural Upscaling / OCR Translation

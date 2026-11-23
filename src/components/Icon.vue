@@ -14,6 +14,7 @@ import thumb from "../assets/thumb.svg?raw";
 import modeScroll from "../assets/mode_infinite_scrolling.svg?raw";
 import modeSingle from "../assets/mode_single_page.svg?raw";
 import modeDouble from "../assets/mode_double_pages.svg?raw";
+import splitDouble from "../assets/split_double_pages.svg?raw";
 import dirLtr from "../assets/direction_left_to_right.svg?raw";
 import dirRtl from "../assets/direction_right_to_left.svg?raw";
 import fitCover from "../assets/fit_cover.svg?raw";
@@ -92,6 +93,7 @@ const assets: Record<string, string> = {
   modeScroll: clean(modeScroll),
   modeSingle: clean(modeSingle),
   modeDouble: clean(modeDouble),
+  splitDouble: clean(splitDouble),
   dirLtr: clean(dirLtr),
   dirRtl: clean(dirRtl),
   fitCover: clean(fitCover),

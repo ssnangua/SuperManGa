@@ -55,6 +55,9 @@ import {
   pageColorFilter,
   pageCount,
   pageLabel,
+  logicalPageSizes,
+  isolateCover,
+  splitDoublePages,
   showEmpty,
   pageIndex,
   resizingSidebar,
@@ -304,7 +307,7 @@ function clearAlt() {
         />
         <ScrollView
           v-else-if="comic && settings.readingMode === 'scroll'"
-          :key="comic.sessionId"
+          :key="`${comic.sessionId}-split-${splitDoublePages}`"
           class="page-color"
           :style="{ filter: pageFilter }"
           :count="pageCount"
@@ -313,14 +316,14 @@ function clearAlt() {
           :fixed-width="viewFit.fitFixedWidth"
           :original-scale="viewFit.fitOriginalScale"
           :direction="viewFit.direction"
-          :sizes="comic.pages"
+          :sizes="logicalPageSizes"
           :sizes-ready="true"
           :resume="scrollOffset"
           @update:index="setIndex($event, true)"
         />
         <PageView
           v-else-if="comic"
-          :key="`${comic.sessionId}-${settings.readingMode}`"
+          :key="`${comic.sessionId}-${settings.readingMode}-split-${splitDoublePages}`"
           class="page-color"
           :style="{ filter: pageFilter }"
           :count="pageCount"
@@ -330,8 +333,8 @@ function clearAlt() {
           :fit="viewFit.fitMode"
           :fixed-width="viewFit.fitFixedWidth"
           :original-scale="viewFit.fitOriginalScale"
-          :isolate-cover="settings.isolateCover"
-          :sizes="comic.pages"
+          :isolate-cover="isolateCover"
+          :sizes="logicalPageSizes"
           @update:index="setIndex($event)"
         />
         <div v-if="overlayPage" class="fs-page">{{ pageLabel }}</div>

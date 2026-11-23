@@ -5,10 +5,13 @@ import {
   bindPageStage,
   getPageRotation,
   getPageSpin,
+  isPageSpinSnap,
+  halfOf,
   imageSrc,
+  logicalToPhysical,
   ocrEnabled,
   altDown,
-  ocrRegionsByPage,
+  ocrRegionsForLogical,
   pageIndex,
   pageSpins,
   pausePlayClock,
@@ -83,7 +86,7 @@ function prefetchTarget(page: number, forward: boolean): { index: number; src: s
     target = neighbor[Math.min(offset, neighbor.length - 1)];
   }
   if (target == null) return undefined;
-  return { index: target, src: imageSrc(target) };
+  return { index: logicalToPhysical(target), src: imageSrc(target) };
 }
 
 function pagesReady(pages: number[]) {
@@ -406,12 +409,17 @@ onBeforeUnmount(() => {
         >
           <div
             class="page-rotate"
-            :class="{ swapped: rotationSwapped(getPageRotation(slot.page)) }"
+            :class="{
+              swapped: rotationSwapped(getPageRotation(slot.page)),
+              'spin-snap': isPageSpinSnap(slot.page),
+            }"
             :style="{ '--spin': `${getPageSpin(slot.page)}deg` }"
           >
             <PageMedia
               :src="imageSrc(slot.page)"
               :index="slot.page"
+              :physical-index="logicalToPhysical(slot.page)"
+              :half="halfOf(slot.page)"
               :profile="settings.renderProfile"
               :alt="String(slot.page + 1)"
               object-fit="fill"
@@ -429,7 +437,7 @@ onBeforeUnmount(() => {
             >
               <OcrOverlay
                 v-if="ocrEnabled && !slot.warm"
-                :regions="ocrRegionsByPage[slot.page] || []"
+                :regions="ocrRegionsForLogical(slot.page)"
                 :show-bounds="altDown"
               />
             </PageMedia>
@@ -454,6 +462,10 @@ onBeforeUnmount(() => {
   transform: translate(-50%, -50%) rotate(var(--spin, 0deg));
   transform-origin: center center;
   transition: transform 0.22s ease;
+}
+
+.page-rotate.spin-snap {
+  transition: none;
 }
 
 .page-rotate.swapped {

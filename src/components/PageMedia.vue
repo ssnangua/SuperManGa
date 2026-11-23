@@ -29,9 +29,11 @@ import {
   resolveNeuralOutputSize,
   runNeuralUpscale,
 } from "../lib/render/neural";
-import { comic, scrollResampleReady, settings } from "../reader";
+import { comic, halfOf, logicalToPhysical, scrollResampleReady, settings } from "../reader";
 import { ANIMATED_IMAGE_SKIP, isAnimatedImage, isAnimatedImageSkip } from "../lib/render/animated";
 import { notifyError } from "../lib/appToast";
+import { acquirePageSource, releasePageSource } from "../lib/pageSourceCache";
+import type { PageHalf } from "../lib/pageSplit";
 
 /** Settle window-resize redraws before expensive classic/neural work. */
 const RESIZE_DEBOUNCE_MS = 160;
@@ -39,7 +41,12 @@ const RESIZE_DEBOUNCE_MS = 160;
 const props = defineProps<{
   src: string;
   profile: RenderProfile;
+  /** Logical page index (layout / emit). */
   index: number;
+  /** Physical source index for neural / disk keys. Defaults from split mapping. */
+  physicalIndex?: number;
+  /** Which horizontal half to show (`full` = whole page). */
+  half?: PageHalf;
   alt?: string;
   /** page-stage fill vs scroll contain-top */
   objectFit?: "fill" | "contain-top";
@@ -47,7 +54,7 @@ const props = defineProps<{
   /** Neighbor page URLs for neural prefetch (current → next → prev). */
   prefetchNextSrc?: string;
   prefetchPrevSrc?: string;
-  /** Explicit neighbor indexes (double-page spreads may skip ±1). */
+  /** Explicit neighbor physical indexes (double-page spreads may skip ±1). */
   prefetchNextIndex?: number;
   prefetchPrevIndex?: number;
 }>();
@@ -104,6 +111,16 @@ const mode = computed(() => {
 
 const useOverlay = computed(() => mode.value !== "img");
 
+const pageHalf = computed<PageHalf>(
+  () => props.half ?? halfOf(props.index),
+);
+
+const physIndex = computed(() =>
+  props.physicalIndex ?? logicalToPhysical(props.index),
+);
+
+const splitHalf = computed(() => pageHalf.value !== "full");
+
 const imgStyle = computed(() => ({
   // Fallback under canvas stays smooth; pixelated only when img mode is selected.
   imageRendering: (mode.value === "img"
@@ -144,10 +161,11 @@ function syncMediaBox() {
 const upscaledSrc = computed(() => {
   if (skipAlgorithm.value || neuralUrlFailed.value) return "";
   if (!isNeuralProfile(props.profile)) return "";
-  if (neuralSkipFlags.value[props.index]) return "";
-  if (!neuralDoneFlags.value[props.index]) return "";
+  const physical = physIndex.value;
+  if (neuralSkipFlags.value[physical]) return "";
+  if (!neuralDoneFlags.value[physical]) return "";
   const assetId = neuralAssetId(props.profile);
-  const key = pageDiskKey(props.index, assetId);
+  const key = pageDiskKey(physical, assetId);
   return key ? neuralResultUrl(key) : "";
 });
 
@@ -170,9 +188,26 @@ function paintSize() {
   const el = root.value;
   if (!el) return { width: 0, height: 0, dpr: 1 };
   const dpr = Math.min(2, window.devicePixelRatio || 1);
-  const width = Math.max(0, Math.round(el.clientWidth * dpr));
+  // Split halves: paint the full source into a 2×-wide bitmap; CSS crops the visible half.
+  const scaleX = splitHalf.value ? 2 : 1;
+  const width = Math.max(0, Math.round(el.clientWidth * scaleX * dpr));
   const height = Math.max(0, Math.round(el.clientHeight * dpr));
   return { width, height, dpr };
+}
+
+function reportNatural(fullW: number, fullH: number) {
+  const half = pageHalf.value;
+  if (half === "full") {
+    naturalW.value = fullW;
+    naturalH.value = fullH;
+    emit("load", { index: props.index, width: fullW, height: fullH });
+    return;
+  }
+  const leftW = Math.floor(fullW / 2);
+  const w = half === "left" ? leftW : fullW - leftW;
+  naturalW.value = w;
+  naturalH.value = fullH;
+  emit("load", { index: props.index, width: w, height: fullH });
 }
 
 function scheduleRetry() {
@@ -222,9 +257,9 @@ function revealOverlayIfCurrent(width: number, height: number) {
   revealOverlay();
 }
 
-function pageDiskKey(index: number, assetId: string): string {
+function pageDiskKey(physical: number, assetId: string): string {
   const book = comic.value;
-  const page = book?.pages[index];
+  const page = book?.pages[physical];
   if (!book || !page) return "";
   return neuralDiskKey(
     assetId,
@@ -237,14 +272,14 @@ function pageDiskKey(index: number, assetId: string): string {
 function scheduleNeuralPrefetch(assetId: string) {
   const targetSize = settings.neuralTargetSize;
   if (props.prefetchNextSrc) {
-    const nextIndex = props.prefetchNextIndex ?? props.index + 1;
+    const nextIndex = props.prefetchNextIndex ?? physIndex.value + 1;
     prefetchNeuralUpscale(props.prefetchNextSrc, assetId, targetSize, NEURAL_PRIORITY_NEXT, {
       cacheKey: pageDiskKey(nextIndex, assetId),
       pageIndex: nextIndex,
     });
   }
   if (props.prefetchPrevSrc) {
-    const prevIndex = props.prefetchPrevIndex ?? props.index - 1;
+    const prevIndex = props.prefetchPrevIndex ?? physIndex.value - 1;
     if (prevIndex >= 0) {
       prefetchNeuralUpscale(props.prefetchPrevSrc, assetId, targetSize, NEURAL_PRIORITY_PREV, {
         cacheKey: pageDiskKey(prevIndex, assetId),
@@ -254,8 +289,7 @@ function scheduleNeuralPrefetch(assetId: string) {
   }
 }
 
-async function ensureSource() {
-  if (source && sourceKey === props.src) return source;
+async function loadSourceBitmap(): Promise<HTMLImageElement | ImageBitmap> {
   // Must fetch -> blob -> ImageBitmap. Drawing the display <img> (comic://) taints 2d and
   // breaks getImageData used by classic resampling.
   try {
@@ -267,10 +301,7 @@ async function ensureSource() {
       skipAlgorithm.value = true;
       throw new Error(ANIMATED_IMAGE_SKIP);
     }
-    const bitmap = await createImageBitmap(blob);
-    source = bitmap;
-    sourceKey = props.src;
-    return bitmap;
+    return await createImageBitmap(blob);
   } catch (error) {
     if (skipAlgorithm.value || isAnimatedImageSkip(error)) throw error;
     const image = new Image();
@@ -279,10 +310,22 @@ async function ensureSource() {
     image.src = props.src;
     await image.decode().catch(() => undefined);
     if (!image.naturalWidth) throw new Error("decode failed");
-    source = image;
-    sourceKey = props.src;
     return image;
   }
+}
+
+async function ensureSource() {
+  if (source && sourceKey === props.src) return source;
+  const previousKey = sourceKey;
+  if (previousKey && previousKey !== props.src) {
+    releasePageSource(previousKey);
+    source = null;
+    sourceKey = "";
+  }
+  const bitmap = await acquirePageSource(props.src, loadSourceBitmap);
+  source = bitmap;
+  sourceKey = props.src;
+  return bitmap;
 }
 
 function drawContainTop(
@@ -320,8 +363,9 @@ async function syncNeuralJob() {
     return;
   }
   const assetId = neuralAssetId(props.profile);
+  const physical = physIndex.value;
   const gen = ++neuralJobGen;
-  if (neuralSkipFlags.value[props.index] || neuralDoneFlags.value[props.index]) {
+  if (neuralSkipFlags.value[physical] || neuralDoneFlags.value[physical]) {
     neuralBusy.value = false;
     scheduleNeuralPrefetch(assetId);
     return;
@@ -340,7 +384,7 @@ async function syncNeuralJob() {
       settings.neuralTargetSize,
     );
     if (!neuralSize) {
-      applyNeuralSkip(props.index);
+      applyNeuralSkip(physical);
       neuralBusy.value = false;
       scheduleNeuralPrefetch(assetId);
       return;
@@ -348,8 +392,8 @@ async function syncNeuralJob() {
     neuralBusy.value = true;
     scheduleNeuralPrefetch(assetId);
     await runNeuralUpscale(image, assetId, neuralSize.width, neuralSize.height, {
-      cacheKey: pageDiskKey(props.index, assetId),
-      pageIndex: props.index,
+      cacheKey: pageDiskKey(physical, assetId),
+      pageIndex: physical,
       priority: NEURAL_PRIORITY_CURRENT,
       requeueOnCancel: false,
     });
@@ -389,10 +433,8 @@ async function redraw() {
     }
     const natural = sourceSize(image);
     ready.value = true;
-    naturalW.value = natural.width;
-    naturalH.value = natural.height;
+    reportNatural(natural.width, natural.height);
     syncMediaBox();
-    emit("load", { index: props.index, width: natural.width, height: natural.height });
 
     if (mode.value === "anime4k" && isAnime4kProfile(props.profile)) {
       const preview = width < 16 || height < 16;
@@ -539,10 +581,8 @@ function onImgLoad(event: Event) {
   const image = event.target;
   if (!(image instanceof HTMLImageElement) || !image.naturalWidth) return;
   ready.value = true;
-  naturalW.value = image.naturalWidth;
-  naturalH.value = image.naturalHeight;
+  reportNatural(image.naturalWidth, image.naturalHeight);
   syncMediaBox();
-  emit("load", { index: props.index, width: image.naturalWidth, height: image.naturalHeight });
   if (useOverlay.value) void redraw();
 }
 
@@ -562,13 +602,7 @@ function onImgError() {
 }
 
 function releaseSource() {
-  if (source && "close" in source) {
-    try {
-      source.close();
-    } catch {
-      // ImageBitmap may already be closed.
-    }
-  }
+  if (sourceKey) releasePageSource(sourceKey);
   source = null;
   sourceKey = "";
 }
@@ -650,7 +684,7 @@ watch(
 );
 
 watch(
-  () => neuralDoneFlags.value[props.index],
+  () => neuralDoneFlags.value[physIndex.value],
   (done) => {
     if (!isNeuralProfile(props.profile) || !done) return;
     neuralBusy.value = false;
@@ -676,37 +710,44 @@ watch(upscaledSrc, () => {
 </script>
 
 <template>
-  <div ref="root" class="page-media" :class="{ pending, show: ready, overlay: useOverlay }">
-    <img
-      class="page-bitmap base"
-      :src="src"
-      :data-index="index"
-      :alt="alt || String(index + 1)"
-      :style="imgStyle"
-      draggable="false"
-      @load="onImgLoad"
-      @error="onImgError"
-    />
-    <img
-      v-if="upscaledSrc"
-      class="page-bitmap overlay"
-      :class="{ show: upscaledReady }"
-      :src="upscaledSrc"
-      :alt="alt || String(index + 1)"
-      :style="imgStyle"
-      draggable="false"
-      @load="onUpscaledLoad"
-      @error="onUpscaledError"
-    />
-    <!-- :key remounts when context family changes (2d / anime4k). -->
-    <canvas
-      v-if="useOverlay"
-      :key="mode"
-      ref="canvasEl"
-      class="page-bitmap overlay"
-      :class="{ show: overlayReady }"
-      :data-index="index"
-    />
+  <div
+    ref="root"
+    class="page-media"
+    :class="{ pending, show: ready, overlay: useOverlay }"
+    :data-half="pageHalf"
+  >
+    <div class="page-media-inner">
+      <img
+        class="page-bitmap base"
+        :src="src"
+        :data-index="index"
+        :alt="alt || String(index + 1)"
+        :style="imgStyle"
+        draggable="false"
+        @load="onImgLoad"
+        @error="onImgError"
+      />
+      <img
+        v-if="upscaledSrc"
+        class="page-bitmap overlay"
+        :class="{ show: upscaledReady }"
+        :src="upscaledSrc"
+        :alt="alt || String(index + 1)"
+        :style="imgStyle"
+        draggable="false"
+        @load="onUpscaledLoad"
+        @error="onUpscaledError"
+      />
+      <!-- :key remounts when context family changes (2d / anime4k). -->
+      <canvas
+        v-if="useOverlay"
+        :key="mode"
+        ref="canvasEl"
+        class="page-bitmap overlay"
+        :class="{ show: overlayReady }"
+        :data-index="index"
+      />
+    </div>
     <div v-if="neuralBusy" class="page-media-neural-busy" aria-hidden="true" />
     <div class="page-media-ocr-plane" :style="ocrPlaneStyle">
       <slot />
@@ -732,10 +773,32 @@ watch(upscaledSrc, () => {
   height: 100%;
 }
 
+.page-media-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.page-media[data-half="left"],
+.page-media[data-half="right"] {
+  overflow: hidden;
+}
+
+.page-media[data-half="left"] .page-media-inner,
+.page-media[data-half="right"] .page-media-inner {
+  width: 200%;
+  height: 100%;
+}
+
+.page-media[data-half="right"] .page-media-inner {
+  margin-left: -100%;
+}
+
 .page-media .page-bitmap {
   width: 100%;
   height: 100%;
   background: transparent;
+  object-fit: fill;
 }
 
 /* Keep decoded <img> as fallback; canvas covers it only after a frame is drawn. */
