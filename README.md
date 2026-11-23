@@ -66,6 +66,35 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 </details>
 
+<details>
+<summary>离线数据包</summary>
+
+**超分** / **翻译** 功能依赖 **ONNX 运行环境** / **超分模型** / **文字检测器模型** / **OCR 模型**，这些没有打进程序包，需在应用内自行下载。资源放在 GitHub 上，下载之前请确保能访问 GitHub，或者在「设置」里配一下「代理」。
+
+也可以下载 **完整离线数据包**：[Google Drive](https://drive.google.com/drive/folders/13lrxg4hbuWxX3RrbcdGDmq-XiGUXOt32?usp=sharing)｜[百度网盘](https://pan.baidu.com/s/1whHFSTgYVk9gohA0RVW4Dw?pwd=ziba)
+
+下载 `SuperManGaData.zip` 后解压到应用的数据目录，「设置 → 常规」里可以查看和自定义「数据目录」路径。
+
+默认数据目录路径：
+
+- **Windows**：可执行文件目录下的 `SuperManGaData/`
+- **macOS** / **Linux**：系统应用数据目录下的 `SuperManGaData/`
+
+放置数据包后，数据目录的结构应该为：
+
+```
+SuperManGaData/
+└── data/
+    ├── manifest.json
+    ├── runtime-*
+    ├── neural-*
+    ├── detector-*
+    ├── ocr-*
+    └── …
+```
+
+</details>
+
 ## 功能特性
 
 |  | 功能 | 说明 |
@@ -178,14 +207,6 @@ API 密钥加密保存在系统凭据库（失败则回退到文件加密），*
 | _自定义 OpenAI 兼容服务_ | _（手动输入接口地址）_ |
 
 </details>
-
-### 应用数据
-
-Windows 下，首次运行会在可执行文件目录创建 `SuperManGaData/`。
-
-macOS / Linux 默认写在系统应用数据目录下的 `SuperManGaData/`。
-
-**设置 → 常规** 里可自定义 **数据目录**。
 
 ### 通过命令行调用
 

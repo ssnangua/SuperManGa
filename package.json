@@ -13,7 +13,7 @@
     "build:win": "tauri build --no-bundle && node scripts/pack-portable.mjs",
     "build:mac": "tauri build --bundles dmg",
     "build:linux": "tauri build --bundles deb",
-    "bundle:win-full": "node scripts/bundle-win-full.mjs",
+    "bundle:data": "node scripts/bundle-data.mjs",
     "sync-version": "node scripts/sync-version.mjs",
     "version": "node scripts/sync-version.mjs",
     "preview": "vite preview"

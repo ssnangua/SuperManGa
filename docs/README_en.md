@@ -66,6 +66,35 @@ Or: `sudo dpkg -i SuperManGa-*-linux-*.deb`, then `sudo apt-get install -f` if d
 
 </details>
 
+<details>
+<summary>Offline data pack</summary>
+
+**Upscaling** / **translation** need an **ONNX runtime**, **upscale models**, **text-detector models**, and **OCR models**. They are not in the app package; download them in the app. The files are on GitHub, so make sure you can reach GitHub, or set a proxy in **Settings**.
+
+You can also download the **full offline data pack**: [Google Drive](https://drive.google.com/drive/folders/13lrxg4hbuWxX3RrbcdGDmq-XiGUXOt32?usp=sharing)｜[Baidu Netdisk](https://pan.baidu.com/s/1whHFSTgYVk9gohA0RVW4Dw?pwd=ziba)
+
+Unpack `SuperManGaData.zip` into the app data directory. The path is shown under **Settings → General**, where you can also change the **data directory**.
+
+Default data directory:
+
+- **Windows**: `SuperManGaData/` next to the executable
+- **macOS** / **Linux**: `SuperManGaData/` under the system app-data directory
+
+After the pack is in place, the data directory should look like:
+
+```
+SuperManGaData/
+└── data/
+    ├── manifest.json
+    ├── runtime-*
+    ├── neural-*
+    ├── detector-*
+    ├── ocr-*
+    └── …
+```
+
+</details>
+
 ## Features
 
 |  | Feature | Notes |
@@ -178,14 +207,6 @@ Overlay style: font, size, horizontal/vertical, alignment, stroke, auto color, a
 | _Custom OpenAI-compatible_ | _(enter base URL manually)_ |
 
 </details>
-
-### App data
-
-On Windows, the first launch creates `SuperManGaData/` next to the executable.
-
-On macOS / Linux, the default is `SuperManGaData/` under the system app-data directory.
-
-You can customize the **data directory** in **Settings → General**.
 
 ### Launch from the command line
 

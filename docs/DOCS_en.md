@@ -188,36 +188,44 @@ Runtime selection (per-platform download; stem like `runtime-{os}-{arch}-{flavor
 - macOS Intel (x64) uses the last official prebuild **ORT 1.23.0** (`runtime-macos-x64-cpu`); other platforms use 1.30
 - ONNX model packs are cross-platform
 
-### 2.8 Windows full offline package
+### 2.8 Offline data pack
 
-For **unpack-and-run upscaling / translation**, build a full offline package (app + ONNX runtime + all models):
+The app package and the data pack ship separately. When the data pack is unchanged, a new release is only the program.
+
+`SuperManGaData.zip` contains every OS's ONNX runtime and every model. Unpacking yields `SuperManGaData/data/…`. Runtimes the current OS does not use can be deleted by hand.
 
 ```bash
-# Need a portable zip (or at least target/release/supermanga.exe)
-npm run build:win          # skip if portable already exists
-# Optional: build data zips locally
+# Optional: build the individual packs locally first
 cd tools/pack-data && python pack.py && cd ../..
 
-npm run bundle:win-full
+npm run bundle:data
 # Output:
-#   src-tauri/target/release/bundle/portable/SuperManGa-*-full-windows-x64.zip
+#   tools/pack-data/data/SuperManGaData.zip
 ```
 
 Layout:
 
 ```
-SuperManGa-*-full-windows-x64/
-├── SuperManGa.exe
-├── pdfium.dll
-└── SuperManGaData/data/   # manifest + versioned runtime/detector/ocr/neural folders
+SuperManGaData.zip
+└── SuperManGaData/
+    └── data/
+        ├── manifest.json
+        ├── runtime-*
+        ├── neural-*
+        ├── detector-*
+        ├── ocr-*
+        └── …
 ```
 
-Reuse rules:
+The zip already includes the `SuperManGaData/` folder. Unpack it into the parent of the data root:
 
-- Existing `…/portable/SuperManGa-*-windows-x64.zip` → **no app rebuild**; if only `supermanga.exe` exists, runs `pack-portable.mjs` only
-- Existing `tools/pack-data/data/{pack}.zip` (and `manifest.json` there) → **no GitHub download** for that pack; missing packs fall back to Release tag `data`
+- Windows portable: next to the exe
+- macOS: `~/Library/Application Support/dev.ssnangua.supermanga/`
+- Linux: `~/.local/share/dev.ssnangua.supermanga/`
 
-Offline packs must include the local **CPU** flavor.
+An existing `tools/pack-data/data/{pack}.zip` (and `manifest.json` beside it) is reused; missing packs fall back to Release tag `data`.
+
+`SuperManGaData.zip` is published on a cloud drive, not as a GitHub Release asset. The per-pack zips and `manifest.json` that the app downloads stay on Release tag `data`.
 
 ---
 
@@ -238,7 +246,7 @@ SuperManGa/
 ├── scripts/
 │   ├── fetch-pdfium.mjs
 │   ├── pack-portable.mjs
-│   ├── bundle-win-full.mjs
+│   ├── bundle-data.mjs
 │   └── check-i18n.mjs
 ├── tools/                    # Offline tooling (not shipped in the app)
 │   ├── pack-data/            # Build data Release zips + manifest
@@ -295,11 +303,11 @@ SuperManGa/
 |---|---|
 | [`scripts/fetch-pdfium.mjs`](../scripts/fetch-pdfium.mjs) | Download pdfium for the host or `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` into `src-tauri/resources/pdfium/` |
 | [`scripts/pack-portable.mjs`](../scripts/pack-portable.mjs) | Pack `target/release/supermanga.exe` into a Windows portable zip (with pdfium when available) |
-| [`scripts/bundle-win-full.mjs`](../scripts/bundle-win-full.mjs) | Merge portable + data packs → `SuperManGa-*-full-windows-x64.zip` (prefers local pack-data / existing portable) |
+| [`scripts/bundle-data.mjs`](../scripts/bundle-data.mjs) | Every runtime + model → `tools/pack-data/data/SuperManGaData.zip` (prefers local pack-data; missing packs fall back to Release tag `data`) |
 | [`scripts/check-i18n.mjs`](../scripts/check-i18n.mjs) | Ensure locale key parity in `src/i18n.ts` and scan for undeclared `$t` / `t(` keys |
 | [`scripts/sync-version.mjs`](../scripts/sync-version.mjs) | Copy `package.json` version to Cargo.toml, Cargo.lock, tauri.conf, and README; runs from `npm version` |
 
-Common npm scripts: `dev`, `fetch:pdfium`, `build:win`, `build:mac`, `build:linux`, `bundle:win-full`, `sync-version`, `preview`.
+Common npm scripts: `dev`, `fetch:pdfium`, `build:win`, `build:mac`, `build:linux`, `bundle:data`, `sync-version`, `preview`.
 
 ---
 

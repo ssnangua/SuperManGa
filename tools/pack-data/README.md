@@ -48,8 +48,12 @@ Every pack is an object (schema 2):
 
 `pack.py` fills `bytes` / `sha256` from the zip. The app uses `bytes` for UI size and verifies `sha256` (and size) on download. Seed may use `bytes: 0` / `sha256: ""` until a real pack is uploaded.
 
+## One zip for users
+
+From the repo root, `npm run bundle:data` extracts every runtime and model pack into `data/SuperManGaData.zip` (`SuperManGaData/data/…`). Publish that zip on the cloud drive, not as a GitHub Release asset. Rebuild it when a runtime or model changes. The app release stays the program only.
+
 ## Upload
 
 1. Create or edit Release tag `data` on `ssnangua/SuperManGa`.
-2. Upload every `data/*.zip` plus `data/manifest.json` (overwrite manifest; keep old versioned zips).
+2. Upload each `{stem}-v{ver}.zip` plus `data/manifest.json` (overwrite manifest; keep old versioned zips). Do not upload `SuperManGaData.zip` here.
 3. App seed: keep [`src-tauri/resources/data-manifest.json`](../../src-tauri/resources/data-manifest.json) in sync with the released manifest.

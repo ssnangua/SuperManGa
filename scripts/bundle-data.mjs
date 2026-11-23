@@ -1,23 +1,30 @@
 /**
- * Build a Windows "full" portable zip: app + SuperManGaData (ORT / models).
+ * Build a cross-platform data pack: every ORT runtime and every model.
  *
- * SuperManGa-{ver}-full-windows-x64.zip
- * └ SuperManGa-{ver}-full-windows-x64/
- *     ├ SuperManGa.exe
- *     ├ pdfium.dll
- *     └ SuperManGaData/data/…
+ * SuperManGaData.zip
+ * └── SuperManGaData
+ *     └── data
+ *         ├── manifest.json
+ *         ├── runtime-windows-x64-cuda13-v1.30.0
+ *         ├── runtime-macos-arm64-cpu-v1.30.0
+ *         ├── runtime-linux-arm64-cpu-v1.30.0
+ *         ├── detector-ctd-v1.0.0
+ *         ├── ocr-manga-ocr-v1.0.0
+ *         ├── neural-manga-janai-2x-v1.0.0
+ *         └── …
  *
- * Prefers:
- *   - existing portable zip under src-tauri/target/release/bundle/portable/
- *     (falls back to packing from supermanga.exe; never runs tauri build)
- *   - local tools/pack-data/data/*.zip (+ manifest.json)
- *     (falls back to GitHub Release tag `data`)
+ * Unpack next to the exe on Windows, or into the OS app-data directory on
+ * macOS / Linux, so `SuperManGaData/data/` lands on the app's data root.
+ * Runtimes the current OS does not use can be deleted by hand.
+ *
+ * Prefers local tools/pack-data/data/*.zip (+ manifest.json).
+ * Missing packs fall back to GitHub Release tag `data`.
  *
  * Usage:
- *   node scripts/bundle-win-full.mjs
- *   node scripts/bundle-win-full.mjs --force
- *   node scripts/bundle-win-full.mjs --skip-models
- *   node scripts/bundle-win-full.mjs --skip-runtime
+ *   node scripts/bundle-data.mjs
+ *   node scripts/bundle-data.mjs --force
+ *   node scripts/bundle-data.mjs --skip-models
+ *   node scripts/bundle-data.mjs --skip-runtime
  */
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
@@ -41,7 +48,7 @@ import { fileURLToPath } from "node:url";
 import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 
-const SAFE_NAME = "SuperManGa";
+const DATA_NAME = "SuperManGaData";
 const RELEASE_BASE =
   "https://github.com/ssnangua/SuperManGa/releases/download/data";
 
@@ -53,15 +60,6 @@ const SEED_MANIFEST = join(
   "data-manifest.json",
 );
 const LOCAL_PACK_DATA = join(root, "tools", "pack-data", "data");
-const PORTABLE_DIR = join(
-  root,
-  "src-tauri",
-  "target",
-  "release",
-  "bundle",
-  "portable",
-);
-const RELEASE_DIR = join(root, "src-tauri", "target", "release");
 
 function parseArgs(argv) {
   let force = false;
@@ -73,7 +71,7 @@ function parseArgs(argv) {
     else if (arg === "--skip-models") skipModels = true;
     else if (arg === "--skip-runtime") skipRuntime = true;
     else if (arg === "--help" || arg === "-h") {
-      console.log(`Usage: node scripts/bundle-win-full.mjs [options]
+      console.log(`Usage: node scripts/bundle-data.mjs [options]
   --force         Re-download / re-extract packs even if present
   --skip-models   Skip detector / OCR / neural packs
   --skip-runtime  Skip runtime-* packs`);
@@ -87,19 +85,11 @@ function ensureDir(dir) {
   mkdirSync(dir, { recursive: true });
 }
 
-function appVersion() {
-  const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
-  const tauri = JSON.parse(
-    readFileSync(join(root, "src-tauri/tauri.conf.json"), "utf8"),
-  );
-  return tauri.version || pkg.version;
-}
-
 function formatBytes(n) {
   if (n < 1024) return `${n} B`;
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
   if (n < 1024 * 1024 * 1024) return `${(n / (1024 * 1024)).toFixed(1)} MB`;
-  return `${(n / (1024 * 1024 * 1024)).toFixed(1)} GB`;
+  return `${(n / (1024 * 1024 * 1024)).toFixed(2)} GB`;
 }
 
 function psPath(p) {
@@ -136,31 +126,20 @@ function extractZip(archive, dest) {
 function compressFolder(folderPath, zipPath) {
   const parent = dirname(folderPath);
   const name = folderPath.slice(parent.length + 1);
-  const zipTmp = `${zipPath}.tmp.zip`;
-  if (existsSync(zipTmp)) rmSync(zipTmp, { force: true });
-  if (process.platform === "win32") {
-    execFileSync(
-      "powershell.exe",
-      [
-        "-NoProfile",
-        "-Command",
-        `Compress-Archive -LiteralPath '${psPath(folderPath)}' -DestinationPath '${psPath(zipTmp)}' -Force`,
-      ],
-      { stdio: "inherit" },
-    );
-  } else {
-    execFileSync("zip", ["-r", zipTmp, name], {
-      cwd: parent,
+  if (existsSync(zipPath)) rmSync(zipPath, { force: true });
+  // bsdtar writes ZIP64. Compress-Archive cannot store an archive this large.
+  try {
+    execFileSync("tar", ["-a", "-cf", zipPath, "-C", parent, name], {
       stdio: "inherit",
     });
+    return;
+  } catch (err) {
+    if (process.platform === "win32") throw err;
   }
-  if (existsSync(zipPath)) rmSync(zipPath, { force: true });
-  try {
-    renameSync(zipTmp, zipPath);
-  } catch {
-    copyFileSync(zipTmp, zipPath);
-    rmSync(zipTmp, { force: true });
-  }
+  execFileSync("zip", ["-r", zipPath, name], {
+    cwd: parent,
+    stdio: "inherit",
+  });
 }
 
 async function downloadTo(url, dest, { force = false, label = "" } = {}) {
@@ -238,9 +217,7 @@ function packEntries(manifest, { skipRuntime, skipModels }) {
     });
   };
   if (!skipRuntime) {
-    // Full Windows zip only needs this host's ORT natives.
     for (const [key, raw] of Object.entries(manifest.runtime || {})) {
-      if (!String(key).startsWith("windows-x64-")) continue;
       push("runtime", key, raw);
     }
   }
@@ -293,7 +270,6 @@ async function resolveArchive(entry, cacheDir, force) {
 async function installPack(dataDir, cacheDir, entry, force) {
   const { stem, version, folder, bytes, sha256 } = entry;
   const dest = join(dataDir, folder);
-  const marker = join(dest, ".ok");
   if (existsSync(dest) && !force) {
     console.log(`  skip extract (exists): ${folder}`);
     return;
@@ -328,84 +304,17 @@ async function installPack(dataDir, cacheDir, entry, force) {
     );
   }
   rmSync(extractTo, { recursive: true, force: true });
-  writeFileSync(marker, `${stem}@${version}\n`);
   console.log(`  installed → data/${folder}/`);
-}
-
-function ensurePortableZip(version) {
-  ensureDir(PORTABLE_DIR);
-  const zipPath = join(PORTABLE_DIR, `${SAFE_NAME}-${version}-windows-x64.zip`);
-  if (existsSync(zipPath) && statSync(zipPath).size > 0) {
-    console.log(`Portable zip (reuse): ${zipPath}`);
-    return zipPath;
-  }
-  const exePath = join(RELEASE_DIR, "supermanga.exe");
-  if (!existsSync(exePath)) {
-    console.error(
-      `Missing portable zip and ${exePath}.\nRun: npm run build:win`,
-    );
-    process.exit(1);
-  }
-  console.log(
-    "Portable zip missing; packing from existing release exe (no tauri rebuild)…",
-  );
-  execFileSync(process.execPath, [join(root, "scripts", "pack-portable.mjs")], {
-    cwd: root,
-    stdio: "inherit",
-  });
-  if (!existsSync(zipPath) || statSync(zipPath).size < 1) {
-    console.error(`pack-portable.mjs did not produce ${zipPath}`);
-    process.exit(1);
-  }
-  return zipPath;
-}
-
-function copyTree(src, dest) {
-  ensureDir(dest);
-  for (const name of readdirSync(src)) {
-    const from = join(src, name);
-    const to = join(dest, name);
-    if (statSync(from).isDirectory()) copyTree(from, to);
-    else copyFileSync(from, to);
-  }
-}
-
-function flattenExtractedPortable(extractRoot, packageDir) {
-  const kids = readdirSync(extractRoot);
-  let source = extractRoot;
-  if (kids.length === 1 && statSync(join(extractRoot, kids[0])).isDirectory()) {
-    source = join(extractRoot, kids[0]);
-  }
-  for (const name of readdirSync(source)) {
-    const from = join(source, name);
-    const to = join(packageDir, name);
-    if (statSync(from).isDirectory()) copyTree(from, to);
-    else copyFileSync(from, to);
-  }
 }
 
 async function main() {
   const opts = parseArgs(process.argv.slice(2));
-  const version = appVersion();
-  const thinStem = `${SAFE_NAME}-${version}-windows-x64`;
-  const fullStem = `${SAFE_NAME}-${version}-full-windows-x64`;
-  const portableZip = ensurePortableZip(version);
-
-  const stagingRoot = mkdtempSync(join(tmpdir(), "jmr-full-"));
-  const packageDir = join(stagingRoot, fullStem);
-  const dataExtractRoot = join(stagingRoot, "data-staging");
-  const cacheDir = join(stagingRoot, "cache");
-  ensureDir(packageDir);
-  ensureDir(cacheDir);
-
-  console.log(`\nExtracting portable → ${fullStem}/`);
-  const portableExtract = join(stagingRoot, "portable-extract");
-  extractZip(portableZip, portableExtract);
-  flattenExtractedPortable(portableExtract, packageDir);
-
-  const dataRoot = join(packageDir, "SuperManGaData");
+  const stagingRoot = mkdtempSync(join(tmpdir(), "smg-data-"));
+  const dataRoot = join(stagingRoot, DATA_NAME);
   const dataDir = join(dataRoot, "data");
+  const cacheDir = join(stagingRoot, "cache");
   ensureDir(dataDir);
+  ensureDir(cacheDir);
 
   const manifest = loadManifest();
   writeFileSync(
@@ -420,17 +329,16 @@ async function main() {
     await installPack(dataDir, cacheDir, entry, opts.force);
   }
 
-  // Keep unused staging dir name reserved for clarity in logs.
-  void dataExtractRoot;
-
-  ensureDir(PORTABLE_DIR);
-  const outZip = join(PORTABLE_DIR, `${fullStem}.zip`);
-  console.log(`\nZipping ${fullStem}.zip …`);
-  compressFolder(packageDir, outZip);
+  ensureDir(LOCAL_PACK_DATA);
+  const outZip = join(LOCAL_PACK_DATA, `${DATA_NAME}.zip`);
+  console.log(`\nZipping ${DATA_NAME}.zip …`);
+  compressFolder(dataRoot, outZip);
   rmSync(stagingRoot, { recursive: true, force: true });
 
-  console.log(`\nFull portable: ${outZip}`);
-  console.log(`(thin portable unchanged: ${thinStem}.zip)`);
+  const size = statSync(outZip).size;
+  console.log(`\nData pack: ${outZip}`);
+  console.log(`Size: ${formatBytes(size)}`);
+  console.log("Publish this zip on the cloud drive, not as a GitHub Release asset.");
 }
 
 main().catch((err) => {

@@ -66,6 +66,35 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 
 </details>
 
+<details>
+<summary>오프라인 데이터 팩</summary>
+
+**업스케일** / **번역**에는 **ONNX 런타임** / **업스케일 모델** / **문자 검출 모델** / **OCR 모델**이 필요합니다. 이것들은 프로그램에 포함되어 있지 않으므로 앱에서 직접 다운로드하세요. 파일은 GitHub에 있습니다. 받기 전에 GitHub에 접속할 수 있는지 확인하거나, 설정에서 프록시를 지정하세요.
+
+**전체 오프라인 데이터 팩**도 받을 수 있습니다: [Google Drive](https://drive.google.com/drive/folders/13lrxg4hbuWxX3RrbcdGDmq-XiGUXOt32?usp=sharing)｜[바이두 넷디스크](https://pan.baidu.com/s/1whHFSTgYVk9gohA0RVW4Dw?pwd=ziba)
+
+`SuperManGaData.zip`을 받아 앱 데이터 디렉터리에 압축을 푸세요. 경로는 **설정 → 일반**에서 볼 수 있고, **데이터 디렉터리**도 거기서 바꿀 수 있습니다.
+
+기본 데이터 디렉터리:
+
+- **Windows**: 실행 파일과 같은 위치의 `SuperManGaData/`
+- **macOS** / **Linux**: 시스템 앱 데이터 폴더 아래의 `SuperManGaData/`
+
+데이터 팩을 넣은 뒤 데이터 디렉터리는 다음 형태여야 합니다:
+
+```
+SuperManGaData/
+└── data/
+    ├── manifest.json
+    ├── runtime-*
+    ├── neural-*
+    ├── detector-*
+    ├── ocr-*
+    └── …
+```
+
+</details>
+
 ## 기능
 
 |  | 기능 | 설명 |
@@ -178,14 +207,6 @@ API 키는 OS 자격 증명 저장소에 암호화되어 보관됩니다(실패 
 | _사용자 지정 OpenAI 호환_ | _(Base URL 직접 입력)_ |
 
 </details>
-
-### 앱 데이터
-
-Windows에서는 첫 실행 시 실행 파일과 같은 위치에 `SuperManGaData/`를 만듭니다.
-
-macOS / Linux는 시스템 앱 데이터 폴더 아래 `SuperManGaData/`를 기본으로 둡니다.
-
-**설정 → 일반**에서 **데이터 디렉터리**를 변경할 수 있습니다.
 
 ### 명령줄에서 열기
 

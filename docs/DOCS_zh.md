@@ -188,36 +188,44 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 - macOS Intel（x64）使用官方最后一版预编译 **ORT 1.23.0**（`runtime-macos-x64-cpu`），其余平台为 1.30。
 - ONNX 模型包不分平台
 
-### 2.8 Windows 完整离线包
+### 2.8 离线数据包
 
-若希望**解压即可使用超分 / 翻译**，可打完整离线包（含程序 + ONNX 运行时 + 所有模型）：
+程序包和数据包分开。数据包不更新时，发新版本只发程序。
+
+`SuperManGaData.zip` 装进全部系统的 ONNX 运行时和全部模型。解压后得到 `SuperManGaData/data/…`，当前系统用不到的运行时可以自行删掉。
 
 ```bash
-# 先有程序包（或至少有 target/release/supermanga.exe）
-npm run build:win          # 若 portable 已存在可跳过
-# 可选：本地打好数据包
+# 可选：本地先打好各包
 cd tools/pack-data && python pack.py && cd ../..
 
-npm run bundle:win-full
+npm run bundle:data
 # 产出：
-#   src-tauri/target/release/bundle/portable/SuperManGa-*-full-windows-x64.zip
+#   tools/pack-data/data/SuperManGaData.zip
 ```
 
-完整包结构：
+结构：
 
 ```
-SuperManGa-*-full-windows-x64/
-├── SuperManGa.exe
-├── pdfium.dll
-└── SuperManGaData/data/   # manifest + runtime/detector/ocr/neural 版本目录
+SuperManGaData.zip
+└── SuperManGaData/
+    └── data/
+        ├── manifest.json
+        ├── runtime-*
+        ├── neural-*
+        ├── detector-*
+        ├── ocr-*
+        └── …
 ```
 
-复用规则：
+zip 里已经带 `SuperManGaData/` 这一层，解压到数据目录的上一级：
 
-- 已有 `…/portable/SuperManGa-*-windows-x64.zip` → **不重新构建/打包程序**；没有 zip 但有 `supermanga.exe` 时只跑 `pack-portable.mjs`
-- 已有 `tools/pack-data/data/{pack}.zip`（及同目录 `manifest.json`）→ **不从 GitHub 下该包**；缺的才回退 Release tag `data`
+- Windows 便携版：exe 同级
+- macOS：`~/Library/Application Support/dev.ssnangua.supermanga/`
+- Linux：`~/.local/share/dev.ssnangua.supermanga/`
 
-完整离线包须带上本机 **CPU** flavor。
+已有 `tools/pack-data/data/{pack}.zip`（及同目录 `manifest.json`）时不从 GitHub 下该包；缺的才回退 Release tag `data`。
+
+`SuperManGaData.zip` 放网盘，不放 GitHub Releases。应用内按单个包下载的 zip 和 `manifest.json` 仍在 Release tag `data`。
 
 ---
 
@@ -238,7 +246,7 @@ SuperManGa/
 ├── scripts/
 │   ├── fetch-pdfium.mjs
 │   ├── pack-portable.mjs
-│   ├── bundle-win-full.mjs
+│   ├── bundle-data.mjs
 │   └── check-i18n.mjs
 ├── tools/                    # 离线工具（不打进安装包）
 │   ├── pack-data/            # 打 data Release zip + manifest
@@ -295,11 +303,11 @@ SuperManGa/
 |---|---|
 | [`scripts/fetch-pdfium.mjs`](../scripts/fetch-pdfium.mjs) | 按本机或 `PDFIUM_TARGET` / `TAURI_ENV_TARGET_TRIPLE` 下载 pdfium 到 `src-tauri/resources/pdfium/` |
 | [`scripts/pack-portable.mjs`](../scripts/pack-portable.mjs) | 将 `target/release/supermanga.exe` 打成 Windows portable zip，并附带 pdfium |
-| [`scripts/bundle-win-full.mjs`](../scripts/bundle-win-full.mjs) | 合并 portable + 数据包 → `SuperManGa-*-full-windows-x64.zip`（优先本地 pack-data / 已有 portable） |
+| [`scripts/bundle-data.mjs`](../scripts/bundle-data.mjs) | 全部运行时 + 模型 → `tools/pack-data/data/SuperManGaData.zip`（优先本地 pack-data，缺的回退 Release tag `data`） |
 | [`scripts/check-i18n.mjs`](../scripts/check-i18n.mjs) | 检查 `src/i18n.ts` 各语言键一致，并扫描源码中未声明的 `$t` / `t(` 键 |
 | [`scripts/sync-version.mjs`](../scripts/sync-version.mjs) | 把 `package.json` 的 version 同步到 Cargo.toml、Cargo.lock、tauri.conf、README；`npm version` 会自动跑 |
 
-常用 npm scripts：`dev`、`fetch:pdfium`、`build:win`、`build:mac`、`build:linux`、`bundle:win-full`、`sync-version`、`preview`。
+常用 npm scripts：`dev`、`fetch:pdfium`、`build:win`、`build:mac`、`build:linux`、`bundle:data`、`sync-version`、`preview`。
 
 ---
 
