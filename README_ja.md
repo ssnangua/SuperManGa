@@ -198,7 +198,7 @@ macOS / Linux ではシステム AppData 配下の `SuperManGaData/` を既定�
 
 ```bash
 # Windows
-SuperManGa.exe "D:\manga\example.pdf"
+SuperManGa.exe C:\path\to\book.cbz
 
 # Linux
 supermanga /path/to/book.cbz

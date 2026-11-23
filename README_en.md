@@ -198,7 +198,7 @@ You can customize the **data directory** in **Settings → General**.
 
 ```bash
 # Windows
-SuperManGa.exe "D:\manga\example.pdf"
+SuperManGa.exe C:\path\to\book.cbz
 
 # Linux
 supermanga /path/to/book.cbz

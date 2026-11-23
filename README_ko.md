@@ -198,7 +198,7 @@ macOS / Linux는 시스템 앱 데이터 폴더 아래 `SuperManGaData/`를 기�
 
 ```bash
 # Windows
-SuperManGa.exe "D:\manga\example.pdf"
+SuperManGa.exe C:\path\to\book.cbz
 
 # Linux
 supermanga /path/to/book.cbz

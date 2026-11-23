@@ -198,7 +198,7 @@ macOS / Linux 默认写在系统应用数据目录下的 `SuperManGaData/`。
 
 ```bash
 # Windows
-SuperManGa.exe "D:\漫画\某某.pdf"
+SuperManGa.exe C:\path\to\book.cbz
 
 # Linux
 supermanga /path/to/book.cbz
