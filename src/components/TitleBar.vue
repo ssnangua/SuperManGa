@@ -548,6 +548,11 @@ async function clampMenus() {
     menu.style.maxWidth = "";
     menu.style.maxHeight = "";
     menu.classList.remove("is-clamped", "flip");
+    for (const child of menu.children) {
+      if (child instanceof HTMLElement && child.classList.contains("history-list")) {
+        child.style.maxHeight = "";
+      }
+    }
   }
   await nextTick();
   for (const menu of menus) {
@@ -572,7 +577,25 @@ async function clampMenus() {
   for (const menu of menus) {
     const rect = menu.getBoundingClientRect();
     if (rect.bottom <= window.innerHeight - pad) continue;
-    menu.style.maxHeight = `${Math.floor(Math.max(120, window.innerHeight - pad - rect.top))}px`;
+    const available = Math.floor(Math.max(120, window.innerHeight - pad - rect.top));
+    const list = [...menu.children].find(
+      (el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains("history-list"),
+    );
+    if (list) {
+      const foot = [...menu.children].find(
+        (el): el is HTMLElement => el instanceof HTMLElement && el.classList.contains("history-foot"),
+      );
+      const styles = getComputedStyle(menu);
+      const chrome =
+        (parseFloat(styles.paddingTop) || 0) +
+        (parseFloat(styles.paddingBottom) || 0) +
+        (parseFloat(styles.borderTopWidth) || 0) +
+        (parseFloat(styles.borderBottomWidth) || 0);
+      const footH = foot?.offsetHeight ?? 0;
+      list.style.maxHeight = `${Math.max(48, Math.floor(available - footH - chrome))}px`;
+      continue;
+    }
+    menu.style.maxHeight = `${available}px`;
     menu.classList.add("is-clamped");
   }
 }
@@ -606,20 +629,24 @@ onBeforeUnmount(() => {
           <button type="button" @click="run(openFolderDialog)"><Icon name="folderOpen" /><span class="label">{{ t('openFolder') }}</span><span class="key">{{ shortcutDisplay('openFolder') }}</span></button>
           <div class="has-sub" @mouseenter="showHistorySub" @mouseleave="historyOpen = false">
             <button type="button" @click="toggleHistorySub"><span class="menu-ico" aria-hidden="true"></span><span class="label">{{ t('history') }}</span><span class="key"><Icon name="expand" /></span></button>
-            <BarMenu v-show="historyOpen" sub>
+            <BarMenu v-show="historyOpen" sub class="history-menu">
               <button v-if="history.length === 0" type="button" disabled>{{ t('historyEmpty') }}</button>
               <template v-else>
-                <button
-                  v-for="(item, index) in history"
-                  :key="item.path"
-                  type="button"
-                  :title="item.path"
-                  @click="openHistory(item)"
-                >
-                  <span class="label">{{ index + 1 }}: {{ fileName(item) }}</span>
-                </button>
-                <div class="sep"></div>
-                <button type="button" @click="run(() => { void clearHistory(); })"><span class="label">{{ t('clearHistory') }}</span></button>
+                <div class="history-list">
+                  <button
+                    v-for="(item, index) in history"
+                    :key="item.path"
+                    type="button"
+                    :title="item.path"
+                    @click="openHistory(item)"
+                  >
+                    <span class="label">{{ index + 1 }}: {{ fileName(item) }}</span>
+                  </button>
+                </div>
+                <div class="history-foot">
+                  <div class="sep"></div>
+                  <button type="button" @click="run(() => { void clearHistory(); })"><span class="label">{{ t('clearHistory') }}</span></button>
+                </div>
               </template>
             </BarMenu>
           </div>

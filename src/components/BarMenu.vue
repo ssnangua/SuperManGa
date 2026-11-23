@@ -56,9 +56,32 @@ withDefaults(
   right: -8px;
 }
 
-.bar-menu.is-clamped:not(:has(.bar-menu)) {
+.bar-menu.is-clamped:not(:has(.bar-menu)):not(.history-menu) {
   overflow-x: hidden;
   overflow-y: auto;
+}
+
+.bar-menu.history-menu {
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+}
+
+.bar-menu.history-menu .history-foot .sep {
+  margin-top: 0;
+}
+
+.bar-menu.history-menu .history-list {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  padding: 4px 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.bar-menu.history-menu .history-foot {
+  flex: none;
 }
 
 .has-sub {
