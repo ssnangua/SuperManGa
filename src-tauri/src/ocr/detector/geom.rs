@@ -258,9 +258,17 @@ fn point_in_ring(px: f64, py: f64, pts: &[[f64; 2]]) -> bool {
         let yj = pts[j][1];
         let xi = pts[i][0];
         let xj = pts[j][0];
-        if ((yi > py) != (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi).max(1e-12) + xi)
-        {
-            inside = !inside;
+        // Keep the sign of (yj - yi). Clamping with `.max(1e-12)` flips downward
+        // edges and marks points far to the side as inside. CTD quads are skewed,
+        // so that false hit zeros `poly_distance` and merges a whole text band.
+        if (yi > py) != (yj > py) {
+            let dy = yj - yi;
+            if dy.abs() > 1e-18 {
+                let x_at = (xj - xi) * (py - yi) / dy + xi;
+                if px < x_at {
+                    inside = !inside;
+                }
+            }
         }
         j = i;
     }
@@ -475,5 +483,36 @@ mod tests {
         let a = DetBox::from_xyxy(0.0, 0.0, 0.2, 0.2, 1.0);
         let b = DetBox::from_xyxy(0.5, 0.5, 0.7, 0.7, 1.0);
         assert!(poly_iou(&a, &b) < 1e-9);
+    }
+
+    #[test]
+    fn skewed_vertical_lines_on_the_same_band_stay_apart() {
+        // CTD minAreaRect quads: thin, slightly skewed, overlapping in y, far in x.
+        let left = DetBox::from_quad(
+            [
+                [0.06, 0.55],
+                [0.075, 0.552],
+                [0.07, 0.65],
+                [0.055, 0.648],
+            ],
+            1.0,
+        );
+        let right = DetBox::from_quad(
+            [
+                [0.60, 0.55],
+                [0.615, 0.552],
+                [0.61, 0.65],
+                [0.595, 0.648],
+            ],
+            1.0,
+        );
+        let dist = poly_distance(&left, &right);
+        assert!(
+            dist > 0.4,
+            "same-band skewed lines must not count as intersecting, dist={dist}"
+        );
+        assert!(!left.contains_point(0.01, 0.60));
+        assert!(!right.contains_point(0.01, 0.60));
+        assert!(left.contains_point(0.065, 0.60));
     }
 }

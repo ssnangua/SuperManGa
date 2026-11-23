@@ -397,8 +397,11 @@ fn fill_poly(mask: &mut [u8], w: usize, h: usize, poly: &[[f64; 2]]) {
             let yi = poly[i][1];
             let yj = poly[j][1];
             if (yi < y as f64 && yj >= y as f64) || (yj < y as f64 && yi >= y as f64) {
-                let t = (y as f64 - yi) / (yj - yi).max(1e-12);
-                nodes.push(poly[i][0] + t * (poly[j][0] - poly[i][0]));
+                let dy = yj - yi;
+                if dy.abs() > 1e-18 {
+                    let t = (y as f64 - yi) / dy;
+                    nodes.push(poly[i][0] + t * (poly[j][0] - poly[i][0]));
+                }
             }
             j = i;
         }

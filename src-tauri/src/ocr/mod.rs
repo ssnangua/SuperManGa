@@ -143,7 +143,7 @@ fn ocr_cache_key(
     settings.enable_aux_yolo.hash(&mut hasher);
     settings.enable_saber_yolo_refine.hash(&mut hasher);
     // Bump when OCR region geometry / overlay / detector preprocess changes.
-    "ocr-only-v41".hash(&mut hasher);
+    "ocr-only-v42".hash(&mut hasher);
     format!("{:016x}", hasher.finish())
 }
 
@@ -165,7 +165,7 @@ fn full_cache_key(
     settings.text_detector.hash(&mut hasher);
     settings.enable_aux_yolo.hash(&mut hasher);
     settings.enable_saber_yolo_refine.hash(&mut hasher);
-    "ocr-regions-v41".hash(&mut hasher);
+    "ocr-regions-v42".hash(&mut hasher);
     format!("{:016x}", hasher.finish())
 }
 

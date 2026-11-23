@@ -277,3 +277,37 @@ fn split_text_region(lines: &[DetBox], indices: &[usize]) -> Vec<Vec<usize>> {
     }
     out
 }
+
+#[cfg(test)]
+mod tests {
+    use super::super::geom::DetBox;
+    use super::merge_textlines;
+
+    #[test]
+    fn same_band_skewed_lines_do_not_merge_across_the_page() {
+        let left = DetBox::from_quad(
+            [
+                [0.06, 0.55],
+                [0.075, 0.552],
+                [0.07, 0.65],
+                [0.055, 0.648],
+            ],
+            1.0,
+        );
+        let right = DetBox::from_quad(
+            [
+                [0.60, 0.55],
+                [0.615, 0.552],
+                [0.61, 0.65],
+                [0.595, 0.648],
+            ],
+            1.0,
+        );
+        let blocks = merge_textlines(&[left, right]);
+        assert_eq!(
+            blocks.len(),
+            2,
+            "lines on one horizontal band must stay separate bubbles"
+        );
+    }
+}
