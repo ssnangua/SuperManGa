@@ -77,8 +77,7 @@ export function defaultTranslationSettings(): TranslationSettings {
     textLineSpacing: DEFAULT_TEXT_LINE_SPACING,
     textAlign: "start",
     textColor: DEFAULT_TEXT_COLOR,
-    // Auto uses 48px line colors (Saber-style); works well when pack installed.
-    textAutoColor: true,
+    textAutoColor: false,
     textStrokeEnabled: true,
     textStrokeWidth: DEFAULT_TEXT_STROKE_WIDTH,
     textStrokeAutoScale: true,

@@ -14,6 +14,7 @@
 6. [国际化（i18n）](#6-国际化i18n)
 7. [附录：格式支持与许可](#7-附录格式支持与许可)
 8. [附录：文字检测器导出](#8-附录文字检测器导出)
+9. [附录：与 Saber-Translator 的差异](#9-附录与-saber-translator-的差异)
 
 ---
 
@@ -599,3 +600,42 @@ cd ../pack-data
 python pack.py --only detector
 # 将 data/detector-*-v*.zip 与 manifest.json 上传到 Release tag `data`
 ```
+
+## 9. 附录：与 Saber-Translator 的差异
+
+检测与气泡合并移植自 [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) 的 `src/core/detector`（CTD / DBNet / YSGYolo / SaberYOLO、行合并、阅读顺序、SaberYOLO 二次拆分）。实现在 [`src-tauri/src/ocr/detector`](../src-tauri/src/ocr/detector)。Saber 用像素和 shapely；这里的框是页面归一化四边形，分割里「5 像素」一类固定阈值是近似。
+
+Saber 的翻译任务按页走下面这些步骤。检测器只负责框，精确文字掩膜另跑一遍 Default（DBNet），给修复用。
+
+```mermaid
+flowchart TD
+  img[原图] --> det[主检测器]
+  det --> lines[文本行]
+  lines --> aux{辅助 YSGYolo}
+  aux -->|开| extra[补上主检测器没盖住的行]
+  aux -->|关| merge[合并成气泡]
+  extra --> merge
+  merge --> post[去掉被包住的框、合并重叠框、排阅读顺序]
+  post --> refine{SaberYOLO 精修}
+  refine -->|开，且参考框不少于 2| split[有行分不进参考框则整块不拆]
+  refine -->|关| ocr[OCR]
+  split --> ocr
+  ocr --> color[48px 再跑一遍，只留颜色]
+  color --> tr[翻译]
+  tr --> repair[纯色或 LaMA 擦字]
+  repair --> render[把译文画进干净页]
+```
+
+SuperManGa 检测到气泡之后就按引擎识别，译文画在原图上的浮层里，不擦原图、也不另存一页干净图。
+
+| 环节 | Saber-Translator | SuperManGa |
+|---|---|---|
+| 主检测器 | Default（DBNet）、CTD、YSGYolo、SaberYOLO | 同一组，id 为 `dbnet` / `ctd` / `yolo` / `saber_yolo`；可关 |
+| 行合并 | 像素距离；可选按边长比断开过远的边（默认阈值 0，等于不切） | 同一套合并与最小生成树分割；没有边长比开关 |
+| SaberYOLO 精修 | 参考框中心落在气泡内，或与气泡重叠达到阈值，才参与拆分；有行分不进去就放弃这一块 | 控制流相同。NMS 之后多一步：一个框若包住至少两个更小的框，丢掉这个大框 |
+| MangaOCR | 每个气泡外接矩形缩成 224，官方 `manga-ocr` 认一次 | 同样整框一次；ONNX 编码器 + 解码器贪心 |
+| 48px | 每行透视到高 48，beam search（k=5）。颜色头接在解码隐状态上 | `ocr-48px-ctc.onnx`，CTC 一次前向。导出里带颜色通道时，字色从同一次输出里读 |
+| 其他识别 | Paddle、百度 OCR、PaddleOCR-VL、视觉模型 | Paddle（有气泡则按行）、Windows Media OCR、EasyOCR。没有百度 OCR、VL、视觉 OCR |
+| 字色 | 独立步骤：每行再跑一遍 48px，丢掉文字，只平均前景色和背景色。`useAutoTextColor` 打开才写进气泡 | MangaOCR / Paddle / 系统 OCR / EasyOCR 在框边采样，暗的当墨、亮的当纸。仅 MIT-48px 在颜色头有结果时改用模型字色。「文字颜色 → 自动识别」默认关，浮层用设置里的固定颜色 |
+| 译文 | 写入气泡，可校对；再擦掉原文并重画 | 在线翻译后叠在阅读器上。没有 LaMA 修复，也不导出擦干净的页 |
+

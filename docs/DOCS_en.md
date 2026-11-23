@@ -14,6 +14,7 @@ This document is for developers and maintainers. User-facing notes live in [READ
 6. [Internationalization (i18n)](#6-internationalization-i18n)
 7. [Appendix: formats & licenses](#7-appendix-formats--licenses)
 8. [Appendix: detector export](#8-appendix-detector-export)
+9. [Appendix: differences from Saber-Translator](#9-appendix-differences-from-saber-translator)
 
 ---
 
@@ -599,3 +600,41 @@ cd ../pack-data
 python pack.py --only detector
 # Upload data/detector-*-v*.zip and manifest.json to Release tag `data`
 ```
+
+## 9. Appendix: differences from Saber-Translator
+
+Detection and bubble merging are ported from [Saber-Translator](https://github.com/MashiroSaber03/Saber-Translator) `src/core/detector` (CTD / DBNet / YSGYolo / SaberYOLO, line merge, reading order, SaberYOLO second-pass split). The Rust port lives in [`src-tauri/src/ocr/detector`](../src-tauri/src/ocr/detector). Saber works in pixels with shapely; boxes here are page-normalized quads, and fixed pixel cutoffs such as “5 px” in the split are approximations.
+
+A Saber translation job walks each page through the steps below. The chosen detector only produces boxes; a second Default (DBNet) pass supplies the precise text mask used for inpainting.
+
+```mermaid
+flowchart TD
+  img[Source image] --> det[Primary detector]
+  det --> lines[Text lines]
+  lines --> aux{Aux YSGYolo}
+  aux -->|on| extra[Add lines the primary missed]
+  aux -->|off| merge[Merge into bubbles]
+  extra --> merge
+  merge --> post[Drop contained boxes, merge overlaps, reading order]
+  post --> refine{SaberYOLO refine}
+  refine -->|on, and at least 2 reference boxes| split[If any line is unassigned, keep the whole block]
+  refine -->|off| ocr[OCR]
+  split --> ocr
+  ocr --> color[Run 48px again and keep only colors]
+  color --> tr[Translate]
+  tr --> repair[Solid fill or LaMA inpaint]
+  repair --> render[Draw the translation onto the clean page]
+```
+
+SuperManGa recognizes each bubble with the selected engine and draws the translation as an overlay on the original page. It does not erase the source art or write a separate clean page.
+
+| Stage | Saber-Translator | SuperManGa |
+|---|---|---|
+| Primary detector | Default (DBNet), CTD, YSGYolo, SaberYOLO | Same set, ids `dbnet` / `ctd` / `yolo` / `saber_yolo`; can be turned off |
+| Line merge | Pixel distances; optional edge-ratio cut for links much longer than the nearest one (default threshold 0, so the cut is off) | Same merge and minimum-spanning-tree split; no edge-ratio switch |
+| SaberYOLO refine | A reference box joins the split only if its center lies inside the bubble or the overlap reaches the threshold; one unassigned line aborts that block | Same control flow. After NMS, one extra step: drop a box that contains the centers of at least two smaller boxes |
+| MangaOCR | One recognition of the bubble AABB, resized to 224, via the official `manga-ocr` package | Same one-crop-per-bubble path; ONNX encoder plus greedy decoder |
+| 48px | Each line is warped to height 48, then beam search (k=5). The color head reads decoder hidden states | `ocr-48px-ctc.onnx`, one CTC forward. When the export includes a color output, ink color comes from that same forward |
+| Other recognizers | Paddle, Baidu OCR, PaddleOCR-VL, vision models | Paddle (per line when bubbles exist), Windows Media OCR, EasyOCR. No Baidu OCR, VL, or vision OCR |
+| Text color | Separate step: run 48px again per line, discard the text, and average foreground and background. Written onto the bubble only when `useAutoTextColor` is on | MangaOCR / Paddle / system OCR / EasyOCR sample the box border: darker pixels are ink, lighter pixels are paper. Only MIT-48px replaces that with the model color when the color head returns one. **Text color → Auto detect** is off by default, so the overlay uses the fixed color from settings |
+| Translation output | Stored on the bubble, with optional proofreading; source text is then erased and redrawn | Translated online and composited in the reader. No LaMA inpaint and no exported clean page |
