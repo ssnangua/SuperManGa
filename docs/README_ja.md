@@ -94,6 +94,7 @@ sudo apt install ./SuperManGa-*-linux-arm64.deb
 | <img src="../src/assets/palette.svg" width="18" height="18" alt=""> | 色調整 | 明るさ / コントラスト / 彩度 |
 | <img src="../src/assets/rotate.svg" width="18" height="18" alt=""> | 回転 | 画像を回転 |
 | <img src="../src/assets/lens.svg" width="18" height="18" alt=""> | ルーペ | 局所拡大 |
+| <img src="../src/assets/split_double_pages.svg" width="18" height="18" alt=""> | 2ページに分割 | 見開き画像を左右それぞれのページに分割 |
 | <img src="../src/assets/bookmark.svg" width="18" height="18" alt=""> | ブックマーク | メモ付きブックマーク |
 |  | 章検出 | ファイル名ルールで章分け。独自正規表現可 |
 |  | 最近の履歴 | 最近開いたファイルと読書位置を記憶 |
