@@ -7,6 +7,7 @@ use zip::ZipArchive;
 
 use super::measure::{self, PageMetric};
 use super::names::{decode_zip_name, is_image, is_junk, normalize_rel};
+use super::zip_cd::{self, CdEntry};
 use super::{ERR_PASSWORD_INCORRECT, ERR_PASSWORD_REQUIRED};
 
 pub struct ZipBook {
@@ -83,18 +84,10 @@ fn map_zip_err(err: ZipError, had_password: bool) -> String {
     }
 }
 
-pub fn any_encrypted(path: &Path, indices: &[usize]) -> Result<bool, String> {
-    let file = File::open(path).map_err(|err| err.to_string())?;
-    let mut archive = ZipArchive::new(BufReader::new(file)).map_err(|err| err.to_string())?;
-    for &index in indices {
-        let entry = archive
-            .by_index_raw(index)
-            .map_err(|err| err.to_string())?;
-        if entry.encrypted() {
-            return Ok(true);
-        }
-    }
-    Ok(false)
+pub struct ZipListing {
+    pub rels: Vec<String>,
+    pub indices: Vec<usize>,
+    pub encrypted: bool,
 }
 
 pub fn verify_password(path: &Path, indices: &[usize], password: &str) -> Result<(), String> {
@@ -126,36 +119,70 @@ pub fn verify_password(path: &Path, indices: &[usize], password: &str) -> Result
     Ok(())
 }
 
-pub fn list(path: &Path) -> Result<(Vec<String>, Vec<usize>), String> {
-    let file = File::open(path).map_err(|err| err.to_string())?;
-    let mut archive = ZipArchive::new(BufReader::new(file)).map_err(|err| err.to_string())?;
+pub fn list(path: &Path) -> Result<ZipListing, String> {
+    let entries = read_entries(path)?;
     let mut items = Vec::new();
-    for index in 0..archive.len() {
-        // Use name_raw + GBK fallback. `name_for_index` maps non-UTF8 bytes through
-        // CP437, which turns Chinese Windows (GBK) zip names into mojibake.
-        let Ok(entry) = archive.by_index_raw(index) else {
-            continue;
-        };
-        let name = normalize_rel(&decode_zip_name(entry.name_raw()));
+    let mut encrypted = false;
+    for entry in entries {
+        // Raw central-directory bytes. The zip crate's decoded name maps non-UTF8
+        // bytes through CP437, which turns Chinese Windows (GBK) names into mojibake.
+        let name = normalize_rel(&decode_zip_name(&entry.name_raw));
         if name.ends_with('/') || name.ends_with('\\') {
             continue;
         }
         if is_image(&name) && !is_junk(&name) {
-            items.push((name, index));
+            if entry.encrypted {
+                encrypted = true;
+            }
+            items.push((name, entry.index));
         }
     }
     items.sort_by(|a, b| super::names::natural_cmp(&a.0, &b.0));
     let rels = items.iter().map(|(name, _)| name.clone()).collect();
     let indices = items.iter().map(|(_, index)| *index).collect();
-    Ok((rels, indices))
+    Ok(ZipListing {
+        rels,
+        indices,
+        encrypted,
+    })
+}
+
+fn read_entries(path: &Path) -> Result<Vec<CdEntry>, String> {
+    match zip_cd::entries(path) {
+        Ok(entries) => Ok(entries),
+        Err(err) => {
+            crate::app_log::info(
+                "archive",
+                format!("[open] zip central directory ({err}), scanning local headers"),
+            );
+            entries_via_local_headers(path)
+        }
+    }
+}
+
+fn entries_via_local_headers(path: &Path) -> Result<Vec<CdEntry>, String> {
+    let file = File::open(path).map_err(|err| err.to_string())?;
+    let mut archive = ZipArchive::new(BufReader::new(file)).map_err(|err| err.to_string())?;
+    let mut entries = Vec::new();
+    for index in 0..archive.len() {
+        let Ok(entry) = archive.by_index_raw(index) else {
+            continue;
+        };
+        entries.push(CdEntry {
+            index,
+            name_raw: entry.name_raw().to_vec(),
+            encrypted: entry.encrypted(),
+        });
+    }
+    Ok(entries)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use std::io::Write;
-    use zip::write::SimpleFileOptions;
     use zip::ZipWriter;
+    use zip::write::SimpleFileOptions;
 
     #[test]
     fn lists_only_images_in_natural_order() {
@@ -167,6 +194,7 @@ mod tests {
         let options = SimpleFileOptions::default();
         zip.start_file("10.jpg", options).unwrap();
         zip.write_all(b"a").unwrap();
+        zip.add_directory("sub/", options).unwrap();
         zip.start_file("2.jpg", options).unwrap();
         zip.write_all(b"b").unwrap();
         zip.start_file("sub/1.png", options).unwrap();
@@ -177,12 +205,13 @@ mod tests {
         zip.write_all(b"e").unwrap();
         zip.finish().unwrap();
 
-        let (rels, indices) = list(&path).unwrap();
-        assert_eq!(rels, vec!["2.jpg", "10.jpg", "sub/1.png"]);
-        assert_eq!(indices.len(), 3);
+        let listed = list(&path).unwrap();
+        assert_eq!(listed.rels, vec!["2.jpg", "10.jpg", "sub/1.png"]);
+        assert_eq!(listed.indices.len(), 3);
+        assert!(!listed.encrypted);
         let book = ZipBook {
             path: path.clone(),
-            indices,
+            indices: listed.indices,
             password: None,
         };
         assert_eq!(book.read(0).unwrap(), b"b");
@@ -246,8 +275,163 @@ mod tests {
         let _ = local_len;
         std::fs::write(&path, &bytes).unwrap();
 
-        let (rels, _) = list(&path).unwrap();
-        assert_eq!(rels, vec!["混搭封面.jpg"]);
+        let listed = list(&path).unwrap();
+        assert_eq!(listed.rels, vec!["混搭封面.jpg"]);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn lists_images_when_local_headers_are_unreadable() {
+        let dir = std::env::temp_dir().join(format!("jmr-zip-cd-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("book.zip");
+        let file = File::create(&path).unwrap();
+        let mut zip = ZipWriter::new(file);
+        let options = SimpleFileOptions::default();
+        zip.start_file("page.jpg", options).unwrap();
+        zip.write_all(b"a").unwrap();
+        zip.finish().unwrap();
+        let mut bytes = std::fs::read(&path).unwrap();
+        bytes[..4].fill(0);
+        std::fs::write(&path, bytes).unwrap();
+
+        let listed = list(&path).unwrap();
+        assert_eq!(listed.rels, vec!["page.jpg"]);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn sees_encryption_flag_in_the_central_directory() {
+        let dir = std::env::temp_dir().join(format!("jmr-zip-enc-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("book.zip");
+        let name = b"a.jpg";
+        let data = b"x";
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&0x04034b50u32.to_le_bytes());
+        bytes.extend_from_slice(&20u16.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(name);
+        bytes.extend_from_slice(data);
+        let cd_offset = bytes.len() as u32;
+        bytes.extend_from_slice(&0x02014b50u32.to_le_bytes());
+        bytes.extend_from_slice(&20u16.to_le_bytes());
+        bytes.extend_from_slice(&20u16.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(name);
+        let cd_size = (bytes.len() as u32) - cd_offset;
+        bytes.extend_from_slice(&0x06054b50u32.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&1u16.to_le_bytes());
+        bytes.extend_from_slice(&cd_size.to_le_bytes());
+        bytes.extend_from_slice(&cd_offset.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        std::fs::write(&path, bytes).unwrap();
+
+        let listed = list(&path).unwrap();
+        assert_eq!(listed.rels, vec!["a.jpg"]);
+        assert!(listed.encrypted);
+        std::fs::remove_dir_all(&dir).ok();
+    }
+
+    #[test]
+    fn lists_zip64_central_directory() {
+        let dir = std::env::temp_dir().join(format!("jmr-zip64-{}", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let path = dir.join("book.zip");
+        let name = b"a.jpg";
+        let data = b"Z";
+        let crc = super::super::zip_cd::crc32(data);
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(&0x04034b50u32.to_le_bytes());
+        bytes.extend_from_slice(&45u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&crc.to_le_bytes());
+        bytes.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(name);
+        bytes.extend_from_slice(data);
+        let cd_offset = bytes.len() as u64;
+        bytes.extend_from_slice(&0x02014b50u32.to_le_bytes());
+        bytes.extend_from_slice(&45u16.to_le_bytes());
+        bytes.extend_from_slice(&45u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&crc.to_le_bytes());
+        bytes.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&(data.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&(name.len() as u16).to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(name);
+        let cd_size = bytes.len() as u64 - cd_offset;
+        let zip64_pos = bytes.len() as u64;
+        bytes.extend_from_slice(&0x06064b50u32.to_le_bytes());
+        bytes.extend_from_slice(&44u64.to_le_bytes());
+        bytes.extend_from_slice(&45u16.to_le_bytes());
+        bytes.extend_from_slice(&45u16.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&1u64.to_le_bytes());
+        bytes.extend_from_slice(&1u64.to_le_bytes());
+        bytes.extend_from_slice(&cd_size.to_le_bytes());
+        bytes.extend_from_slice(&cd_offset.to_le_bytes());
+        bytes.extend_from_slice(&0x07064b50u32.to_le_bytes());
+        bytes.extend_from_slice(&0u32.to_le_bytes());
+        bytes.extend_from_slice(&zip64_pos.to_le_bytes());
+        bytes.extend_from_slice(&1u32.to_le_bytes());
+        bytes.extend_from_slice(&0x06054b50u32.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        bytes.extend_from_slice(&0xffffu16.to_le_bytes());
+        bytes.extend_from_slice(&0xffffu16.to_le_bytes());
+        bytes.extend_from_slice(&0xffff_ffffu32.to_le_bytes());
+        bytes.extend_from_slice(&0xffff_ffffu32.to_le_bytes());
+        bytes.extend_from_slice(&0u16.to_le_bytes());
+        std::fs::write(&path, bytes).unwrap();
+
+        let listed = list(&path).unwrap();
+        assert_eq!(listed.rels, vec!["a.jpg"]);
+        let book = ZipBook {
+            path: path.clone(),
+            indices: listed.indices,
+            password: None,
+        };
+        assert_eq!(book.read(0).unwrap(), b"Z");
         std::fs::remove_dir_all(&dir).ok();
     }
 
@@ -259,21 +443,24 @@ mod tests {
         if !path.is_file() {
             return;
         }
-        let (rels, _) = list(path).unwrap();
+        let listed = list(path).unwrap();
         assert!(
-            rels.iter().any(|name| name.contains("混搭封面")),
+            listed.rels.iter().any(|name| name.contains("混搭封面")),
             "cover name missing, first={:?}",
-            rels.first()
+            listed.rels.first()
         );
         assert!(
-            rels.iter().any(|name| name.contains("目录")),
+            listed.rels.iter().any(|name| name.contains("目录")),
             "toc name missing (GBK-as-UTF8 trap), sample={:?}",
-            rels.get(1)
+            listed.rels.get(1)
         );
         assert!(
-            !rels.iter().any(|name| name.contains('Ŀ') || name.contains('¼')),
+            !listed
+                .rels
+                .iter()
+                .any(|name| name.contains('Ŀ') || name.contains('¼')),
             "latin accident still present: {:?}",
-            rels.iter().take(3).collect::<Vec<_>>()
+            listed.rels.iter().take(3).collect::<Vec<_>>()
         );
     }
 }

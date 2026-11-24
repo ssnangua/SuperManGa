@@ -9,6 +9,7 @@ pub(crate) mod names;
 mod pdf;
 mod rar;
 mod sevenz;
+mod zip_cd;
 
 use std::path::{Path, PathBuf};
 use std::sync::Arc;
@@ -346,12 +347,14 @@ fn open_folder(
 fn open_zip(path: &Path, locale: &str, password: Option<&str>) -> Result<Loaded, String> {
     let total = Instant::now();
     let list_started = Instant::now();
-    let (rels, indices) = cbz::list(path)?;
+    let listed = cbz::list(path)?;
     let list_ms = list_started.elapsed().as_secs_f64() * 1000.0;
-    if rels.is_empty() {
+    if listed.rels.is_empty() {
         return Err(no_images(locale));
     }
-    let encrypted = cbz::any_encrypted(path, &indices)?;
+    let encrypted = listed.encrypted;
+    let rels = listed.rels;
+    let indices = listed.indices;
     let password = if encrypted {
         match password {
             None => return Err(ERR_PASSWORD_REQUIRED.to_string()),

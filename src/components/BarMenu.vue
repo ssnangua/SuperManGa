@@ -210,9 +210,9 @@ withDefaults(
   transition: none;
 }
 
-.menubar .bar-menu button.on,
-.menubar .bar-menu button.on:hover,
-.menubar .bar-menu button.on.is-hot {
+.menubar .bar-menu button.on:not(:disabled),
+.menubar .bar-menu button.on:hover:not(:disabled),
+.menubar .bar-menu button.on.is-hot:not(:disabled) {
   color: var(--accent);
   font-weight: 600;
 }

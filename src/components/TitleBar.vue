@@ -1050,7 +1050,7 @@ onBeforeUnmount(() => {
           <div class="sep"></div>
           <button
             type="button"
-            :class="{ on: isolateCover }"
+            :class="{ on: isolateCover && settings.readingMode === 'double' }"
             :disabled="!comic || settings.readingMode !== 'double'"
             :title="settings.readingMode !== 'double' ? t('isolateCoverDoubleOnly') : undefined"
             @click="run(toggleIsolateCover)"
