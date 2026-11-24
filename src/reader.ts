@@ -144,6 +144,8 @@ export const ASSOC_GROUPS = [
 export interface Settings {
   scrollDelta: number;
   scrollTrack: ScrollTrackBehavior;
+  /** When false, hide stage scrollbars even if the page is larger than the canvas. */
+  showScrollbar: boolean;
   smoothScroll: boolean;
   playScrollMode: PlayScrollMode;
   playSmoothStep: number;
@@ -424,6 +426,7 @@ function normalizePlayIntervalStepMode(value: unknown): PlayIntervalStepMode {
 const defaultSettings = (): Settings => ({
   scrollDelta: 100,
   scrollTrack: "page",
+  showScrollbar: true,
   smoothScroll: true,
   playScrollMode: "smooth",
   playSmoothStep: 1,
@@ -563,6 +566,7 @@ function applySettings(saved: Partial<Settings>) {
   settings.pdfRasterize = saved.pdfRasterize === true;
   settings.scrollTrack = normalizeScrollTrack(saved.scrollTrack);
   settings.scrollDelta = clampInt(saved.scrollDelta, 1, 400, 100);
+  settings.showScrollbar = saved.showScrollbar !== false;
   settings.smoothScroll = saved.smoothScroll !== false;
   settings.playScrollMode = normalizePlayScrollMode(saved.playScrollMode);
   settings.playSmoothStep = clampInt(saved.playSmoothStep, 1, 400, 1);

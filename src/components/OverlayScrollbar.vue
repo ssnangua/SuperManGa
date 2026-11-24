@@ -96,9 +96,12 @@ function syncNow() {
   }
   const y = axisMetrics(el, "y");
   const x = axisMetrics(el, "x");
-  const needChanged = yNeed.value !== y.need || xNeed.value !== x.need;
-  yNeed.value = y.need;
-  xNeed.value = x.need;
+  const show = settings.showScrollbar;
+  const yShow = show && y.need;
+  const xShow = show && x.need;
+  const needChanged = yNeed.value !== yShow || xNeed.value !== xShow;
+  yNeed.value = yShow;
+  xNeed.value = xShow;
   ySize.value = y.size;
   xSize.value = x.size;
   yOffset.value = y.offset;
@@ -107,7 +110,7 @@ function syncNow() {
   yAtEnd.value = y.atEnd;
   xAtStart.value = x.atStart;
   xAtEnd.value = x.atEnd;
-  markHost(el, y.need, x.need);
+  markHost(el, yShow, xShow);
   if (needChanged && !flushTracks) {
     flushTracks = true;
     void nextTick(() => {
@@ -401,6 +404,7 @@ function onKeyUp(event: KeyboardEvent) {
 
 watch(() => props.target, bind, { immediate: true });
 watch(chromeOverlay, sync);
+watch(() => settings.showScrollbar, sync);
 
 onMounted(() => {
   window.addEventListener("keydown", onKeyDown);

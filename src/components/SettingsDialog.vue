@@ -451,12 +451,12 @@ async function applyAssociations() {
             <h3 class="settings-section-title">{{ t("settingsBlockScroll") }}</h3>
             <div class="settings-row">
               <div class="settings-row-main">
-                <span class="settings-label">{{ t("smoothScroll") }}</span>
-                <SwitchToggle v-model="settings.smoothScroll" />
+                <span class="settings-label">{{ t("showScrollbar") }}</span>
+                <SwitchToggle v-model="settings.showScrollbar" />
               </div>
-              <p class="settings-hint">{{ t("smoothScrollHint") }}</p>
+              <p class="settings-hint">{{ t("showScrollbarHint") }}</p>
             </div>
-            <div class="settings-row">
+            <div v-if="settings.showScrollbar" class="settings-row">
               <div class="settings-row-main">
                 <span class="settings-label">{{ t("scrollTrack") }}</span>
                 <RadioGroup
@@ -466,6 +466,13 @@ async function applyAssociations() {
                 />
               </div>
               <p class="settings-hint">{{ t("scrollTrackHint") }}</p>
+            </div>
+            <div class="settings-row">
+              <div class="settings-row-main">
+                <span class="settings-label">{{ t("smoothScroll") }}</span>
+                <SwitchToggle v-model="settings.smoothScroll" />
+              </div>
+              <p class="settings-hint">{{ t("smoothScrollHint") }}</p>
             </div>
             <div class="settings-row">
               <div class="settings-row-main">
