@@ -179,10 +179,6 @@ Translation providers:
 | Volcengine Translate | Volcengine MT; Access Key |
 | Alibaba Translate | Alibaba Cloud MT; AccessKey |
 
-API keys are stored encrypted in the OS credential store (file-encrypted fallback if that fails)—**not** as plaintext in normal settings files.
-
-Overlay style: font, size, horizontal/vertical, alignment, stroke, auto color, and more.
-
 <details>
 <summary>AI translate presets</summary>
 
@@ -204,6 +200,10 @@ Overlay style: font, size, horizontal/vertical, alignment, stroke, auto color, a
 | _Custom OpenAI-compatible_ | _(enter base URL manually)_ |
 
 </details>
+
+API keys are stored encrypted in the OS credential store (file-encrypted fallback if that fails)—**not** as plaintext in normal settings files.
+
+Overlay style: font, size, horizontal/vertical, alignment, stroke, auto color, and more.
 
 ### Launch from the command line
 
