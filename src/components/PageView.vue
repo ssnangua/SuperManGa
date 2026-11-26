@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { bindStagePointer, scrollStageOrigin } from "../lib/stagePointer";
 import {
   bindPageStage,
+  displayedZoom,
   getPageRotation,
   getPageSpin,
   isPageSpinSnap,
@@ -256,6 +257,62 @@ const layoutFit = computed(() => {
   return still > 1 ? "height" : "page";
 });
 
+function zoomSlots(): { width: number; height: number }[] | null {
+  const indexes = spreadOf(props.index);
+  const sizes = indexes.map((index) => {
+    const natural = exactSize(index);
+    if (!natural) return null;
+    return rotatedSize(natural.width, natural.height, getPageRotation(index));
+  });
+  if (sizes.some((size) => !size)) return null;
+  const known = sizes as { width: number; height: number }[];
+  if (props.mode === "double" && known.length === 1) return [known[0]!, known[0]!];
+  return known;
+}
+
+/** Displayed scale of the current page. 100 means one image pixel per device pixel. */
+const pageZoomPercent = computed(() => {
+  void pageSpins;
+  void measured.value;
+  if (props.fit === "original") return 100;
+  if (props.fit === "originalScale") return Math.round(Math.max(0.01, props.originalScale) * 100);
+  const slots = zoomSlots();
+  if (!slots?.length) return null;
+  const sumW = slots.reduce((sum, page) => sum + page.width, 0);
+  const maxH = slots.reduce((max, page) => Math.max(max, page.height), 0);
+  if (sumW <= 0 || maxH <= 0) return null;
+  if (props.fit === "fixedWidth") return Math.round((Math.max(1, props.fixedWidth) / sumW) * 100);
+  const box = viewport.value;
+  if (box.width <= 0 || box.height <= 0) return null;
+  const gap = slots.length > 1 ? Math.max(0, settings.spreadGap) : 0;
+  const dpr = Math.max(0.01, screenScale.value);
+  const scaleW = ((box.width - gap) * dpr) / sumW;
+  const scaleH = (box.height * dpr) / maxH;
+  const fit = props.fit === "auto" ? layoutFit.value : "page";
+  if (fit === "height") return Math.round(scaleH * 100);
+  if (fit === "width") return Math.round(scaleW * 100);
+  return Math.round(Math.min(scaleW, scaleH) * 100);
+});
+
+watch(pageZoomPercent, (value) => {
+  displayedZoom.value = value;
+}, { immediate: true });
+
+/** Cached images can be complete before the load listener runs. */
+function harvestLoadedSizes() {
+  const root = stage.value;
+  if (!root) return;
+  for (const image of root.querySelectorAll<HTMLImageElement>("img.page-bitmap.base")) {
+    if (!image.naturalWidth || !image.naturalHeight) continue;
+    const index = Number(image.dataset.index);
+    if (!Number.isInteger(index) || exactSize(index)) continue;
+    const half = halfOf(index);
+    const leftW = Math.floor(image.naturalWidth / 2);
+    const width = half === "full" ? image.naturalWidth : half === "left" ? leftW : image.naturalWidth - leftW;
+    settle(index, { width, height: image.naturalHeight });
+  }
+}
+
 function settle(index: number, size?: { width: number; height: number }) {
   if (size && size.width > 0) {
     const page = props.sizes[index];
@@ -363,14 +420,23 @@ onMounted(() => {
     );
     stage.value.addEventListener("wheel", resetPlayClock, { passive: true });
     measureViewport();
-    observer = new ResizeObserver(() => measureViewport());
+    observer = new ResizeObserver(() => {
+      measureViewport();
+      harvestLoadedSizes();
+    });
     observer.observe(stage.value);
+    stage.value.addEventListener("load", harvestLoadedSizes, true);
+    void nextTick(() => {
+      harvestLoadedSizes();
+      requestAnimationFrame(() => harvestLoadedSizes());
+    });
     void resetScrollOrigin();
   }
 });
 
 onBeforeUnmount(() => {
   stage.value?.removeEventListener("wheel", resetPlayClock);
+  stage.value?.removeEventListener("load", harvestLoadedSizes, true);
   bindPageStage(null);
   unbindPointer?.();
   observer?.disconnect();

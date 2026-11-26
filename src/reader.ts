@@ -1861,10 +1861,15 @@ async function pushExtractPriority() {
   }
 }
 
+/** Spread page numbers in on-screen left-to-right order. Right-open reverses the pair. */
+function visualPageOrder(indexes: number[]): number[] {
+  if (indexes.length > 1 && modeFit().direction === "rtl") return [...indexes].reverse();
+  return indexes;
+}
+
 export const pageCurrentLabel = computed(() => {
-  const pages = shownPages.value.map((page) => page + 1);
-  if (pages.length > 1) return `${pages[0]},${pages[pages.length - 1]}`;
-  if (pages.length === 1) return `${pages[0]}`;
+  const pages = visualPageOrder(shownPages.value).map((page) => page + 1);
+  if (pages.length > 0) return pages.join(",");
   return "0";
 });
 export const pageLabel = computed(() => `${pageCurrentLabel.value} / ${pageCount.value}`);
@@ -1931,23 +1936,20 @@ export function commitChapterRules(
   settings.chapterRules = cloneChapterRules(rules);
   return { ok: true };
 }
+/** Current page scale in percent. 100 means one image pixel per device pixel. */
+export const displayedZoom = ref<number | null>(null);
+
 export const titleText = computed(() => {
+  void i18n.global.locale.value;
   if (!comic.value || pageCount.value === 0) return i18n.global.t("appName");
-  const indexes = shownPages.value.length > 0 ? shownPages.value : [pageIndex.value];
-  const pages = indexes
-    .map((index) => comic.value?.pages[index])
-    .filter((page): page is PageInfo => !!page);
-  if (pages.length === 0) return i18n.global.t("appName");
+  const indexes = visualPageOrder(shownPages.value.length > 0 ? shownPages.value : [pageIndex.value]);
+  const names = indexes.map((index) => logicalPageSizes.value[index]?.name ?? "");
+  if (names.every((name) => !name)) return i18n.global.t("appName");
   const container = comic.value.path.split(/[/\\]/).filter(Boolean).pop() || comic.value.title;
-  const numbers = indexes.map((index) => index + 1);
-  if (pages.length > 1) {
-    const names =
-      modeFit().direction === "rtl"
-        ? [pages[1]?.name, pages[0]?.name]
-        : [pages[0]?.name, pages[1]?.name];
-    return `[${numbers[0]},${numbers[1]}/${pageCount.value}] ${names[0]} | ${names[1]} <${container}>`;
-  }
-  return `[${numbers[0]}/${pageCount.value}] ${pages[0]?.name} <${container}>`;
+  const numbers = indexes.map((index) => index + 1).join(",");
+  const zoom = displayedZoom.value;
+  const zoomPart = zoom == null ? "" : `  [${i18n.global.t("titleZoom")}=${zoom}%]`;
+  return `${numbers}/${pageCount.value}：${names.join(" | ")}${zoomPart}  <${container}>`;
 });
 
 let scrollByDelta: ((dy: number, animate?: boolean) => boolean) | null = null;

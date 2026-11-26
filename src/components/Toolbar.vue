@@ -11,6 +11,7 @@ import {
   chromeBottom,
   chromeEdgeRevealBlockedByOverlay,
   chromeOverlay,
+  comic,
   fullscreen,
   FULLSCREEN_CHROME_ZONE,
   FULLSCREEN_RIGHT_GUTTER,
@@ -581,10 +582,10 @@ const showSeek = computed(() => {
         <button
           type="button"
           class="icon"
-          :disabled="chromeOverlay"
+          :disabled="chromeOverlay || !comic"
           :data-tip="chromeOverlay ? t('panel') : tipWithShortcut(t('panel'), 'panel')"
           :aria-label="chromeOverlay ? t('panel') : tipWithShortcut(t('panel'), 'panel')"
-          :class="{ on: !chromeOverlay && sideOpen }"
+          :class="{ on: !!comic && !chromeOverlay && sideOpen }"
           @click="toggleSide(sideTab)"
         ><Icon name="panelOn" /></button>
         <template v-if="thumbnailsOpen">

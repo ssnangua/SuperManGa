@@ -5,6 +5,7 @@ import { cssFromImagePx } from "../lib/displayScale";
 import {
   bindScroll,
   consumeScrollBehavior,
+  displayedZoom,
   markScrollMotion,
   pausePlayClock,
   resetPlayClock,
@@ -243,7 +244,24 @@ function syncHorizontalOrigin(el: HTMLElement) {
   el.scrollLeft = props.direction === "rtl" ? limit : 0;
 }
 
+function scrollZoomPercent(): number | null {
+  const mode = fitMode.value;
+  if (mode === "original") return 100;
+  if (mode === "originalScale") return Math.round(Math.max(0.01, props.originalScale) * 100);
+  const size = displayNatural(pageIndex.value);
+  if (!size) return null;
+  if (mode === "fixedWidth") return Math.round((Math.max(1, props.fixedWidth) / size.w) * 100);
+  const width = scroller.value?.clientWidth || observedWidth;
+  if (width <= 0) return null;
+  return Math.round((width * Math.max(0.01, screenScale.value) / size.w) * 100);
+}
+
+function publishZoom() {
+  displayedZoom.value = scrollZoomPercent();
+}
+
 function layout(mode: "keep" | "jump") {
+  publishZoom();
   const el = scroller.value;
   stopGlide();
   programmatic = null;
@@ -279,6 +297,7 @@ function layout(mode: "keep" | "jump") {
   }
   heights.value = nextHeights;
   widths.value = nextWidths;
+  publishZoom();
   sheetPx.value = fitMode.value === "auto" ? null : Math.max(1, Math.round(maxW));
   prefix = nextPrefix;
   const pageHeight = nextHeights[anchor] || 1;
@@ -490,6 +509,7 @@ watch(
   () => layout("keep"),
 );
 watch(pageSpins, () => layout("keep"), { deep: true });
+watch(pageIndex, () => publishZoom());
 watch(() => props.direction, () => {
   const el = scroller.value;
   if (el) syncHorizontalOrigin(el);
