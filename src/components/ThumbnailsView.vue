@@ -435,13 +435,17 @@ html.theme-light .thumb {
   margin-left: -100%;
 }
 
+.thumb-frame[data-half="full"] .thumb-crop,
+.thumb-frame:not([data-half]) .thumb-crop {
+  width: 100%;
+  height: 100%;
+}
+
 .thumb-frame[data-half="full"] .thumb-crop img,
 .thumb-frame:not([data-half]) .thumb-crop img {
   display: block;
-  max-width: 100%;
-  max-height: 100%;
-  width: auto;
-  height: auto;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
